@@ -1,0 +1,38 @@
+[package]
+name = "dioxus-mdx"
+version = "0.1.0"
+authors = ["Hauke Jung <hauke.jung@outlook.de>"]
+edition = "2024"
+description = "MDX parsing and rendering components for Dioxus"
+license = "MIT"
+repository = "https://github.com/hauju/dioxus-docs-kit"
+keywords = ["dioxus", "mdx", "markdown", "documentation", "parser"]
+categories = ["parsing", "web-programming", "text-processing"]
+readme = "README.md"
+
+[dependencies]
+dioxus = { version = "0.7", features = ["lib"] }
+dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+regex = "1.11"
+thiserror = "2.0"
+syntect = { version = "5.2", default-features = false, features = [
+    "default-syntaxes",
+    "default-themes",
+    "html",
+    "regex-fancy",
+] }
+markdown = "1.0"
+openapiv3 = "2.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { version = "0.3.0", features = ["futures"] }
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+
+[dev-dependencies]

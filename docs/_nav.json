@@ -1,0 +1,25 @@
+{
+  "tabs": ["Docs", "Guides", "API Reference", "Changelog"],
+  "groups": [
+    {
+      "group": "Getting Started",
+      "tab": "Docs",
+      "pages": ["getting-started/introduction", "getting-started/quickstart"]
+    },
+    {
+      "group": "Guides",
+      "tab": "Guides",
+      "pages": ["guides/basic-usage", "guides/customization", "guides/integration"]
+    },
+    {
+      "group": "API Reference",
+      "tab": "API Reference",
+      "pages": ["api-reference/overview"]
+    },
+    {
+      "group": "Changelog",
+      "tab": "Changelog",
+      "pages": ["changelog"]
+    }
+  ]
+}

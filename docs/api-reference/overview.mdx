@@ -1,0 +1,216 @@
+---
+title: API Reference
+description: Complete API documentation for the dioxus-mdx crate
+sidebarTitle: Overview
+icon: code-2
+---
+
+## Overview
+
+The `dioxus-mdx` crate provides parsing and rendering capabilities for MDX documentation in Dioxus applications.
+
+## Core Functions
+
+### parse_document
+
+Parses a complete MDX document, extracting frontmatter and content.
+
+<ParamField body="content" type="&str" required>
+  The raw MDX content to parse
+</ParamField>
+
+**Returns:** `ParsedDoc` containing frontmatter, content nodes, and raw markdown.
+
+```rust
+use dioxus_mdx::parse_document;
+
+let mdx = r#"---
+title: My Page
+---
+
+## Hello World
+"#;
+
+let doc = parse_document(mdx);
+assert_eq!(doc.frontmatter.title, "My Page");
+```
+
+### parse_mdx
+
+Parses MDX content without frontmatter extraction.
+
+<ParamField body="content" type="&str" required>
+  The MDX content to parse (without frontmatter)
+</ParamField>
+
+**Returns:** `Vec<DocNode>` representing the parsed content tree.
+
+```rust
+use dioxus_mdx::parse_mdx;
+
+let nodes = parse_mdx("## Hello\n\n<Note>A note</Note>");
+```
+
+## Components
+
+### MdxContent
+
+The main component for rendering MDX content.
+
+<ParamField body="content" type="String" required>
+  Raw MDX content to parse and render
+</ParamField>
+
+```rust
+use dioxus::prelude::*;
+use dioxus_mdx::MdxContent;
+
+#[component]
+fn DocsPage(content: String) -> Element {
+    rsx! {
+        MdxContent { content }
+    }
+}
+```
+
+### DocTableOfContents
+
+Displays a table of contents with scroll tracking.
+
+<ParamField body="headers" type="Vec<(String, String, u8)>" required>
+  List of headers as (id, title, level) tuples
+</ParamField>
+
+```rust
+use dioxus_mdx::{DocTableOfContents, extract_headers};
+
+let headers = extract_headers(&mdx_content);
+rsx! {
+    DocTableOfContents { headers }
+}
+```
+
+## Types
+
+### DocFrontmatter
+
+<ResponseField name="title" type="String">
+  Page title used in H1 and browser tab
+</ResponseField>
+
+<ResponseField name="description" type="Option<String>">
+  Short description for meta tags
+</ResponseField>
+
+<ResponseField name="sidebar_title" type="Option<String>">
+  Shorter title for sidebar navigation
+</ResponseField>
+
+<ResponseField name="icon" type="Option<String>">
+  Lucide icon identifier
+</ResponseField>
+
+### DocNode
+
+An enum representing parsed content nodes:
+
+<AccordionGroup>
+  <Accordion title="Markdown">
+    Plain markdown content rendered as HTML.
+  </Accordion>
+  <Accordion title="Callout">
+    Tip, Note, Warning, or Info callout boxes.
+  </Accordion>
+  <Accordion title="Card / CardGroup">
+    Navigation cards with optional icons and links.
+  </Accordion>
+  <Accordion title="Tabs">
+    Tabbed content containers.
+  </Accordion>
+  <Accordion title="Steps">
+    Sequential step-by-step guides.
+  </Accordion>
+  <Accordion title="CodeBlock / CodeGroup">
+    Syntax-highlighted code blocks.
+  </Accordion>
+  <Accordion title="ParamField / ResponseField">
+    API documentation fields.
+  </Accordion>
+</AccordionGroup>
+
+## Helper Functions
+
+### extract_headers
+
+Extracts headers from markdown content for table of contents.
+
+```rust
+use dioxus_mdx::extract_headers;
+
+let headers = extract_headers("## Intro\n### Details");
+// Returns: [("intro", "Intro", 2), ("details", "Details", 3)]
+```
+
+### slugify
+
+Converts a title to a URL-friendly slug.
+
+```rust
+use dioxus_mdx::slugify;
+
+assert_eq!(slugify("Hello World"), "hello-world");
+assert_eq!(slugify("API v1.0"), "api-v1-0");
+```
+
+## Usage Example
+
+<CodeGroup>
+```rust Basic Usage
+use dioxus::prelude::*;
+use dioxus_mdx::{parse_document, MdxContent, DocTableOfContents, extract_headers};
+
+#[component]
+fn DocsPage(content: String) -> Element {
+    let doc = parse_document(&content);
+    let headers = extract_headers(&doc.raw_markdown);
+
+    rsx! {
+        div { class: "flex",
+            // Sidebar with ToC
+            aside {
+                DocTableOfContents { headers }
+            }
+            // Main content
+            main {
+                h1 { "{doc.frontmatter.title}" }
+                MdxContent { content }
+            }
+        }
+    }
+}
+```
+
+```rust With Navigation
+use dioxus::prelude::*;
+use dioxus_mdx::DocCardGroup;
+
+#[component]
+fn DocsIndex() -> Element {
+    rsx! {
+        DocCardGroup {
+            group: CardGroupNode {
+                cols: 2,
+                cards: vec![
+                    CardNode {
+                        title: "Quick Start".to_string(),
+                        icon: Some("rocket".to_string()),
+                        href: Some("/docs/quickstart".to_string()),
+                        content: "Get started quickly".to_string(),
+                    }
+                ]
+            }
+        }
+    }
+}
+```
+</CodeGroup>

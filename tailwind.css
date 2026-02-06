@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+    themes: dark --default, light;
+}
+
+@source "./src/**/*.{rs,html,css}";
+@source "./crates/**/*.{rs,html,css}";

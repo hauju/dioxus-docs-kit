@@ -1,0 +1,121 @@
+---
+title: Quick Start
+description: Get up and running with your documentation site in minutes
+sidebarTitle: Quick Start
+icon: rocket
+---
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+<Steps>
+  <Step title="Install Rust">
+    Install Rust and Cargo using rustup:
+
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+  </Step>
+
+  <Step title="Install Dioxus CLI">
+    Install the Dioxus CLI tool:
+
+    ```bash
+    cargo install dioxus-cli
+    ```
+  </Step>
+
+  <Step title="Clone the Template">
+    Clone this documentation template:
+
+    ```bash
+    git clone https://github.com/hauju/dioxus-docs-kit.git
+    cd dioxus-docs-kit
+    ```
+  </Step>
+</Steps>
+
+## Running the Development Server
+
+Start the development server with hot reloading:
+
+```bash
+dx serve
+```
+
+<Note>
+The development server will start at `http://localhost:8080` by default.
+</Note>
+
+## Project Structure
+
+Here's an overview of the project structure:
+
+```text
+dioxus-docs-kit/
+├── docs/                        # Documentation content (MDX)
+│   ├── _nav.json               # Navigation configuration
+│   ├── getting-started/        # Getting started guides
+│   ├── guides/                 # Usage guides
+│   └── api-reference/          # API docs + OpenAPI specs
+├── src/
+│   └── main.rs                 # App entry point & docs glue code
+├── build.rs                     # Generates content map from _nav.json
+└── crates/
+    ├── dioxus-docs-kit/         # Reusable docs site shell
+    └── dioxus-mdx/              # MDX parsing and rendering
+```
+
+## Adding Documentation
+
+<Steps>
+  <Step title="Create MDX File">
+    Create a new `.mdx` file in the `docs/` directory:
+
+    ```mdx
+    ---
+    title: My New Page
+    description: A brief description
+    ---
+
+    ## My Content
+
+    Write your documentation here!
+    ```
+  </Step>
+
+  <Step title="Update Navigation">
+    Add your page to `docs/_nav.json`:
+
+    ```json
+    {
+      "groups": [
+        {
+          "group": "My Section",
+          "pages": ["my-new-page"]
+        }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Rebuild">
+    The content is embedded at compile time, so rebuild to see changes:
+
+    ```bash
+    dx serve
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Basic Usage" icon="book" href="/docs/guides/basic-usage">
+    Learn about all the MDX components available
+  </Card>
+  <Card title="API Reference" icon="code-2" href="/docs/api-reference/overview">
+    Explore the API documentation
+  </Card>
+</CardGroup>
