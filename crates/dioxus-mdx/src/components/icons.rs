@@ -44,7 +44,9 @@ pub fn MdxIcon(
         "folder-plus" => rsx! { Icon { class: icon_class, icon: LdFolderPlus } },
         "paste" | "clipboard-paste" => rsx! { Icon { class: icon_class, icon: LdClipboardPaste } },
         "browser" | "globe" => rsx! { Icon { class: icon_class, icon: LdGlobe } },
-        "cart-shopping" | "shopping-cart" => rsx! { Icon { class: icon_class, icon: LdShoppingCart } },
+        "cart-shopping" | "shopping-cart" => {
+            rsx! { Icon { class: icon_class, icon: LdShoppingCart } }
+        }
         "circle-question" | "help" => rsx! { Icon { class: icon_class, icon: LdCircleHelp } },
         "circle-exclamation" | "alert" => rsx! { Icon { class: icon_class, icon: LdCircleAlert } },
         "react" | "atom" => rsx! { Icon { class: icon_class, icon: LdAtom } },
@@ -58,7 +60,9 @@ pub fn MdxIcon(
         "key" => rsx! { Icon { class: icon_class, icon: LdKey } },
         "clock" => rsx! { Icon { class: icon_class, icon: LdClock } },
         "eye-slash" | "eye-off" => rsx! { Icon { class: icon_class, icon: LdEyeOff } },
-        "arrows-left-right" | "arrow-left-right" => rsx! { Icon { class: icon_class, icon: LdArrowLeftRight } },
+        "arrows-left-right" | "arrow-left-right" => {
+            rsx! { Icon { class: icon_class, icon: LdArrowLeftRight } }
+        }
         "mobile" | "smartphone" => rsx! { Icon { class: icon_class, icon: LdSmartphone } },
         "lightbulb" => rsx! { Icon { class: icon_class, icon: LdLightbulb } },
         "info" => rsx! { Icon { class: icon_class, icon: LdInfo } },
@@ -71,7 +75,9 @@ pub fn MdxIcon(
         // Additional icons for docs
         "users" | "team" => rsx! { Icon { class: icon_class, icon: LdUsers } },
         "robot" | "bot" => rsx! { Icon { class: icon_class, icon: LdBot } },
-        "code-branch" | "git-branch" | "branch" => rsx! { Icon { class: icon_class, icon: LdGitBranch } },
+        "code-branch" | "git-branch" | "branch" => {
+            rsx! { Icon { class: icon_class, icon: LdGitBranch } }
+        }
         "link" => rsx! { Icon { class: icon_class, icon: LdLink } },
         "image" | "picture" => rsx! { Icon { class: icon_class, icon: LdImage } },
         "camera" | "screenshot" => rsx! { Icon { class: icon_class, icon: LdCamera } },

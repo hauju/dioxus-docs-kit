@@ -1093,7 +1093,6 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "syntect",
- "thiserror 2.0.17",
 ]
 
 [[package]]

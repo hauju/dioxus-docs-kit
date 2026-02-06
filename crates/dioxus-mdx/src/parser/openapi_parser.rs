@@ -39,7 +39,9 @@ pub fn parse_openapi(content: &str) -> Result<OpenApiSpec, OpenApiError> {
     } else if let Ok(s) = serde_json::from_str(content) {
         s
     } else {
-        return Err(OpenApiError::ParseError("Failed to parse as YAML or JSON".to_string()));
+        return Err(OpenApiError::ParseError(
+            "Failed to parse as YAML or JSON".to_string(),
+        ));
     };
 
     Ok(transform_spec(&spec))
@@ -117,7 +119,13 @@ fn extract_operations(
 
     for (method, op_option) in methods {
         if let Some(op) = op_option {
-            operations.push(transform_operation(path, method, op, &item.parameters, spec));
+            operations.push(transform_operation(
+                path,
+                method,
+                op,
+                &item.parameters,
+                spec,
+            ));
         }
     }
 }
@@ -172,10 +180,7 @@ fn transform_operation(
 }
 
 /// Transform a parameter.
-fn transform_parameter(
-    param_ref: &ReferenceOr<Parameter>,
-    spec: &OpenAPI,
-) -> Option<ApiParameter> {
+fn transform_parameter(param_ref: &ReferenceOr<Parameter>, spec: &OpenAPI) -> Option<ApiParameter> {
     let param = resolve_parameter(param_ref, spec)?;
 
     let location = match &param.parameter_data_ref().format {
@@ -241,7 +246,10 @@ fn transform_request_body(
         .iter()
         .map(|(media_type, media)| MediaTypeContent {
             media_type: media_type.clone(),
-            schema: media.schema.as_ref().map(|s| resolve_and_transform_schema(s, spec)),
+            schema: media
+                .schema
+                .as_ref()
+                .map(|s| resolve_and_transform_schema(s, spec)),
             example: media.example.as_ref().map(|v| format_json_value(v)),
         })
         .collect();
@@ -293,7 +301,10 @@ fn transform_response(
             .iter()
             .map(|(media_type, media)| MediaTypeContent {
                 media_type: media_type.clone(),
-                schema: media.schema.as_ref().map(|s| resolve_and_transform_schema(s, spec)),
+                schema: media
+                    .schema
+                    .as_ref()
+                    .map(|s| resolve_and_transform_schema(s, spec)),
                 example: media.example.as_ref().map(|v| format_json_value(v)),
             })
             .collect();
@@ -331,7 +342,10 @@ fn resolve_response<'a>(
 }
 
 /// Resolve a schema reference and transform it.
-fn resolve_and_transform_schema(schema_ref: &ReferenceOr<Schema>, spec: &OpenAPI) -> SchemaDefinition {
+fn resolve_and_transform_schema(
+    schema_ref: &ReferenceOr<Schema>,
+    spec: &OpenAPI,
+) -> SchemaDefinition {
     match schema_ref {
         ReferenceOr::Item(schema) => transform_schema(schema, spec),
         ReferenceOr::Reference { reference } => {
@@ -367,7 +381,10 @@ fn resolve_and_transform_schema(schema_ref: &ReferenceOr<Schema>, spec: &OpenAPI
 }
 
 /// Resolve a boxed schema reference and transform it.
-fn resolve_and_transform_boxed_schema(schema_ref: &ReferenceOr<Box<Schema>>, spec: &OpenAPI) -> SchemaDefinition {
+fn resolve_and_transform_boxed_schema(
+    schema_ref: &ReferenceOr<Box<Schema>>,
+    spec: &OpenAPI,
+) -> SchemaDefinition {
     match schema_ref {
         ReferenceOr::Item(schema) => transform_schema(schema, spec),
         ReferenceOr::Reference { reference } => {
@@ -416,57 +433,63 @@ fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
     let mut def = SchemaDefinition::default();
 
     def.description = schema.schema_data.description.clone();
-    def.example = schema.schema_data.example.as_ref().map(|v| format_json_value(v));
-    def.default = schema.schema_data.default.as_ref().map(|v| format_json_value(v));
+    def.example = schema
+        .schema_data
+        .example
+        .as_ref()
+        .map(|v| format_json_value(v));
+    def.default = schema
+        .schema_data
+        .default
+        .as_ref()
+        .map(|v| format_json_value(v));
     def.nullable = schema.schema_data.nullable;
 
     match &schema.schema_kind {
-        SchemaKind::Type(t) => {
-            match t {
-                Type::String(s) => {
-                    def.schema_type = SchemaType::String;
-                    def.format = extract_format(&s.format);
-                    def.enum_values = s.enumeration.iter().filter_map(|v| v.clone()).collect();
+        SchemaKind::Type(t) => match t {
+            Type::String(s) => {
+                def.schema_type = SchemaType::String;
+                def.format = extract_format(&s.format);
+                def.enum_values = s.enumeration.iter().filter_map(|v| v.clone()).collect();
+            }
+            Type::Number(n) => {
+                def.schema_type = SchemaType::Number;
+                def.format = extract_format(&n.format);
+            }
+            Type::Integer(i) => {
+                def.schema_type = SchemaType::Integer;
+                def.format = extract_format(&i.format);
+            }
+            Type::Boolean(_) => {
+                def.schema_type = SchemaType::Boolean;
+            }
+            Type::Array(a) => {
+                def.schema_type = SchemaType::Array;
+                if let Some(items) = &a.items {
+                    def.items = Some(Box::new(resolve_and_transform_boxed_schema(items, spec)));
                 }
-                Type::Number(n) => {
-                    def.schema_type = SchemaType::Number;
-                    def.format = extract_format(&n.format);
+            }
+            Type::Object(o) => {
+                def.schema_type = SchemaType::Object;
+                def.required = o.required.clone();
+                for (name, prop) in &o.properties {
+                    let prop_schema = resolve_and_transform_boxed_schema(prop, spec);
+                    def.properties.insert(name.clone(), prop_schema);
                 }
-                Type::Integer(i) => {
-                    def.schema_type = SchemaType::Integer;
-                    def.format = extract_format(&i.format);
-                }
-                Type::Boolean(_) => {
-                    def.schema_type = SchemaType::Boolean;
-                }
-                Type::Array(a) => {
-                    def.schema_type = SchemaType::Array;
-                    if let Some(items) = &a.items {
-                        def.items = Some(Box::new(resolve_and_transform_boxed_schema(items, spec)));
-                    }
-                }
-                Type::Object(o) => {
-                    def.schema_type = SchemaType::Object;
-                    def.required = o.required.clone();
-                    for (name, prop) in &o.properties {
-                        let prop_schema = resolve_and_transform_boxed_schema(prop, spec);
-                        def.properties.insert(name.clone(), prop_schema);
-                    }
-                    if let Some(ap) = &o.additional_properties {
-                        match ap {
-                            openapiv3::AdditionalProperties::Any(true) => {
-                                def.additional_properties = Some(Box::new(SchemaDefinition::default()));
-                            }
-                            openapiv3::AdditionalProperties::Schema(s) => {
-                                def.additional_properties =
-                                    Some(Box::new(resolve_and_transform_schema(s, spec)));
-                            }
-                            _ => {}
+                if let Some(ap) = &o.additional_properties {
+                    match ap {
+                        openapiv3::AdditionalProperties::Any(true) => {
+                            def.additional_properties = Some(Box::new(SchemaDefinition::default()));
                         }
+                        openapiv3::AdditionalProperties::Schema(s) => {
+                            def.additional_properties =
+                                Some(Box::new(resolve_and_transform_schema(s, spec)));
+                        }
+                        _ => {}
                     }
                 }
             }
-        }
+        },
         SchemaKind::OneOf { one_of } => {
             def.one_of = one_of
                 .iter()
@@ -560,7 +583,10 @@ paths:
         let spec = parse_openapi(yaml).unwrap();
         assert_eq!(spec.operations[0].parameters.len(), 2);
         assert_eq!(spec.operations[0].parameters[0].name, "id");
-        assert_eq!(spec.operations[0].parameters[0].location, ParameterLocation::Path);
+        assert_eq!(
+            spec.operations[0].parameters[0].location,
+            ParameterLocation::Path
+        );
         assert!(spec.operations[0].parameters[0].required);
     }
 

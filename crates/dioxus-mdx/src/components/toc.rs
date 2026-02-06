@@ -6,7 +6,7 @@
 //! - Uses IntersectionObserver for performant scroll tracking
 
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons::LdList, Icon};
+use dioxus_free_icons::{Icon, icons::ld_icons::LdList};
 
 /// Props for DocTableOfContents component.
 #[derive(Props, Clone, PartialEq)]

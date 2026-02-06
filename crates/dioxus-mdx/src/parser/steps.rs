@@ -34,7 +34,11 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
         // Parse inner content recursively
         let parsed_content = parse_content(inner);
         steps.push(StepNode {
-            title: caps.get(1).map(|m| m.as_str()).unwrap_or_default().to_string(),
+            title: caps
+                .get(1)
+                .map(|m| m.as_str())
+                .unwrap_or_default()
+                .to_string(),
             content: parsed_content,
         });
     }
@@ -48,7 +52,12 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
     let headings: Vec<_> = heading_re.captures_iter(content).collect();
 
     for (i, caps) in headings.iter().enumerate() {
-        let title = caps.get(1).map(|m| m.as_str()).unwrap_or_default().trim().to_string();
+        let title = caps
+            .get(1)
+            .map(|m| m.as_str())
+            .unwrap_or_default()
+            .trim()
+            .to_string();
         let full_match = caps.get(0).expect("regex group 0");
 
         let start = full_match.end();

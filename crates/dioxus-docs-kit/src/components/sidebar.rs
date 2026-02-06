@@ -85,9 +85,7 @@ fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
     let ctx = use_context::<DocsContext>();
     let registry = use_context::<&'static DocsRegistry>();
 
-    let prefix = registry
-        .get_first_api_prefix()
-        .unwrap_or("api-reference");
+    let prefix = registry.get_first_api_prefix().unwrap_or("api-reference");
     let path = format!("{prefix}/{slug}");
 
     let is_active = (ctx.current_path)() == path;
@@ -134,13 +132,12 @@ fn SidebarLink(path: String) -> Element {
     let ctx = use_context::<DocsContext>();
     let registry = use_context::<&'static DocsRegistry>();
 
-    let title = registry.get_sidebar_title(&path).unwrap_or_else(|| {
-        path.split('/').last().unwrap_or(&path).replace('-', " ")
-    });
+    let title = registry
+        .get_sidebar_title(&path)
+        .unwrap_or_else(|| path.split('/').last().unwrap_or(&path).replace('-', " "));
 
     let current = (ctx.current_path)();
-    let is_active = current == path
-        || (current.is_empty() && path == registry.default_path);
+    let is_active = current == path || (current.is_empty() && path == registry.default_path);
 
     let active_class = if is_active {
         "bg-primary/10 text-primary font-medium border-l-2 border-primary"

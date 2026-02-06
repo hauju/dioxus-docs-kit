@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons::*, Icon};
+use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::{ApiOperation, ApiTag, OpenApiSpec, SchemaDefinition};
 
@@ -35,7 +35,11 @@ pub fn OpenApiViewer(props: OpenApiViewerProps) -> Element {
     let filtered_groups: Vec<_> = if let Some(filter_tags) = &props.tags {
         grouped_ops
             .into_iter()
-            .filter(|(tag, _)| filter_tags.iter().any(|t| t.eq_ignore_ascii_case(&tag.name)))
+            .filter(|(tag, _)| {
+                filter_tags
+                    .iter()
+                    .any(|t| t.eq_ignore_ascii_case(&tag.name))
+            })
             .collect()
     } else {
         grouped_ops

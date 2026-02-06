@@ -337,8 +337,14 @@ mod tests {
             // Should have markdown and a nested Note
             assert!(f.content.len() >= 2);
             // Find the Note in the content
-            let has_note = f.content.iter().any(|n| matches!(n, DocNode::Callout(c) if c.callout_type == CalloutType::Note));
-            assert!(has_note, "Expected nested Note callout in ParamField content");
+            let has_note = f
+                .content
+                .iter()
+                .any(|n| matches!(n, DocNode::Callout(c) if c.callout_type == CalloutType::Note));
+            assert!(
+                has_note,
+                "Expected nested Note callout in ParamField content"
+            );
         } else {
             panic!("Expected ParamField node");
         }

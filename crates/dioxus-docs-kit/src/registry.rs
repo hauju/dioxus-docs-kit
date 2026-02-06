@@ -158,16 +158,13 @@ impl DocsRegistry {
         }
 
         self.get_parsed_doc(path).and_then(|doc| {
-            doc.frontmatter
-                .sidebar_title
-                .clone()
-                .or_else(|| {
-                    if doc.frontmatter.title.is_empty() {
-                        None
-                    } else {
-                        Some(doc.frontmatter.title.clone())
-                    }
-                })
+            doc.frontmatter.sidebar_title.clone().or_else(|| {
+                if doc.frontmatter.title.is_empty() {
+                    None
+                } else {
+                    Some(doc.frontmatter.title.clone())
+                }
+            })
         })
     }
 
@@ -190,7 +187,9 @@ impl DocsRegistry {
 
     /// Get raw documentation content by path.
     pub fn get_doc_content(&self, path: &str) -> Option<&str> {
-        self.parsed_docs.get(path).map(|doc| doc.raw_markdown.as_str())
+        self.parsed_docs
+            .get(path)
+            .map(|doc| doc.raw_markdown.as_str())
     }
 
     /// Get all available documentation paths.
@@ -265,8 +264,7 @@ impl DocsRegistry {
                 .operations
                 .iter()
                 .filter(|op| {
-                    op.tags.is_empty()
-                        || op.tags.iter().all(|t| !tagged_ids.contains(&t.as_str()))
+                    op.tags.is_empty() || op.tags.iter().all(|t| !tagged_ids.contains(&t.as_str()))
                 })
                 .map(|op| ApiEndpointEntry {
                     slug: op.slug(),
