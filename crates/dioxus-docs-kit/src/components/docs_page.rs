@@ -5,6 +5,7 @@ use dioxus_mdx::{DocContent, DocTableOfContents, EndpointPage, extract_headers};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
 
+use super::docs_layout::LayoutOffsets;
 use super::page_nav::DocsPageNav;
 
 /// Documentation page content renderer.
@@ -30,6 +31,12 @@ pub fn DocsPageContent(path: String) -> Element {
             };
         }
     }
+
+    let offsets = try_use_context::<LayoutOffsets>().unwrap_or(LayoutOffsets {
+        sticky_top: "top-20",
+        scroll_mt: "scroll-mt-20",
+        sidebar_height: "h-[calc(100vh-5rem)]",
+    });
 
     let doc = match registry.get_parsed_doc(&path) {
         Some(d) => d,
@@ -77,7 +84,7 @@ pub fn DocsPageContent(path: String) -> Element {
 
                     // MDX content
                     div { class: "prose prose-base max-w-none
-                        prose-headings:scroll-mt-20
+                        prose-headings:{offsets.scroll_mt}
                         prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-10 prose-h2:mb-4
                         prose-h3:text-xl prose-h3:font-medium prose-h3:mt-8 prose-h3:mb-3
                         prose-p:text-base-content/80 prose-p:leading-relaxed
@@ -95,7 +102,7 @@ pub fn DocsPageContent(path: String) -> Element {
             // Table of Contents sidebar (right side)
             if !headers.is_empty() {
                 aside { class: "w-56 shrink-0 hidden xl:block",
-                    div { class: "sticky top-20 p-6",
+                    div { class: "sticky {offsets.sticky_top} p-6",
                         DocTableOfContents { headers }
                     }
                 }

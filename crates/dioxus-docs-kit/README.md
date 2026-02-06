@@ -120,9 +120,49 @@ All doc content is embedded at compile time via `include_str!()`. A typical `bui
 
 See the [example project](https://github.com/hauju/dioxus-docs-kit) for a complete `build.rs` implementation.
 
-## Styling
+## Styling Setup
 
-Uses [Tailwind CSS](https://tailwindcss.com/) with [DaisyUI](https://daisyui.com/). Components use semantic DaisyUI classes and adapt to any DaisyUI theme.
+This crate requires **Tailwind CSS 4**, **DaisyUI 5**, and **@tailwindcss/typography**.
+
+### Install dependencies
+
+```sh
+bun add tailwindcss @tailwindcss/typography daisyui
+```
+
+### Configure Tailwind
+
+Add to your `tailwind.css`:
+
+```css
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+    themes: dark --default, light;
+}
+
+@source "./src/**/*.{rs,html,css}";
+```
+
+### Include dioxus-docs-kit classes
+
+When using as a **git or crates.io dependency**, Tailwind can't scan the crate source
+(it lives in `~/.cargo` with machine-specific paths). Copy `safelist.html` from the
+crate into your project root and add it as a source:
+
+```css
+@source "./safelist.html";
+```
+
+The safelist includes all classes from both `dioxus-docs-kit` and `dioxus-mdx`, including
+dynamic runtime classes that Tailwind cannot detect from source scanning alone.
+
+When using as a **workspace path dependency**, you can point directly at the source instead:
+
+```css
+@source "./crates/dioxus-docs-kit/src/**/*.rs";
+@source "./crates/dioxus-mdx/src/**/*.rs";
+```
 
 ## Features
 

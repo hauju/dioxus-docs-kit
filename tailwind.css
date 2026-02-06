@@ -7,3 +7,7 @@
 
 @source "./src/**/*.{rs,html,css}";
 @source "./crates/**/*.{rs,html,css}";
+
+/* For git/crates.io dependency users who can't use @source on crate paths, use:
+   @source "./safelist.html";
+   Copy safelist.html from crates/dioxus-docs-kit/ into your project root. */

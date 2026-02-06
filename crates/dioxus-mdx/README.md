@@ -89,9 +89,29 @@ use dioxus_mdx::highlight_code;
 let html = highlight_code("let x = 42;", Some("rust"));
 ```
 
-## Styling
+## Styling Setup
 
-Components use [Tailwind CSS](https://tailwindcss.com/) with [DaisyUI](https://daisyui.com/) classes. Ensure your project includes both. The components use semantic DaisyUI classes (`bg-base-200`, `text-base-content`, `text-primary`, etc.) so they adapt to any DaisyUI theme.
+Components use **Tailwind CSS 4** with **DaisyUI 5** and **@tailwindcss/typography**.
+
+```sh
+bun add tailwindcss @tailwindcss/typography daisyui
+```
+
+When using as a **git or crates.io dependency**, Tailwind can't scan the crate source.
+Copy `safelist.html` from the crate into your project root and add it as a source:
+
+```css
+@source "./safelist.html";
+```
+
+When using as a **workspace path dependency**, point directly at the source:
+
+```css
+@source "./crates/dioxus-mdx/src/**/*.rs";
+```
+
+Components use semantic DaisyUI classes (`bg-base-200`, `text-base-content`, `text-primary`, etc.)
+and adapt to any DaisyUI theme.
 
 ## Features
 
