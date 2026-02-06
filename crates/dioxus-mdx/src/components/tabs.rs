@@ -56,7 +56,7 @@ struct TabContentProps {
 fn TabContent(props: TabContentProps) -> Element {
     rsx! {
         div {
-            class: "tab-content",
+            class: "doc-tab-content",
             for (i, node) in props.content.iter().enumerate() {
                 DocNodeRenderer { key: "{i}", node: node.clone() }
             }
