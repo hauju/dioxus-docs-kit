@@ -21,7 +21,7 @@ pub struct LayoutOffsets {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct CurrentTheme(pub Signal<String>);
+pub struct CurrentTheme(pub Signal<String>);
 
 /// Newtype wrapper for the drawer-open signal, so it can coexist with
 /// `Signal<bool>` (used for `search_open`) in the context system.
@@ -205,37 +205,29 @@ pub fn DocsLayout(
                     // Tab bar (below header)
                     if has_tabs {
                         div { class: "bg-base-200/80 backdrop-blur border-b border-base-300 px-4 lg:px-8",
-                            div { class: "flex items-center justify-between",
-                                div { class: "flex gap-6",
-                                    for tab in nav.tabs.iter() {
-                                        {
-                                            let is_active = *tab == active_tab();
-                                            let tab_clone = tab.clone();
-                                            let style = if is_active {
-                                                "text-primary border-b-2 border-primary font-medium"
-                                            } else {
-                                                "text-base-content/60 hover:text-base-content border-b-2 border-transparent"
-                                            };
-                                            rsx! {
-                                                button {
-                                                    class: "px-1 py-2.5 text-sm transition-colors -mb-px {style}",
-                                                    onclick: move |_| {
-                                                        active_tab.set(tab_clone.clone());
-                                                        let groups = nav.groups_for_tab(&tab_clone);
-                                                        if let Some(first_page) = groups.first().and_then(|g| g.pages.first()) {
-                                                            (ctx.navigate)(first_page.clone());
-                                                        }
-                                                    },
-                                                    "{tab}"
-                                                }
+                            div { class: "flex gap-6",
+                                for tab in nav.tabs.iter() {
+                                    {
+                                        let is_active = *tab == active_tab();
+                                        let tab_clone = tab.clone();
+                                        let style = if is_active {
+                                            "text-primary border-b-2 border-primary font-medium"
+                                        } else {
+                                            "text-base-content/60 hover:text-base-content border-b-2 border-transparent"
+                                        };
+                                        rsx! {
+                                            button {
+                                                class: "px-1 py-2.5 text-sm transition-colors -mb-px {style}",
+                                                onclick: move |_| {
+                                                    active_tab.set(tab_clone.clone());
+                                                    let groups = nav.groups_for_tab(&tab_clone);
+                                                    if let Some(first_page) = groups.first().and_then(|g| g.pages.first()) {
+                                                        (ctx.navigate)(first_page.clone());
+                                                    }
+                                                },
+                                                "{tab}"
                                             }
                                         }
-                                    }
-                                }
-                                div { class: "flex items-center gap-1",
-                                    SearchButton { search_open }
-                                    if has_theme {
-                                        ThemeToggle {}
                                     }
                                 }
                             }
