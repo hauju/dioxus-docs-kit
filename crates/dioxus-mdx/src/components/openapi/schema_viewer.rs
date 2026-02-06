@@ -1,7 +1,7 @@
 //! Schema viewer component for displaying type definitions.
 
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons::*, Icon};
+use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::SchemaDefinition;
 

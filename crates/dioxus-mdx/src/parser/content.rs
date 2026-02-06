@@ -5,7 +5,9 @@ use regex::Regex;
 use super::accordion::{try_parse_accordion_group, try_parse_standalone_accordion};
 use super::callout::try_parse_callout;
 use super::card::{try_parse_card_group, try_parse_columns, try_parse_standalone_card};
-use super::code_group::{try_parse_code_group, try_parse_request_example, try_parse_response_example};
+use super::code_group::{
+    try_parse_code_group, try_parse_request_example, try_parse_response_example,
+};
 use super::fields::{try_parse_expandable, try_parse_param_field, try_parse_response_field};
 use super::openapi_tag::try_parse_openapi;
 use super::steps::try_parse_steps;
@@ -259,7 +261,10 @@ pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
             }
             DocNode::ParamField(f) => {
                 let required = if f.required { " *(required)*" } else { "" };
-                output.push_str(&format!("**`{}`** _{}_{}: ", f.name, f.param_type, required));
+                output.push_str(&format!(
+                    "**`{}`** _{}_{}: ",
+                    f.name, f.param_type, required
+                ));
                 output.push_str(&get_raw_markdown(&f.content));
             }
             DocNode::ResponseField(f) => {
@@ -314,11 +319,7 @@ pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
                     output.push_str("\n\n");
                 }
                 for op in &api.spec.operations {
-                    output.push_str(&format!(
-                        "## {} {}\n\n",
-                        op.method.as_str(),
-                        op.path
-                    ));
+                    output.push_str(&format!("## {} {}\n\n", op.method.as_str(), op.path));
                     if let Some(summary) = &op.summary {
                         output.push_str(summary);
                         output.push_str("\n\n");
@@ -376,7 +377,9 @@ More text after."#;
         // Should have 3 nodes: Markdown, CodeBlock, Markdown
         assert_eq!(nodes.len(), 3);
         assert!(matches!(&nodes[0], DocNode::Markdown(m) if m.contains("intro text")));
-        assert!(matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("html".to_string())));
+        assert!(
+            matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("html".to_string()))
+        );
         assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("More text")));
     }
 
@@ -399,9 +402,13 @@ End section."#;
         // Should have 5 nodes: Markdown, CodeBlock, Markdown, CodeBlock, Markdown
         assert_eq!(nodes.len(), 5);
         assert!(matches!(&nodes[0], DocNode::Markdown(_)));
-        assert!(matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("js".to_string())));
+        assert!(
+            matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("js".to_string()))
+        );
         assert!(matches!(&nodes[2], DocNode::Markdown(_)));
-        assert!(matches!(&nodes[3], DocNode::CodeBlock(cb) if cb.language == Some("rust".to_string())));
+        assert!(
+            matches!(&nodes[3], DocNode::CodeBlock(cb) if cb.language == Some("rust".to_string()))
+        );
         assert!(matches!(&nodes[4], DocNode::Markdown(_)));
     }
 

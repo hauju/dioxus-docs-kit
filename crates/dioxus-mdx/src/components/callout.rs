@@ -24,24 +24,14 @@ pub fn DocCallout(props: DocCalloutProps) -> Element {
             "text-success",
             "shadow-success/5",
         ),
-        CalloutType::Note => (
-            "bg-info/5",
-            "border-info/40",
-            "text-info",
-            "shadow-info/5",
-        ),
+        CalloutType::Note => ("bg-info/5", "border-info/40", "text-info", "shadow-info/5"),
         CalloutType::Warning => (
             "bg-warning/5",
             "border-warning/40",
             "text-warning",
             "shadow-warning/5",
         ),
-        CalloutType::Info => (
-            "bg-info/5",
-            "border-info/40",
-            "text-info",
-            "shadow-info/5",
-        ),
+        CalloutType::Info => ("bg-info/5", "border-info/40", "text-info", "shadow-info/5"),
     };
 
     // Render markdown content

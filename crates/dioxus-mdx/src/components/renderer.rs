@@ -8,7 +8,7 @@ use crate::components::{
     DocParamField, DocRequestExample, DocResponseExample, DocResponseField, DocSteps, DocTabs,
     DocUpdate, OpenApiViewer,
 };
-use crate::parser::{parse_mdx, CardGroupNode, DocNode};
+use crate::parser::{CardGroupNode, DocNode, parse_mdx};
 
 /// Inject `id` attributes into heading tags so TOC anchor links work.
 fn inject_heading_ids(html: &str) -> String {

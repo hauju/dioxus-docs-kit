@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 
-use crate::parser::{highlight_code, ApiOperation, OpenApiSpec};
+use crate::parser::{ApiOperation, OpenApiSpec, highlight_code};
 
 use super::method_badge::MethodBadge;
 use super::parameters_list::ParametersList;

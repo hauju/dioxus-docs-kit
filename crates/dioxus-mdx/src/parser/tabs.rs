@@ -35,7 +35,11 @@ fn parse_tabs(content: &str) -> Vec<TabNode> {
 
         if let Some(caps) = tab_open_re.captures(remaining) {
             let full_match = caps.get(0).expect("regex group 0");
-            let title = caps.get(1).map(|m| m.as_str()).unwrap_or_default().to_string();
+            let title = caps
+                .get(1)
+                .map(|m| m.as_str())
+                .unwrap_or_default()
+                .to_string();
 
             let after_open = &remaining[full_match.end()..];
             if let Some(close_idx) = find_closing_tag(after_open, "Tab") {
@@ -99,7 +103,10 @@ mod tests {
         if let DocNode::Tabs(t) = &nodes[0] {
             assert_eq!(t.tabs.len(), 1);
             // Tab content should contain the code block
-            let has_code_block = t.tabs[0].content.iter().any(|n| matches!(n, DocNode::CodeBlock(_)));
+            let has_code_block = t.tabs[0]
+                .content
+                .iter()
+                .any(|n| matches!(n, DocNode::CodeBlock(_)));
             assert!(has_code_block, "Expected CodeBlock in Tab content");
         } else {
             panic!("Expected Tabs node");

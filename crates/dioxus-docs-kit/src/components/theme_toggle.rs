@@ -2,8 +2,8 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdMoon, LdSun};
 
-use crate::registry::DocsRegistry;
 use super::docs_layout::CurrentTheme;
+use crate::registry::DocsRegistry;
 
 /// Light/dark theme toggle button.
 ///
@@ -15,7 +15,11 @@ use super::docs_layout::CurrentTheme;
 pub fn ThemeToggle() -> Element {
     let registry = use_context::<&'static DocsRegistry>();
 
-    let toggle = match registry.theme.as_ref().and_then(|t| t.toggle_themes.as_ref()) {
+    let toggle = match registry
+        .theme
+        .as_ref()
+        .and_then(|t| t.toggle_themes.as_ref())
+    {
         Some(t) => t.clone(),
         None => return rsx! {},
     };
