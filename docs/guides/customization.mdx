@@ -1,0 +1,140 @@
+---
+title: Customization
+description: Theme your documentation site with DaisyUI, configure navigation, and add OpenAPI specs
+sidebarTitle: Customization
+icon: palette
+---
+
+## Theming with DaisyUI
+
+dioxus-docs-kit uses **Tailwind CSS 4** and **DaisyUI 5** for styling. The default theme is `dark`, but you can configure light/dark toggle via `DocsConfig`:
+
+```rust
+DocsConfig::new(nav_json, content_map)
+    .with_theme_toggle("light", "dark", "dark") // (light theme, dark theme, default)
+    .build()
+```
+
+DaisyUI themes control all component colors automatically. To use a different built-in theme (e.g. `cupcake`, `dracula`), just change the theme names passed to `with_theme_toggle`.
+
+<Tip>
+See the full list of built-in DaisyUI themes at [daisyui.com/docs/themes](https://daisyui.com/docs/themes/).
+</Tip>
+
+## Configuring Navigation
+
+Navigation is defined in `docs/_nav.json`. The structure supports **tabs**, **groups**, and **pages**:
+
+```json
+{
+  "tabs": ["Docs", "Guides", "API Reference"],
+  "groups": [
+    {
+      "group": "Getting Started",
+      "tab": "Docs",
+      "pages": ["getting-started/introduction", "getting-started/quickstart"]
+    },
+    {
+      "group": "Guides",
+      "tab": "Guides",
+      "pages": ["guides/basic-usage", "guides/customization"]
+    }
+  ]
+}
+```
+
+- **tabs** — Top-level navigation tabs shown in the docs header
+- **groups** — Sidebar sections, each assigned to a tab
+- **pages** — Paths relative to the `docs/` directory (without `.mdx` extension)
+
+<Note>
+Each page path must correspond to a `.mdx` file in the `docs/` directory. The `build.rs` script reads `_nav.json` to generate `include_str!()` calls at compile time.
+</Note>
+
+### Adding a New Page
+
+<Steps>
+  <Step title="Create the MDX file">
+    Create `docs/my-section/my-page.mdx` with frontmatter:
+
+    ```mdx
+    ---
+    title: My Page
+    description: A brief description
+    sidebarTitle: My Page
+    icon: file-text
+    ---
+
+    Your content here.
+    ```
+  </Step>
+
+  <Step title="Add to _nav.json">
+    Add `"my-section/my-page"` to the appropriate group's `pages` array.
+  </Step>
+
+  <Step title="Rebuild">
+    Run `dx serve` — the build script re-generates the content map automatically.
+  </Step>
+</Steps>
+
+## Adding OpenAPI Specs
+
+dioxus-docs-kit can render interactive API reference pages from OpenAPI 3.x YAML specs. Each endpoint gets its own page with a Mintlify-style two-column layout.
+
+```rust
+static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
+    DocsConfig::new(nav_json, content_map)
+        .with_openapi(
+            "api-reference",
+            include_str!("../docs/api-reference/petstore.yaml"),
+        )
+        .build()
+});
+```
+
+- The first argument (`"api-reference"`) is the URL prefix for API pages
+- The second argument is the OpenAPI YAML content
+- Endpoint slugs are derived from `operationId` values (camelCase → kebab-case)
+- Sidebar entries are generated automatically, grouped by tag
+
+<Note>
+You also need an `api-reference/overview` page in `_nav.json`. The individual endpoint pages are generated dynamically from the spec.
+</Note>
+
+## Styling Prose Content
+
+Documentation content is rendered inside Tailwind's `prose` class via the `@tailwindcss/typography` plugin. You can customize prose styles in your `tailwind.css`:
+
+```css
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui";
+
+/* Custom prose overrides */
+.prose {
+  --tw-prose-body: oklch(0.85 0 0);
+  --tw-prose-headings: oklch(0.95 0 0);
+}
+```
+
+### MDX Components
+
+All content pages support Mintlify-style MDX components out of the box:
+
+<CardGroup cols={2}>
+  <Card title="Callouts" icon="message-circle">
+    Tip, Note, Warning, and Info callout boxes
+  </Card>
+  <Card title="Cards & Card Groups" icon="layout">
+    Linked card grids with icons
+  </Card>
+  <Card title="Steps" icon="list-ordered">
+    Numbered step-by-step instructions
+  </Card>
+  <Card title="Code Groups" icon="code">
+    Tabbed code blocks with syntax highlighting
+  </Card>
+</CardGroup>
+
+See the [Basic Usage](/docs/guides/basic-usage) guide for a full component reference.

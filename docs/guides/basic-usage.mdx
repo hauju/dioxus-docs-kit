@@ -1,0 +1,194 @@
+---
+title: Basic Usage
+description: Learn how to use all the MDX components in your documentation
+sidebarTitle: Basic Usage
+icon: book
+---
+
+## Overview
+
+This guide covers all the MDX components available for creating rich documentation.
+
+## Callouts
+
+Callouts are used to highlight important information:
+
+<Tip>
+Tips provide helpful suggestions and best practices.
+</Tip>
+
+<Note>
+Notes contain additional information that may be useful.
+</Note>
+
+<Warning>
+Warnings alert users to potential issues or important caveats.
+</Warning>
+
+<Info>
+Info boxes provide general informational content.
+</Info>
+
+## Cards
+
+Cards are great for navigation and feature highlights:
+
+### Single Card
+
+<Card title="Single Card Example" icon="star">
+  Cards can contain rich content including text and links.
+</Card>
+
+### Card Groups
+
+<CardGroup cols={2}>
+  <Card title="Feature One" icon="zap">
+    Description of the first feature.
+  </Card>
+  <Card title="Feature Two" icon="shield">
+    Description of the second feature.
+  </Card>
+</CardGroup>
+
+## Code Blocks
+
+Code blocks support syntax highlighting:
+
+### Single Language
+
+```rust
+fn main() {
+    println!("Hello, Dioxus!");
+}
+```
+
+### With Filename
+
+```rust filename="main.rs"
+use dioxus::prelude::*;
+
+fn main() {
+    dioxus::launch(App);
+}
+
+#[component]
+fn App() -> Element {
+    rsx! {
+        div { "Hello, World!" }
+    }
+}
+```
+
+### Code Groups
+
+<CodeGroup>
+```rust Rust
+fn greet(name: &str) {
+    println!("Hello, {}!", name);
+}
+```
+
+```typescript TypeScript
+function greet(name: string) {
+    console.log(`Hello, ${name}!`);
+}
+```
+
+```python Python
+def greet(name: str):
+    print(f"Hello, {name}!")
+```
+</CodeGroup>
+
+## Tabs
+
+Organize related content with tabs:
+
+<Tabs>
+  <Tab title="Installation">
+    Install the package using your preferred package manager:
+
+    ```bash
+    cargo add dioxus
+    ```
+  </Tab>
+  <Tab title="Configuration">
+    Configure your `Dioxus.toml` file:
+
+    ```toml
+    [application]
+    name = "my-app"
+    ```
+  </Tab>
+  <Tab title="Usage">
+    Import and use in your application:
+
+    ```rust
+    use dioxus::prelude::*;
+    ```
+  </Tab>
+</Tabs>
+
+## Steps
+
+Steps provide sequential instructions:
+
+<Steps>
+  <Step title="First Step">
+    Complete the first task in the sequence.
+  </Step>
+  <Step title="Second Step">
+    Move on to the second task.
+  </Step>
+  <Step title="Final Step">
+    Complete the final task to finish.
+  </Step>
+</Steps>
+
+## Accordions
+
+Collapsible content sections:
+
+<AccordionGroup>
+  <Accordion title="What is Dioxus?">
+    Dioxus is a portable, performant, and ergonomic framework for building cross-platform user interfaces in Rust.
+  </Accordion>
+  <Accordion title="Why use MDX?">
+    MDX combines the simplicity of Markdown with the power of custom components, making documentation both easy to write and feature-rich.
+  </Accordion>
+  <Accordion title="How does syntax highlighting work?">
+    Code blocks are parsed and highlighted using tree-sitter for accurate, language-aware syntax highlighting.
+  </Accordion>
+</AccordionGroup>
+
+## Combining Components
+
+You can combine components for rich documentation experiences:
+
+<Tip>
+The following example shows how to combine steps with code blocks.
+</Tip>
+
+<Steps>
+  <Step title="Create Component">
+    Define your Dioxus component:
+
+    ```rust
+    #[component]
+    fn Button(label: String) -> Element {
+        rsx! {
+            button { class: "btn btn-primary", "{label}" }
+        }
+    }
+    ```
+  </Step>
+  <Step title="Use Component">
+    Use it in your application:
+
+    ```rust
+    rsx! {
+        Button { label: "Click me" }
+    }
+    ```
+  </Step>
+</Steps>

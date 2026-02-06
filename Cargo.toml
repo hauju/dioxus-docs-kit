@@ -1,0 +1,21 @@
+[package]
+name = "dioxus-docs-kit-example"
+version = "0.1.0"
+authors = ["Hauke Jung <hauke.jung@outlook.de>"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = { version = "0.7.3", features = ["router", "fullstack"] }
+dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
+dioxus-docs-kit = { path = "crates/dioxus-docs-kit", default-features = false }
+
+[build-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-docs-kit/web"]
+server = ["dioxus/server"]
