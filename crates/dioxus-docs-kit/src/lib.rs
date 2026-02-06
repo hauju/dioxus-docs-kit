@@ -62,8 +62,8 @@ pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
 // Re-export UI components
 pub use components::{
-    DocsLayout, DocsPageContent, DocsPageNav, DocsSidebar, DrawerOpen, LayoutOffsets, MobileDrawer,
-    SearchButton, SearchModal, ThemeToggle,
+    CurrentTheme, DocsLayout, DocsPageContent, DocsPageNav, DocsSidebar, DrawerOpen, LayoutOffsets,
+    MobileDrawer, SearchButton, SearchModal, ThemeToggle,
 };
 
 // Re-export key dioxus-mdx types that consumers commonly need

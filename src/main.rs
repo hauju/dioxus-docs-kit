@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, DrawerOpen, highlight_code,
+    CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, DrawerOpen,
+    SearchButton, SearchModal, ThemeToggle, highlight_code,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -114,7 +115,7 @@ fn MyDocsLayout() -> Element {
                             "Dioxus Docs Kit"
                         }
                     }
-                    div { class: "flex-none gap-1",
+                    div { class: "flex-none flex items-center gap-1",
                         ul { class: "menu menu-horizontal gap-1 hidden lg:flex",
                             li {
                                 Link {
@@ -131,6 +132,8 @@ fn MyDocsLayout() -> Element {
                                 }
                             }
                         }
+                        SearchButton { search_open }
+                        ThemeToggle {}
                     }
                 }
             },
@@ -176,6 +179,63 @@ async fn llms_full_txt() -> Result<String, ServerFnError> {
 /// Shared navbar component with DaisyUI styling
 #[component]
 fn Navbar() -> Element {
+    let nav = use_navigator();
+
+    // Provide DocsRegistry + DocsContext so SearchModal can function
+    use_context_provider(|| &*DOCS as &'static DocsRegistry);
+    use_context_provider(|| DocsContext {
+        current_path: Signal::new(String::new()).into(),
+        base_path: "/docs".into(),
+        navigate: Callback::new(move |path: String| {
+            let slug: Vec<String> = path.split('/').map(String::from).collect();
+            nav.push(Route::DocsPage { slug });
+        }),
+    });
+
+    // Search open signal (consumed by SearchModal via context)
+    let search_open = use_signal(|| false);
+    use_context_provider(|| search_open);
+
+    // Theme state
+    let registry = &*DOCS;
+    let theme_default = registry
+        .theme
+        .as_ref()
+        .map(|t| t.default_theme.clone())
+        .unwrap_or_default();
+    let theme_storage_key = registry
+        .theme
+        .as_ref()
+        .map(|t| t.storage_key.clone())
+        .unwrap_or_default();
+    let has_theme = registry.theme.is_some();
+
+    let mut current_theme = use_signal(|| theme_default.clone());
+    use_context_provider(|| CurrentTheme(current_theme));
+
+    // On mount: read stored preference and apply data-theme
+    use_effect(move || {
+        if !has_theme {
+            return;
+        }
+        let key = theme_storage_key.clone();
+        let fallback = theme_default.clone();
+        spawn(async move {
+            let mut eval = document::eval(&format!(
+                r#"
+                let theme = null;
+                try {{ theme = localStorage.getItem('{key}'); }} catch(e) {{}}
+                theme = theme || '{fallback}';
+                document.documentElement.setAttribute('data-theme', theme);
+                dioxus.send(theme);
+                "#
+            ));
+            if let Ok(stored) = eval.recv::<String>().await {
+                current_theme.set(stored);
+            }
+        });
+    });
+
     rsx! {
         div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
             div { class: "flex-1",
@@ -185,7 +245,7 @@ fn Navbar() -> Element {
                     "Dioxus Docs Kit"
                 }
             }
-            div { class: "flex-none",
+            div { class: "flex-none gap-1",
                 ul { class: "menu menu-horizontal gap-1",
                     li {
                         Link {
@@ -202,12 +262,18 @@ fn Navbar() -> Element {
                         }
                     }
                 }
+                SearchButton { search_open }
+                if has_theme {
+                    ThemeToggle {}
+                }
             }
         }
 
         main { class: "min-h-screen bg-base-100",
             Outlet::<Route> {}
         }
+
+        SearchModal {}
     }
 }
 
