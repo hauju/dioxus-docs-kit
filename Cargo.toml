@@ -1,3 +1,10 @@
+[workspace]
+members = [
+    "crates/dioxus-docs-kit",
+    "crates/dioxus-docs-kit-build",
+    "crates/dioxus-mdx",
+]
+
 [package]
 name = "dioxus-docs-kit-example"
 version = "0.1.0"
