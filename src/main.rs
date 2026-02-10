@@ -1,23 +1,20 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, DrawerOpen,
-    SearchButton, SearchModal, ThemeToggle, highlight_code,
+    CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, SearchButton,
+    SearchModal, ThemeToggle, highlight_code, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
     LdArrowRight, LdBookOpen, LdFileText, LdGithub, LdMenu, LdPackage, LdPalette, LdSearch,
     LdServer,
 };
-use std::collections::HashMap;
 use std::sync::LazyLock;
 
 // ============================================================================
 // Documentation Registry
 // ============================================================================
 
-fn doc_content_map() -> HashMap<&'static str, &'static str> {
-    include!(concat!(env!("OUT_DIR"), "/doc_content_generated.rs"))
-}
+dioxus_docs_kit::doc_content_map!();
 
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
     DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
@@ -89,15 +86,9 @@ fn MyDocsLayout() -> Element {
         }),
     };
 
-    use_context_provider(|| &*DOCS as &'static DocsRegistry);
-    use_context_provider(|| docs_ctx);
-
-    let search_open = use_signal(|| false);
-    let mut drawer_open = use_signal(|| false);
-
-    // Provide search_open and drawer_open before DocsLayout reads them
-    use_context_provider(|| search_open);
-    use_context_provider(|| DrawerOpen(drawer_open));
+    let providers = use_docs_providers(&*DOCS, docs_ctx);
+    let search_open = providers.search_open;
+    let mut drawer_open = providers.drawer_open;
 
     rsx! {
         DocsLayout {

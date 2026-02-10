@@ -810,14 +810,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-docs-kit-build"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dioxus-docs-kit-example"
 version = "0.1.0"
 dependencies = [
  "dioxus",
  "dioxus-docs-kit",
+ "dioxus-docs-kit-build",
  "dioxus-free-icons",
- "serde",
- "serde_json",
 ]
 
 [[package]]
