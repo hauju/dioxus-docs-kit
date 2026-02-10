@@ -12,8 +12,7 @@ dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 dioxus-docs-kit = { path = "crates/dioxus-docs-kit", default-features = false }
 
 [build-dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1.0"
+dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
 
 [features]
 default = ["web"]

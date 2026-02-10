@@ -36,6 +36,7 @@
 
 pub mod components;
 pub mod config;
+pub mod hooks;
 pub mod registry;
 
 use dioxus::prelude::*;
@@ -66,8 +67,31 @@ pub use components::{
     MobileDrawer, SearchButton, SearchModal, ThemeToggle,
 };
 
+// Re-export hooks
+pub use hooks::{DocsProviders, use_docs_providers};
+
 // Re-export key dioxus-mdx types that consumers commonly need
 pub use dioxus_mdx::{
     ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
     ParsedDoc, extract_headers, highlight_code,
 };
+
+/// Generates a `doc_content_map()` function that returns a
+/// `HashMap<&'static str, &'static str>` from the build-script output.
+///
+/// Place this at module level in your `main.rs`:
+///
+/// ```rust,ignore
+/// dioxus_docs_kit::doc_content_map!();
+/// ```
+///
+/// Requires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`
+/// that calls `dioxus_docs_kit_build::generate_content_map("docs/_nav.json")`.
+#[macro_export]
+macro_rules! doc_content_map {
+    () => {
+        fn doc_content_map() -> ::std::collections::HashMap<&'static str, &'static str> {
+            include!(concat!(env!("OUT_DIR"), "/doc_content_generated.rs"))
+        }
+    };
+}
