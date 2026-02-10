@@ -25,10 +25,7 @@ pub struct DocsProviders {
 /// - `use_context_provider(|| registry)`
 /// - `use_context_provider(|| docs_ctx)`
 /// - `use_signal(|| false)` × 2 + `use_context_provider` for search_open / DrawerOpen
-pub fn use_docs_providers(
-    registry: &'static DocsRegistry,
-    docs_ctx: DocsContext,
-) -> DocsProviders {
+pub fn use_docs_providers(registry: &'static DocsRegistry, docs_ctx: DocsContext) -> DocsProviders {
     use_context_provider(|| registry);
     use_context_provider(|| docs_ctx);
 
