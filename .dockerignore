@@ -1,0 +1,31 @@
+# Build artifacts
+build/
+deps/
+debug/
+
+# Documentation
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env*
+
+# Docker files
+Dockerfile*
+docker-compose*
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Logs
+*.log
