@@ -155,8 +155,7 @@ impl ApiOperation {
                 .path
                 .trim_matches('/')
                 .replace('/', "-")
-                .replace('{', "")
-                .replace('}', "");
+                .replace(['{', '}'], "");
             format!("{}-{}", self.method.as_str().to_lowercase(), path_slug)
         }
     }
@@ -522,10 +521,10 @@ impl SchemaDefinition {
                 }
             }
             SchemaType::Integer => {
-                if let Some(default) = &self.default {
-                    if let Ok(n) = default.parse::<i64>() {
-                        return json!(n);
-                    }
+                if let Some(default) = &self.default
+                    && let Ok(n) = default.parse::<i64>()
+                {
+                    return json!(n);
                 }
                 json!(0)
             }

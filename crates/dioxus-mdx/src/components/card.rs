@@ -35,7 +35,7 @@ pub fn DocCardGroup(props: DocCardGroupProps) -> Element {
                 DocCard {
                     key: "{i}",
                     card: card.clone(),
-                    on_link: props.on_link.clone(),
+                    on_link: props.on_link,
                     doc_base_path: props.doc_base_path.clone(),
                 }
             }
@@ -110,7 +110,7 @@ pub fn DocCard(props: DocCardProps) -> Element {
 
             if let Some(on_link) = &props.on_link {
                 let href_for_click = internal_href.clone();
-                let on_link = on_link.clone();
+                let on_link = *on_link;
                 rsx! {
                     button {
                         class: "block no-underline text-left w-full not-prose",

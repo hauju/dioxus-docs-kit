@@ -148,7 +148,7 @@ pub fn DocsLayout(
                 "#,
             );
             loop {
-                if let Ok(_) = eval.recv::<bool>().await {
+                if (eval.recv::<bool>().await).is_ok() {
                     search_open.toggle();
                 }
             }

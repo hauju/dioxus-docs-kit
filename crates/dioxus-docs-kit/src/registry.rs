@@ -103,7 +103,7 @@ impl DocsRegistry {
             .iter()
             .map(|(prefix, yaml)| {
                 let spec = parse_openapi(yaml)
-                    .expect(&format!("Failed to parse OpenAPI spec for {prefix}"));
+                    .unwrap_or_else(|_| panic!("Failed to parse OpenAPI spec for {prefix}"));
                 (prefix.clone(), spec)
             })
             .collect();
@@ -206,10 +206,10 @@ impl DocsRegistry {
     /// The `path` is the full docs path, e.g. "api-reference/list-pets".
     pub fn get_api_operation(&self, path: &str) -> Option<&ApiOperation> {
         for (prefix, spec) in &self.openapi_specs {
-            if let Some(slug) = path.strip_prefix(&format!("{prefix}/")) {
-                if let Some(op) = spec.operations.iter().find(|op| op.slug() == slug) {
-                    return Some(op);
-                }
+            if let Some(slug) = path.strip_prefix(&format!("{prefix}/"))
+                && let Some(op) = spec.operations.iter().find(|op| op.slug() == slug)
+            {
+                return Some(op);
             }
         }
         None
@@ -341,7 +341,7 @@ impl DocsRegistry {
             for page in &group.pages {
                 if let Some(doc) = self.get_parsed_doc(page) {
                     let title = if doc.frontmatter.title.is_empty() {
-                        page.split('/').last().unwrap_or(page).to_string()
+                        page.split('/').next_back().unwrap_or(page).to_string()
                     } else {
                         doc.frontmatter.title.clone()
                     };
@@ -372,7 +372,7 @@ impl DocsRegistry {
             for page in &group.pages {
                 if let Some(doc) = self.get_parsed_doc(page) {
                     let title = if doc.frontmatter.title.is_empty() {
-                        page.split('/').last().unwrap_or(page).to_string()
+                        page.split('/').next_back().unwrap_or(page).to_string()
                     } else {
                         doc.frontmatter.title.clone()
                     };
@@ -434,7 +434,7 @@ impl DocsRegistry {
             for page in &group.pages {
                 if let Some(doc) = parsed_docs.get(page.as_str()) {
                     let title = if doc.frontmatter.title.is_empty() {
-                        page.split('/').last().unwrap_or(page).replace('-', " ")
+                        page.split('/').next_back().unwrap_or(page).replace('-', " ")
                     } else {
                         doc.frontmatter.title.clone()
                     };

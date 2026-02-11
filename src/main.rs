@@ -86,7 +86,7 @@ fn MyDocsLayout() -> Element {
         }),
     };
 
-    let providers = use_docs_providers(&*DOCS, docs_ctx);
+    let providers = use_docs_providers(&DOCS, docs_ctx);
     let search_open = providers.search_open;
     let mut drawer_open = providers.drawer_open;
 

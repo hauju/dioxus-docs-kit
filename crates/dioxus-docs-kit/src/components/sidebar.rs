@@ -96,14 +96,7 @@ fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
         "text-base-content/70 hover:text-base-content hover:bg-base-200"
     };
 
-    let method_color = match method {
-        HttpMethod::Get => "text-success",
-        HttpMethod::Post => "text-primary",
-        HttpMethod::Put => "text-warning",
-        HttpMethod::Delete => "text-error",
-        HttpMethod::Patch => "text-info",
-        _ => "text-base-content/50",
-    };
+    let badge_class = method.badge_class();
 
     let method_label = match method {
         HttpMethod::Delete => "DEL",
@@ -117,7 +110,7 @@ fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
             Link {
                 to: NavigationTarget::Internal(href),
                 class: "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors {active_class}",
-                span { class: "w-10 text-[10px] font-bold font-mono {method_color} shrink-0",
+                span { class: "badge badge-xs font-mono font-bold {badge_class} shrink-0",
                     "{method_label}"
                 }
                 span { class: "truncate", "{title}" }
@@ -134,7 +127,7 @@ fn SidebarLink(path: String) -> Element {
 
     let title = registry
         .get_sidebar_title(&path)
-        .unwrap_or_else(|| path.split('/').last().unwrap_or(&path).replace('-', " "));
+        .unwrap_or_else(|| path.split('/').next_back().unwrap_or(&path).replace('-', " "));
 
     let current = (ctx.current_path)();
     let is_active = current == path || (current.is_empty() && path == registry.default_path);
