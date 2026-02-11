@@ -17,19 +17,19 @@ pub fn DocsPageContent(path: String) -> Element {
     let ctx = use_context::<DocsContext>();
 
     // Check if this is an API endpoint page
-    if let Some(operation) = registry.get_api_operation(&path) {
-        if let Some(spec) = registry.get_first_api_spec() {
-            return rsx! {
-                div { class: "flex flex-col",
-                    EndpointPage { operation: operation.clone(), spec: spec.clone() }
-                    main { class: "px-8 lg:px-12 pb-12",
-                        div { class: "max-w-2xl",
-                            DocsPageNav { current_path: path.clone() }
-                        }
+    if let Some(operation) = registry.get_api_operation(&path)
+        && let Some(spec) = registry.get_first_api_spec()
+    {
+        return rsx! {
+            div { class: "flex flex-col",
+                EndpointPage { operation: operation.clone(), spec: spec.clone() }
+                main { class: "px-8 lg:px-12 pb-12",
+                    div { class: "max-w-2xl",
+                        DocsPageNav { current_path: path.clone() }
                     }
                 }
-            };
-        }
+            }
+        };
     }
 
     let offsets = try_use_context::<LayoutOffsets>().unwrap_or(LayoutOffsets {

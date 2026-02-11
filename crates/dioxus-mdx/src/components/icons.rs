@@ -104,7 +104,7 @@ pub fn MdxIcon(
         "filter" => rsx! { Icon { class: icon_class, icon: LdFilter } },
         "sort" | "arrow-up-down" => rsx! { Icon { class: icon_class, icon: LdArrowUpDown } },
         "zap" | "bolt" | "lightning" => rsx! { Icon { class: icon_class, icon: LdZap } },
-        "circle" | _ => rsx! { Icon { class: icon_class, icon: LdCircle } },
+        _ => rsx! { Icon { class: icon_class, icon: LdCircle } },
     }
 }
 

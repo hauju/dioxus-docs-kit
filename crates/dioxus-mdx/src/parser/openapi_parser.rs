@@ -209,7 +209,7 @@ fn transform_parameter(param_ref: &ReferenceOr<Parameter>, spec: &OpenAPI) -> Op
         required: data.required,
         deprecated: data.deprecated.unwrap_or(false),
         schema,
-        example: data.example.as_ref().map(|v| format_json_value(v)),
+        example: data.example.as_ref().map(format_json_value),
     })
 }
 
@@ -250,7 +250,7 @@ fn transform_request_body(
                 .schema
                 .as_ref()
                 .map(|s| resolve_and_transform_schema(s, spec)),
-            example: media.example.as_ref().map(|v| format_json_value(v)),
+            example: media.example.as_ref().map(format_json_value),
         })
         .collect();
 
@@ -305,7 +305,7 @@ fn transform_response(
                     .schema
                     .as_ref()
                     .map(|s| resolve_and_transform_schema(s, spec)),
-                example: media.example.as_ref().map(|v| format_json_value(v)),
+                example: media.example.as_ref().map(format_json_value),
             })
             .collect();
         (r.description.clone(), content)
@@ -430,20 +430,13 @@ fn extract_format<T: std::fmt::Debug>(format: &VariantOrUnknownOrEmpty<T>) -> Op
 
 /// Transform a schema.
 fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
-    let mut def = SchemaDefinition::default();
-
-    def.description = schema.schema_data.description.clone();
-    def.example = schema
-        .schema_data
-        .example
-        .as_ref()
-        .map(|v| format_json_value(v));
-    def.default = schema
-        .schema_data
-        .default
-        .as_ref()
-        .map(|v| format_json_value(v));
-    def.nullable = schema.schema_data.nullable;
+    let mut def = SchemaDefinition {
+        description: schema.schema_data.description.clone(),
+        example: schema.schema_data.example.as_ref().map(format_json_value),
+        default: schema.schema_data.default.as_ref().map(format_json_value),
+        nullable: schema.schema_data.nullable,
+        ..Default::default()
+    };
 
     match &schema.schema_kind {
         SchemaKind::Type(t) => match t {

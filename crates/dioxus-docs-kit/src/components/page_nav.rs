@@ -28,10 +28,10 @@ pub fn DocsPageNav(current_path: String) -> Element {
         for page in &group.pages {
             all_pages.push(page.clone());
             // Insert API endpoint pages right after overview
-            if let Some(ref ov) = overview_path {
-                if page == ov {
-                    all_pages.extend(registry.get_api_endpoint_paths());
-                }
+            if let Some(ref ov) = overview_path
+                && page == ov
+            {
+                all_pages.extend(registry.get_api_endpoint_paths());
             }
         }
     }
