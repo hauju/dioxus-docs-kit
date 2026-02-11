@@ -125,9 +125,12 @@ fn SidebarLink(path: String) -> Element {
     let ctx = use_context::<DocsContext>();
     let registry = use_context::<&'static DocsRegistry>();
 
-    let title = registry
-        .get_sidebar_title(&path)
-        .unwrap_or_else(|| path.split('/').next_back().unwrap_or(&path).replace('-', " "));
+    let title = registry.get_sidebar_title(&path).unwrap_or_else(|| {
+        path.split('/')
+            .next_back()
+            .unwrap_or(&path)
+            .replace('-', " ")
+    });
 
     let current = (ctx.current_path)();
     let is_active = current == path || (current.is_empty() && path == registry.default_path);
