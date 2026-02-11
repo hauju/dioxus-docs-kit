@@ -434,7 +434,10 @@ impl DocsRegistry {
             for page in &group.pages {
                 if let Some(doc) = parsed_docs.get(page.as_str()) {
                     let title = if doc.frontmatter.title.is_empty() {
-                        page.split('/').next_back().unwrap_or(page).replace('-', " ")
+                        page.split('/')
+                            .next_back()
+                            .unwrap_or(page)
+                            .replace('-', " ")
                     } else {
                         doc.frontmatter.title.clone()
                     };
