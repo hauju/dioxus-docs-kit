@@ -5,8 +5,8 @@ use dioxus_docs_kit::{
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
-    LdArrowRight, LdBookOpen, LdFileText, LdGithub, LdMenu, LdPackage, LdPalette, LdSearch,
-    LdServer,
+    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdMenu, LdPackage,
+    LdPalette, LdSearch, LdServer,
 };
 use std::sync::LazyLock;
 
@@ -44,6 +44,8 @@ enum Route {
         DocsPage { slug: Vec<String> },
 }
 
+const SEGGWAT_LOGO: Asset = asset!("/assets/seggwat_logo.avif");
+const INFRAPAGE_LOGO: Asset = asset!("/assets/infrapage_logo.ico");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
@@ -276,6 +278,7 @@ fn Home() -> Element {
             div { class: "hero-glow absolute inset-x-0 top-0 h-[600px] pointer-events-none" }
             HeroSection {}
             FeaturesSection {}
+            UsedBySection {}
             CodeSection {}
             LandingFooter {}
         }
@@ -385,24 +388,89 @@ fn FeaturesSection() -> Element {
     }
 }
 
+// ── Used By ──────────────────────────────────────────────────────────────────
+
+#[component]
+fn UsedBySection() -> Element {
+    rsx! {
+        section { class: "px-4 py-20",
+            div { class: "max-w-5xl mx-auto",
+                div { class: "text-center mb-12",
+                    h2 { class: "text-3xl font-bold tracking-tight", "Used in Production" }
+                    p { class: "mt-3 text-base-content/60",
+                        "Projects powered by Dioxus Docs Kit."
+                    }
+                }
+                div { class: "grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto",
+                    a {
+                        href: "https://seggwat.com",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "group flex flex-col gap-4 p-6 rounded-xl border border-base-300 bg-base-200/30 hover:border-primary/30 transition-all duration-200",
+                        div { class: "flex items-center justify-between",
+                            div { class: "flex items-center gap-3",
+                                img { src: SEGGWAT_LOGO, alt: "SeggWat logo", class: "size-8 rounded" }
+                                h3 { class: "font-semibold text-lg text-base-content", "seggwat.com" }
+                            }
+                            Icon { class: "size-4 text-base-content/40 group-hover:text-primary transition-colors", icon: LdExternalLink }
+                        }
+                        p { class: "text-sm text-base-content/60 leading-relaxed",
+                            "Feedback collection widget for websites — collect bug reports, feature ideas, and user feedback in one dashboard."
+                        }
+                    }
+                    a {
+                        href: "https://infra.page",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "group flex flex-col gap-4 p-6 rounded-xl border border-base-300 bg-base-200/30 hover:border-primary/30 transition-all duration-200",
+                        div { class: "flex items-center justify-between",
+                            div { class: "flex items-center gap-3",
+                                img { src: INFRAPAGE_LOGO, alt: "infrapage logo", class: "size-8 rounded" }
+                                h3 { class: "font-semibold text-lg text-base-content", "infra.page" }
+                            }
+                            Icon { class: "size-4 text-base-content/40 group-hover:text-primary transition-colors", icon: LdExternalLink }
+                        }
+                        p { class: "text-sm text-base-content/60 leading-relaxed",
+                            "Widget-based dashboard connecting GitHub, Polar, uptime monitors, and more into a single status page."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ── Code Example ─────────────────────────────────────────────────────────────
 
-const CODE_SNIPPET: &str = r#"use dioxus_docs_kit::{DocsConfig, DocsRegistry};
+const CODE_SNIPPET: &str = r#"use dioxus_docs_kit::{
+    DocsConfig, DocsContext, DocsLayout, DocsPageContent,
+    DocsRegistry, SearchButton, use_docs_providers,
+};
 use std::sync::LazyLock;
 
+// build.rs: dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+dioxus_docs_kit::doc_content_map!();
+
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(
-        include_str!("../docs/_nav.json"),
-        doc_content_map(),
-    )
-    .with_openapi(
-        "api-reference",
-        include_str!("../docs/api-reference/petstore.yaml"),
-    )
-    .with_default_path("getting-started/introduction")
-    .with_theme_toggle("light", "dark", "dark")
-    .build()
-});"#;
+    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
+        .with_openapi("api-reference", include_str!("../docs/api.yaml"))
+        .with_default_path("getting-started/introduction")
+        .with_theme_toggle("light", "dark", "dark")
+        .build()
+});
+
+#[component]
+fn MyDocsLayout() -> Element {
+    let docs_ctx = DocsContext { /* ... */ };
+    let providers = use_docs_providers(&DOCS, docs_ctx);
+
+    rsx! {
+        DocsLayout {
+            header: rsx! { SearchButton { search_open: providers.search_open } },
+            Outlet::<Route> {}
+        }
+    }
+}"#;
 
 #[component]
 fn CodeSection() -> Element {
