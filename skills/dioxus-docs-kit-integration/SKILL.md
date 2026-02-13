@@ -30,10 +30,10 @@ Add to the project's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { git = "https://github.com/hauju/dioxus-docs-kit.git", default-features = false }
+dioxus-docs-kit = { version = "0.1", default-features = false }
 
 [build-dependencies]
-dioxus-docs-kit-build = { git = "https://github.com/hauju/dioxus-docs-kit.git" }
+dioxus-docs-kit-build = "0.1"
 ```
 
 Add feature flags:
