@@ -5,8 +5,8 @@ use dioxus_docs_kit::{
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
-    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdMenu, LdPackage,
-    LdPalette, LdSearch, LdServer,
+    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdMenu, LdPackage, LdPalette,
+    LdSearch, LdServer,
 };
 use std::sync::LazyLock;
 
@@ -480,7 +480,53 @@ fn CodeSection() -> Element {
                 div { class: "text-center mb-12",
                     h2 { class: "text-3xl font-bold tracking-tight", "Simple Integration" }
                     p { class: "mt-3 text-base-content/60",
-                        "Set up your documentation site in about 50 lines of glue code."
+                        "Set up your documentation site with an skill and a bit of glue code."
+                    }
+                }
+                // Claude Code skill callout
+                div { class: "mb-8 rounded-xl border border-primary/20 bg-primary/5 p-6",
+                    h3 { class: "font-semibold text-base-content mb-4 flex items-center gap-2",
+                        div { class: "flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary",
+                            Icon { class: "size-4", icon: LdPackage }
+                        }
+                        "Claude Code Integration Skill"
+                    }
+                    p { class: "text-sm text-base-content/60 leading-relaxed mb-5",
+                        "This repo includes a Claude Code skill that automates the entire setup. "
+                        "Install the skill once, then use it in any Dioxus project."
+                    }
+                    // Steps
+                    div { class: "space-y-4",
+                        // Step 1
+                        div { class: "flex items-start gap-3",
+                            span { class: "flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-xs font-bold shrink-0 mt-0.5", "1" }
+                            div { class: "flex-1 min-w-0",
+                                p { class: "text-sm font-medium text-base-content mb-1.5", "Install the skill" }
+                                code { class: "block bg-base-200 text-xs font-mono px-3 py-2 rounded-lg text-base-content/70 overflow-x-auto",
+                                    "git clone https://github.com/hauju/dioxus-docs-kit.git /tmp/ddk && cp -r /tmp/ddk/skills/dioxus-docs-kit-integration ~/.claude/skills/"
+                                }
+                            }
+                        }
+                        // Step 2
+                        div { class: "flex items-start gap-3",
+                            span { class: "flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-xs font-bold shrink-0 mt-0.5", "2" }
+                            div { class: "flex-1 min-w-0",
+                                p { class: "text-sm font-medium text-base-content mb-1.5", "Open your Dioxus project in Claude Code and ask:" }
+                                code { class: "block bg-base-200 text-sm font-mono px-3 py-2 rounded-lg text-primary",
+                                    "\"Add dioxus-docs-kit documentation to this project\""
+                                }
+                            }
+                        }
+                        // Step 3
+                        div { class: "flex items-start gap-3",
+                            span { class: "flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-xs font-bold shrink-0 mt-0.5", "3" }
+                            div { class: "flex-1 min-w-0",
+                                p { class: "text-sm font-medium text-base-content",
+                                    "Claude handles the rest "
+                                    span { class: "text-base-content/40", "— dependencies, build.rs, routes, layout, Tailwind safelist, and starter content" }
+                                }
+                            }
+                        }
                     }
                 }
                 div { class: "rounded-xl border border-base-300 bg-base-200 overflow-hidden",
@@ -498,6 +544,7 @@ fn CodeSection() -> Element {
                         }
                     }
                 }
+
             }
         }
     }

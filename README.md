@@ -154,6 +154,20 @@ Then in your `tailwind.css`:
 
 The safelist file includes a version comment at the top — check it periodically and re-copy when the crate updates.
 
+## Claude Code Skill
+
+This repo ships a [Claude Code skill](skills/dioxus-docs-kit-integration/) that automates the full integration. Install it globally:
+
+```sh
+cp -r skills/dioxus-docs-kit-integration ~/.claude/skills/
+```
+
+Then open any Dioxus project with Claude Code and say:
+
+> "Add dioxus-docs-kit documentation to this project"
+
+The skill walks Claude through all 5 steps: dependencies, build.rs, content files, route/layout wiring, and Tailwind safelist.
+
 ## Running the Example
 
 ```sh
