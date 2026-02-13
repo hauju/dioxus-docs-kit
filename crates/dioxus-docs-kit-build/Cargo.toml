@@ -8,6 +8,7 @@ license = "MIT"
 repository = "https://github.com/hauju/dioxus-docs-kit"
 keywords = ["dioxus", "documentation", "build-script"]
 categories = ["development-tools::build-utils"]
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
