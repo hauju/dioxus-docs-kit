@@ -63,7 +63,7 @@ Create `docs/_nav.json`:
 {
   "groups": [
     {
-      "title": "Getting Started",
+      "group": "Getting Started",
       "pages": [
         "getting-started/introduction"
       ]
