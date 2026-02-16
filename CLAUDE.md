@@ -2,44 +2,73 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build & Serve
+## Build & Dev Commands
 
 ```sh
-dx serve              # Dev server with hot reload (web)
-dx build --release    # Production build
+dx serve                    # Dev server with hot reload
+dx build --release          # Production build
+dx bundle --web --release   # Bundle for deployment
 ```
 
-Requires the Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
+**Linting & testing (matches CI):**
+```sh
+cargo fmt --all --check     # Format check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo machete               # Unused dependency check
+cargo test --workspace      # Run all tests
+```
+
+**Tailwind CSS generation** (required before clippy/test if `assets/tailwind.css` is missing):
+```sh
+bun install --frozen-lockfile
+bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
+```
+
+**Shortcuts via justfile:** `just build`, `just test`, `just serve`
+
+Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 
 ## Project Architecture
 
-**Dioxus 0.7 fullstack documentation site** (package name: `dioxus-docs-kit-example`). Renders MDX docs, OpenAPI API reference pages, and a search modal.
+**Dioxus 0.7 documentation site framework** — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
 
 ### Crate Layout
 
-- `src/main.rs` — Routes, app-specific pages (Home, Blog, Navbar), plus ~50 lines of docs glue code
-- `crates/dioxus-docs-kit/` — **Reusable docs site shell** (layout, sidebar, search, page nav, content registry)
-- `crates/dioxus-mdx/` — MDX parser/renderer subcrate (uses `dioxus = { features = ["lib"] }`, NOT fullstack)
-- `build.rs` — Reads `docs/_nav.json`, generates `doc_content_generated.rs` with `include_str!()` calls for all `.mdx` files
+| Crate | Path | Purpose |
+|-------|------|---------|
+| `dioxus-docs-kit-example` | `src/main.rs` | Example app: routes, custom pages (Home, Blog, Navbar), docs glue |
+| `dioxus-docs-kit` | `crates/dioxus-docs-kit/` | **Reusable docs shell** — layout, sidebar, search, page nav, theme toggle, OpenAPI |
+| `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time helper: reads `_nav.json` → generates `include_str!()` content map |
+| `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
+
+**Dependency direction:** `dioxus-docs-kit` depends on `dioxus-mdx`. The build crate is independent. The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
 
 ### Content Pipeline
 
-All doc content is **embedded at compile time**:
-1. `build.rs` reads `docs/_nav.json` → generates HashMap of path→content via `include_str!()`
-2. `main.rs` creates a `DocsRegistry` via `DocsConfig` builder (parses all docs, builds search index, parses OpenAPI specs)
-3. OpenAPI spec at `docs/api-reference/petstore.yaml` passed to the registry via `.with_openapi()`
+1. `build.rs` calls `dioxus_docs_kit_build::generate_content_map("docs/_nav.json")`
+2. Build script reads `_nav.json`, generates `$OUT_DIR/doc_content_generated.rs` with `include_str!()` for each `.mdx` file
+3. `doc_content_map!()` macro in `main.rs` includes the generated file as a `HashMap<&str, &str>`
+4. `DocsConfig::new(nav_json, content_map).with_openapi(prefix, yaml).build()` creates a `DocsRegistry` (parses all docs, builds search index)
+5. `DocsPageContent` checks `registry.get_api_operation(&path)` first, then falls back to `registry.get_parsed_doc(&path)`
 
-When adding a new doc page: create `docs/<group>/<slug>.mdx` and add the path to `docs/_nav.json`.
+**Adding a new doc page:** create `docs/<group>/<slug>.mdx` and add the path to `docs/_nav.json`.
 
-### dioxus-docs-kit Crate
+### `_nav.json` Structure
 
-Reusable documentation site shell. Key types:
-- **`DocsConfig`** — Builder: `DocsConfig::new(nav_json, content_map).with_openapi(prefix, yaml).build()`
-- **`DocsRegistry`** — Holds parsed docs, nav config, search index, OpenAPI specs. Methods: `get_parsed_doc()`, `search_docs()`, `get_api_operation()`, `get_api_sidebar_entries()`, `get_sidebar_title()`, `tab_for_path()`
-- **`DocsContext`** — Route decoupling bridge (current_path, base_path, navigate callback). Consumer provides via `use_context_provider`
-- **UI components** — `DocsLayout`, `DocsSidebar`, `DocsPageContent`, `SearchModal`, `DocsPageNav`, `MobileDrawer`, `SearchButton`
+```json
+{
+  "tabs": ["Docs", "Guides", "API Reference", "Changelog"],
+  "groups": [
+    { "group": "Getting Started", "tab": "Docs", "pages": ["getting-started/introduction"] }
+  ]
+}
+```
 
-### Routing
+- `tabs`: displayed in the tab bar above the sidebar
+- `groups[].tab`: which tab a sidebar group belongs to (optional)
+- `groups[].pages`: paths relative to `docs/`, without `.mdx` extension
+
+### Routing Pattern
 
 ```
 Route enum (main.rs):
@@ -47,25 +76,34 @@ Route enum (main.rs):
   #[layout(MyDocsLayout)]  → DocsIndex (/docs), DocsPage (/docs/:..slug)
 ```
 
-- `MyDocsLayout` wires `DocsContext` + `DocsRegistry` into the library's `DocsLayout`
-- `/docs/:..slug` is a catch-all; slug is `Vec<String>` joined with `/` to resolve content
-- `DocsPageContent` checks `registry.get_api_operation(&path)` first for API endpoints, then falls back to `registry.get_parsed_doc(&path)`
+- `MyDocsLayout` creates a `DocsContext` and calls `use_docs_providers(&DOCS, docs_ctx)` — one-call context setup
+- `/docs/:..slug` is a catch-all; slug `Vec<String>` joined with `/` resolves content
 - API endpoint slugs are kebab-cased from camelCase operationIds
+
+### Key Types (dioxus-docs-kit)
+
+- **`DocsConfig`** — Builder: `.new(nav_json, content_map)` → `.with_openapi()` → `.with_theme_toggle()` → `.with_default_path()` → `.build()`
+- **`DocsRegistry`** — Holds parsed docs, nav config, search index, OpenAPI specs. Key methods: `get_parsed_doc()`, `search_docs()`, `get_api_operation()`, `get_api_sidebar_entries()`, `tab_for_path()`, `generate_llms_txt()`, `generate_llms_full_txt()`
+- **`DocsContext`** — Route decoupling bridge (`current_path`, `base_path`, `navigate` callback). Consumer provides this so library components don't depend on the consumer's Route enum
+- **`use_docs_providers(registry, docs_ctx)`** → returns `DocsProviders { search_open, drawer_open }` for use in custom headers
+- **UI components** — `DocsLayout`, `DocsPageContent`, `DocsSidebar`, `SearchModal`, `SearchButton`, `DocsPageNav`, `MobileDrawer`, `ThemeToggle`
+- **`doc_content_map!()`** — Macro that generates `fn doc_content_map() -> HashMap<&'static str, &'static str>` from build script output
 
 ### Styling
 
-- **Tailwind CSS 4** + **DaisyUI 5** (dark theme default)
+- **Tailwind CSS 4** + **DaisyUI 5** (dark theme default, light theme available)
 - `@tailwindcss/typography` for prose content
-- Input: `tailwind.css` → processed automatically by Dioxus CLI
+- Input: `tailwind.css` → processed by `@tailwindcss/cli`
 - Icons: `dioxus-free-icons` with `lucide` feature
+- **Safelist pattern**: when crates are git/crates.io deps, Tailwind can't scan `~/.cargo/` — ship `safelist.html` files with all CSS classes (especially dynamic ones from match arms like `HttpMethod::badge_class()`)
 
 ### Key Conventions
 
-- Components use `#[component]` macro with owned prop types (String, Vec, Signal)
-- Context API shares state: `search_open`, `active_tab` signals managed by `DocsLayout`; `DocsContext` + `DocsRegistry` provided by consumer wrapper
+- Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
+- `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `highlight_code(code, Some("lang"))` returns HTML for `dangerous_inner_html`
-- Main crate uses `dioxus = { features = ["router", "fullstack"] }`; the docs-site and mdx subcrates use `features = ["lib"]`
-- Cargo features: `default = ["web"]`, `server = ["dioxus/server", "dep:mongodb"]`
+- Cargo features: `default = ["web"]`, `server = ["dioxus/server"]`
+- CI toolchain: Rust 1.91.0, Dioxus CLI 0.7.3, Bun for Tailwind
 
 ---
 

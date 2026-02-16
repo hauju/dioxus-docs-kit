@@ -47,7 +47,7 @@ Create `docs/_nav.json` with your navigation structure:
 {
   "groups": [
     {
-      "title": "Getting Started",
+      "group": "Getting Started",
       "pages": [
         "getting-started/introduction",
         "getting-started/installation"

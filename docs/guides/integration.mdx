@@ -175,20 +175,18 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     #[derive(Debug, Clone, Routable, PartialEq)]
     enum Route {
         #[layout(MyDocsLayout)]
-            #[route("/docs")]
-            DocsIndex {},
+            #[redirect("/docs", || Route::DocsPage {
+                slug: vec!["getting-started".into(), "introduction".into()]
+            })]
             #[route("/docs/:..slug")]
             DocsPage { slug: Vec<String> },
     }
 
     #[component]
-    fn DocsIndex() -> Element {
-        rsx! { DocsPageContent {} }
-    }
-
-    #[component]
     fn DocsPage(slug: Vec<String>) -> Element {
-        rsx! { DocsPageContent {} }
+        rsx! {
+            DocsPageContent { path: slug.join("/") }
+        }
     }
     ```
   </Step>
