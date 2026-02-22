@@ -50,12 +50,20 @@ pub fn generate_content_map(nav_json_path: &str) {
     for group in &nav.groups {
         for page in &group.pages {
             let mdx_path = format!("{docs_dir}/{page}.mdx");
+            let full_path = format!("{manifest_dir}/{mdx_path}");
+
+            if !Path::new(&full_path).exists() {
+                println!(
+                    "cargo:warning=Skipping \"{page}\": {mdx_path} not found (OpenAPI endpoints don't need .mdx files)"
+                );
+                continue;
+            }
+
             println!("cargo:rerun-if-changed={mdx_path}");
 
             // Use absolute path so include_str! works from OUT_DIR
-            let abs_path = format!("{manifest_dir}/{mdx_path}");
             code.push_str(&format!(
-                "    map.insert(\"{page}\", include_str!(\"{abs_path}\"));\n"
+                "    map.insert(\"{page}\", include_str!(\"{full_path}\"));\n"
             ));
         }
     }
