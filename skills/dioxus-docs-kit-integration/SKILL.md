@@ -30,10 +30,10 @@ Add to the project's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { version = "0.1", default-features = false }
+dioxus-docs-kit = { version = "0.2", default-features = false }
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.1"
+dioxus-docs-kit-build = "0.2"
 ```
 
 Add feature flags:

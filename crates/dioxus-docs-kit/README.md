@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.1"
+dioxus-docs-kit = "0.2"
 ```
 
 ### 1. Build a Registry
@@ -146,7 +146,7 @@ Add to your `tailwind.css`:
 
 ### Include dioxus-docs-kit classes
 
-When using as a **git or crates.io dependency**, Tailwind can't scan the crate source
+When using as a **crates.io dependency**, Tailwind can't scan the crate source
 (it lives in `~/.cargo` with machine-specific paths). Copy `safelist.html` from the
 crate into your project root and add it as a source:
 

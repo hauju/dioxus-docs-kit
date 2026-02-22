@@ -18,10 +18,10 @@ A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MD
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = { git = "https://github.com/hauju/dioxus-docs-kit.git", default-features = false }
+dioxus-docs-kit = { version = "0.2", default-features = false }
 
 [build-dependencies]
-dioxus-docs-kit-build = { git = "https://github.com/hauju/dioxus-docs-kit.git" }
+dioxus-docs-kit-build = "0.2"
 
 [features]
 default = ["web"]
@@ -136,7 +136,7 @@ fn DocsPage(slug: Vec<String>) -> Element {
 
 ### 5. Set up Tailwind CSS
 
-When `dioxus-docs-kit` is a git dependency, Tailwind CSS 4 cannot scan `~/.cargo/` paths. Copy the safelist file into your project and reference it:
+When `dioxus-docs-kit` is a crates.io dependency, Tailwind CSS 4 cannot scan `~/.cargo/` paths. Copy the safelist file into your project and reference it:
 
 ```sh
 cp path/to/dioxus-docs-kit/crates/dioxus-docs-kit/safelist.html safelist-docs-kit.html
