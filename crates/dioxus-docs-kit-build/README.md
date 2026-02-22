@@ -8,7 +8,7 @@ Add it as a build dependency:
 
 ```toml
 [build-dependencies]
-dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
+dioxus-docs-kit-build = "0.2"
 ```
 
 Create a `build.rs`:

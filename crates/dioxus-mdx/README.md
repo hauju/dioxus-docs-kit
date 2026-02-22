@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-mdx = "0.1"
+dioxus-mdx = "0.2"
 ```
 
 Render MDX content in a component:
@@ -97,7 +97,7 @@ Components use **Tailwind CSS 4** with **DaisyUI 5** and **@tailwindcss/typograp
 bun add tailwindcss @tailwindcss/typography daisyui
 ```
 
-When using as a **git or crates.io dependency**, Tailwind can't scan the crate source.
+When using as a **crates.io dependency**, Tailwind can't scan the crate source.
 Copy `safelist.html` from the crate into your project root and add it as a source:
 
 ```css

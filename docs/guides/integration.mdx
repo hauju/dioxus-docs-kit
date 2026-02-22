@@ -22,15 +22,15 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
 
     ```toml
     [dependencies]
-    dioxus-docs-kit = { path = "crates/dioxus-docs-kit" }
+    dioxus-docs-kit = { version = "0.2", default-features = false }
 
     [build-dependencies]
-    dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
-    ```
+    dioxus-docs-kit-build = "0.2"
 
-    <Note>
-    Until `dioxus-docs-kit` is published on crates.io, use a path or git dependency.
-    </Note>
+    [features]
+    default = ["web"]
+    web = ["dioxus/web", "dioxus-docs-kit/web"]
+    ```
   </Step>
 
   <Step title="Create the docs directory">
