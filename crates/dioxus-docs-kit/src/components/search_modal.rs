@@ -136,12 +136,12 @@ fn SearchResultItem(
                     if let Some(method) = api_method {
                         {
                             let (label, color) = match method {
-                                HttpMethod::Get => ("GET", "badge-success"),
-                                HttpMethod::Post => ("POST", "badge-primary"),
-                                HttpMethod::Put => ("PUT", "badge-warning"),
-                                HttpMethod::Delete => ("DEL", "badge-error"),
-                                HttpMethod::Patch => ("PATCH", "badge-info"),
-                                _ => ("???", "badge-ghost"),
+                                HttpMethod::Get => ("GET", "badge-soft badge-success"),
+                                HttpMethod::Post => ("POST", "badge-soft badge-primary"),
+                                HttpMethod::Put => ("PUT", "badge-soft badge-warning"),
+                                HttpMethod::Delete => ("DEL", "badge-soft badge-error"),
+                                HttpMethod::Patch => ("PATCH", "badge-soft badge-info"),
+                                _ => ("???", "badge-soft badge-ghost"),
                             };
                             rsx! {
                                 span { class: "badge badge-xs font-mono {color}", "{label}" }

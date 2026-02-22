@@ -92,13 +92,13 @@ impl HttpMethod {
     /// DaisyUI badge class for the method.
     pub fn badge_class(&self) -> &'static str {
         match self {
-            Self::Get => "badge-success",
-            Self::Post => "badge-primary",
-            Self::Put => "badge-warning",
-            Self::Delete => "badge-error",
-            Self::Patch => "badge-info",
-            Self::Head => "badge-ghost",
-            Self::Options => "badge-ghost",
+            Self::Get => "badge-soft badge-success",
+            Self::Post => "badge-soft badge-primary",
+            Self::Put => "badge-soft badge-warning",
+            Self::Delete => "badge-soft badge-error",
+            Self::Patch => "badge-soft badge-info",
+            Self::Head => "badge-soft badge-ghost",
+            Self::Options => "badge-soft badge-ghost",
         }
     }
 
