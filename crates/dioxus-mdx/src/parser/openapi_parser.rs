@@ -615,8 +615,8 @@ paths:
 
     #[test]
     fn test_http_method_badge_class() {
-        assert_eq!(HttpMethod::Get.badge_class(), "badge-success");
-        assert_eq!(HttpMethod::Post.badge_class(), "badge-primary");
-        assert_eq!(HttpMethod::Delete.badge_class(), "badge-error");
+        assert_eq!(HttpMethod::Get.badge_class(), "badge-soft badge-success");
+        assert_eq!(HttpMethod::Post.badge_class(), "badge-soft badge-primary");
+        assert_eq!(HttpMethod::Delete.badge_class(), "badge-soft badge-error");
     }
 }
