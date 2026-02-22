@@ -127,6 +127,16 @@ impl DocsRegistry {
 
         let theme = config.theme_config().cloned();
 
+        // Warn if OpenAPI specs were registered but no nav group matches api_group_name
+        if !openapi_specs.is_empty() && !nav.groups.iter().any(|g| g.group == api_group_name) {
+            eprintln!(
+                "dioxus-docs-kit warning: OpenAPI specs registered but no nav group \
+                 matches api_group_name \"{api_group_name}\". API endpoints won't appear \
+                 in the sidebar. Add a group with `\"group\": \"{api_group_name}\"` to \
+                 _nav.json, or call .with_api_group_name(\"<your group name>\") on DocsConfig."
+            );
+        }
+
         // Build search index
         let search_index =
             Self::build_search_index(&nav, &parsed_docs, &openapi_specs, &api_group_name);
@@ -425,7 +435,7 @@ impl DocsRegistry {
         nav: &NavConfig,
         parsed_docs: &HashMap<&'static str, ParsedDoc>,
         openapi_specs: &[(String, OpenApiSpec)],
-        _api_group_name: &str,
+        api_group_name: &str,
     ) -> Vec<SearchEntry> {
         let mut entries = Vec::new();
 
@@ -475,7 +485,7 @@ impl DocsRegistry {
                     title,
                     description: description.clone(),
                     content_preview: description,
-                    breadcrumb: format!("API Reference > {tag}"),
+                    breadcrumb: format!("{api_group_name} > {tag}"),
                     api_method: Some(op.method),
                 });
             }

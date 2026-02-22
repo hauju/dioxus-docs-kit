@@ -15,6 +15,7 @@
 //! static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 //!     DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
 //!         .with_openapi("api-reference", include_str!("../docs/api-reference/spec.yaml"))
+//!         // .with_api_group_name("My API Docs")  // must match a group in _nav.json
 //!         .build()
 //! });
 //!

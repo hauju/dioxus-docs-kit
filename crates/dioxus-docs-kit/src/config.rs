@@ -54,6 +54,11 @@ impl DocsConfig {
     ///
     /// - `prefix`: The URL prefix for this spec's endpoints (e.g. "api-reference").
     /// - `yaml`: The raw YAML string of the OpenAPI spec.
+    ///
+    /// The `prefix` must correspond to a nav group in `_nav.json` whose `"group"` value
+    /// matches [`Self::with_api_group_name`] (defaults to `"API Reference"`). The library
+    /// dynamically injects API endpoints into that group's sidebar — do **not** list
+    /// individual operation paths in the `"pages"` array of `_nav.json`.
     pub fn with_openapi(mut self, prefix: &str, yaml: &str) -> Self {
         self.openapi_specs
             .push((prefix.to_string(), yaml.to_string()));
@@ -70,7 +75,9 @@ impl DocsConfig {
 
     /// Set the display name for the API Reference sidebar group.
     ///
-    /// Defaults to "API Reference".
+    /// Defaults to `"API Reference"`. The value must match a `"group"` in `_nav.json`
+    /// so the library knows where to inject the API endpoint sidebar entries.
+    /// See [`Self::with_openapi`] for details.
     pub fn with_api_group_name(mut self, name: &str) -> Self {
         self.api_group_name = Some(name.to_string());
         self

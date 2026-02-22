@@ -1,6 +1,6 @@
 [package]
 name = "dioxus-docs-kit-build"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Hauke Jung <hauke.jung@outlook.de>"]
 edition = "2024"
 description = "Build-time helper for dioxus-docs-kit: generates content maps from _nav.json"
