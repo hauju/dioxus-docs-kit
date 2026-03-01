@@ -77,6 +77,9 @@ pub use dioxus_mdx::{
     ParsedDoc, extract_headers, highlight_code,
 };
 
+#[cfg(feature = "mermaid")]
+pub use dioxus_mdx::MermaidDiagram;
+
 /// Generates a `doc_content_map()` function that returns a
 /// `HashMap<&'static str, &'static str>` from the build-script output.
 ///

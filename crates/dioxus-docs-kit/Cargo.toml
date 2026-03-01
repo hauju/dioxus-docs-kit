@@ -23,5 +23,6 @@ serde_json = "1.0"
 gloo-timers = { version = "0.3", features = ["futures"] }
 
 [features]
-default = ["web"]
+default = ["web", "mermaid"]
 web = ["dioxus/web", "dioxus-mdx/web"]
+mermaid = ["dioxus-mdx/mermaid"]

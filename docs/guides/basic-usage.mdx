@@ -100,6 +100,30 @@ def greet(name: str):
 ```
 </CodeGroup>
 
+## Mermaid Diagrams
+
+Fenced code blocks with the `mermaid` language are rendered as diagrams:
+
+```mermaid
+graph TD
+    A[Write MDX] --> B[Build with Dioxus]
+    B --> C{Deploy}
+    C -->|Web| D[Static Site]
+    C -->|Desktop| E[Native App]
+    C -->|Mobile| F[Mobile App]
+```
+
+Sequence diagrams work too:
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Server
+    Browser->>Server: GET /docs/page
+    Server-->>Browser: HTML + WASM
+    Browser->>Browser: Hydrate & render
+```
+
 ## Tabs
 
 Organize related content with tabs:
