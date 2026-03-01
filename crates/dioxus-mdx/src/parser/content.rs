@@ -413,6 +413,31 @@ End section."#;
     }
 
     #[test]
+    fn test_mermaid_code_block() {
+        let content = r#"Some intro.
+
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[OK]
+    B -->|No| D[End]
+```
+
+After the diagram."#;
+        let nodes = parse_mdx(content);
+        assert_eq!(nodes.len(), 3);
+        assert!(matches!(&nodes[0], DocNode::Markdown(m) if m.contains("intro")));
+        if let DocNode::CodeBlock(cb) = &nodes[1] {
+            assert_eq!(cb.language, Some("mermaid".to_string()));
+            assert!(cb.code.contains("graph TD"));
+            assert!(cb.code.contains("A[Start]"));
+        } else {
+            panic!("Expected CodeBlock node, got {:?}", &nodes[1]);
+        }
+        assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("After")));
+    }
+
+    #[test]
     fn test_multiline_html_code_block() {
         // Test the specific pattern from customization.mdx that was failing
         let content = r##"Example with React colors:

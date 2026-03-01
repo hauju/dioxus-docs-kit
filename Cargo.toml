@@ -23,6 +23,7 @@ dioxus-docs-kit = { path = "crates/dioxus-docs-kit", default-features = false }
 dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
 
 [features]
-default = ["web"]
+default = ["web", "mermaid"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server"]
+mermaid = ["dioxus-docs-kit/mermaid"]

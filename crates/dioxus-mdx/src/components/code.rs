@@ -5,6 +5,8 @@
 use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
+#[cfg(feature = "mermaid")]
+use super::mermaid::MermaidDiagram;
 use crate::parser::{CodeBlockNode, CodeGroupNode, highlight_code};
 
 /// Props for DocCodeBlock component.
@@ -17,6 +19,12 @@ pub struct DocCodeBlockProps {
 /// Single code block with syntax highlighting and copy button.
 #[component]
 pub fn DocCodeBlock(props: DocCodeBlockProps) -> Element {
+    // Mermaid blocks are rendered as diagrams, not syntax-highlighted code
+    #[cfg(feature = "mermaid")]
+    if props.block.language.as_deref() == Some("mermaid") {
+        return rsx! { MermaidDiagram { code: props.block.code.clone() } };
+    }
+
     let copied = use_signal(|| false);
     let code = props.block.code.clone();
     let code_for_copy = code.clone();

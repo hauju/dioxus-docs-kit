@@ -28,6 +28,8 @@ mod callout;
 mod card;
 mod code;
 mod icons;
+#[cfg(feature = "mermaid")]
+mod mermaid;
 pub mod openapi;
 mod param_field;
 mod renderer;
@@ -43,6 +45,8 @@ pub use callout::*;
 pub use card::*;
 pub use code::*;
 pub use icons::*;
+#[cfg(feature = "mermaid")]
+pub use mermaid::*;
 pub use openapi::*;
 pub use param_field::*;
 pub use renderer::*;

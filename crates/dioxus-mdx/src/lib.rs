@@ -120,3 +120,6 @@ pub use components::{
     SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup, UngroupedEndpoints,
     extract_headers, slugify,
 };
+
+#[cfg(feature = "mermaid")]
+pub use components::MermaidDiagram;
