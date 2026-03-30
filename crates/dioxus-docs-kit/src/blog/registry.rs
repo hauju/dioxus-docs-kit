@@ -125,6 +125,34 @@ impl BlogRegistry {
             .collect()
     }
 
+    /// Get a page of non-featured posts for the main blog index.
+    pub fn non_featured_posts_page(&self, page: usize) -> Vec<&BlogPost> {
+        let filtered: Vec<&BlogPost> = self
+            .posts
+            .iter()
+            .filter(|p| !p.frontmatter.featured)
+            .collect();
+        let start = page * self.posts_per_page;
+        let end = (start + self.posts_per_page).min(filtered.len());
+        if start >= filtered.len() {
+            return Vec::new();
+        }
+        filtered[start..end].to_vec()
+    }
+
+    /// Total number of pages for the main blog index, excluding featured posts.
+    pub fn non_featured_total_pages(&self) -> usize {
+        let count = self
+            .posts
+            .iter()
+            .filter(|p| !p.frontmatter.featured)
+            .count();
+        if count == 0 {
+            return 1;
+        }
+        count.div_ceil(self.posts_per_page)
+    }
+
     /// Find posts related to the given slug by tag overlap.
     ///
     /// Returns up to `max` posts sorted by number of overlapping tags (descending),
@@ -164,7 +192,10 @@ impl BlogRegistry {
             })
             .collect();
 
-        scored.sort_by(|a, b| b.0.cmp(&a.0));
+        scored.sort_by(|a, b| {
+            b.0.cmp(&a.0)
+                .then_with(|| b.1.frontmatter.date.cmp(&a.1.frontmatter.date))
+        });
         scored.into_iter().take(max).map(|(_, p)| p).collect()
     }
 
@@ -402,4 +433,159 @@ pub fn format_date_with(date: &str, fmt: &str) -> String {
         .replace("%m", month)
         .replace("%d", day)
         .replace("%B", month_name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::blog::config::BlogConfig;
+    use std::collections::HashMap;
+
+    fn build_registry(posts_per_page: usize) -> BlogRegistry {
+        let manifest = r#"{
+            "authors": {
+                "author": { "name": "Author" }
+            },
+            "posts": ["featured", "regular-1", "regular-2", "regular-3", "rust-new", "rust-old", "misc"]
+        }"#;
+
+        let mut content_map = HashMap::new();
+        content_map.insert(
+            "featured",
+            r#"---
+title: "Featured"
+date: "2026-03-21"
+author: "author"
+tags: ["announcement"]
+featured: true
+---
+Featured post
+"#,
+        );
+        content_map.insert(
+            "regular-1",
+            r#"---
+title: "Regular 1"
+date: "2026-03-20"
+author: "author"
+tags: ["announcement"]
+---
+Regular one
+"#,
+        );
+        content_map.insert(
+            "regular-2",
+            r#"---
+title: "Regular 2"
+date: "2026-03-19"
+author: "author"
+tags: ["announcement"]
+---
+Regular two
+"#,
+        );
+        content_map.insert(
+            "regular-3",
+            r#"---
+title: "Regular 3"
+date: "2026-03-18"
+author: "author"
+tags: ["announcement"]
+---
+Regular three
+"#,
+        );
+        content_map.insert(
+            "rust-new",
+            r#"---
+title: "Rust New"
+date: "2026-03-17"
+author: "author"
+tags: ["rust", "web", "async"]
+---
+Rust new
+"#,
+        );
+        content_map.insert(
+            "rust-old",
+            r#"---
+title: "Rust Old"
+date: "2026-03-16"
+author: "author"
+tags: ["rust", "web"]
+---
+Rust old
+"#,
+        );
+        content_map.insert(
+            "misc",
+            r#"---
+title: "Misc"
+date: "2026-03-15"
+author: "author"
+tags: ["rust"]
+---
+Misc
+"#,
+        );
+
+        BlogConfig::new(manifest, content_map)
+            .with_posts_per_page(posts_per_page)
+            .build()
+    }
+
+    #[test]
+    fn unfiltered_pagination_excludes_featured_posts() {
+        let registry = build_registry(2);
+
+        let page_1: Vec<_> = registry
+            .non_featured_posts_page(0)
+            .into_iter()
+            .map(|post| post.slug.as_str())
+            .collect();
+        let page_2: Vec<_> = registry
+            .non_featured_posts_page(1)
+            .into_iter()
+            .map(|post| post.slug.as_str())
+            .collect();
+        let page_3: Vec<_> = registry
+            .non_featured_posts_page(2)
+            .into_iter()
+            .map(|post| post.slug.as_str())
+            .collect();
+        let page_4 = registry.non_featured_posts_page(3);
+
+        assert_eq!(page_1, vec!["regular-1", "regular-2"]);
+        assert_eq!(page_2, vec!["regular-3", "rust-new"]);
+        assert_eq!(page_3, vec!["rust-old", "misc"]);
+        assert!(page_4.is_empty());
+        assert_eq!(registry.non_featured_total_pages(), 3);
+    }
+
+    #[test]
+    fn tag_pagination_still_includes_featured_posts() {
+        let registry = build_registry(2);
+
+        let page: Vec<_> = registry
+            .posts_page_by_tag("announcement", 0)
+            .into_iter()
+            .map(|post| post.slug.as_str())
+            .collect();
+
+        assert_eq!(page, vec!["featured", "regular-1"]);
+        assert_eq!(registry.total_pages_for_tag("announcement"), 2);
+    }
+
+    #[test]
+    fn related_posts_tie_break_on_date() {
+        let registry = build_registry(10);
+
+        let related: Vec<_> = registry
+            .related_posts("misc", 3)
+            .into_iter()
+            .map(|post| post.slug.as_str())
+            .collect();
+
+        assert_eq!(related, vec!["rust-new", "rust-old"]);
+    }
 }

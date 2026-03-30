@@ -2,15 +2,18 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdChevronLeft, LdChevronRight};
 
+use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
 
 use super::blog_card::BlogCard;
+use super::blog_meta::BlogIndexMeta;
 use super::tag_filter::TagFilter;
 
 /// Blog listing page with cards grid, tag filter, and pagination.
 #[component]
 pub fn BlogList(hero: Option<Element>) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
+    let ctx = use_context::<BlogContext>();
     let active_tag = use_context::<Signal<Option<String>>>();
     let mut current_page = use_context::<Signal<usize>>();
 
@@ -23,28 +26,47 @@ pub fn BlogList(hero: Option<Element>) -> Element {
                 .into_iter()
                 .cloned()
                 .collect::<Vec<_>>(),
-            None => registry.posts_page(page).to_vec(),
+            None => registry
+                .non_featured_posts_page(page)
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>(),
         };
-        // When showing all posts, exclude featured ones (they appear in the featured section)
-        if tag.is_none() {
-            raw.into_iter()
-                .filter(|p| !p.frontmatter.featured)
-                .collect()
-        } else {
-            raw
-        }
+        raw
     });
 
     let total_pages = use_memo(move || {
         let tag = active_tag();
         match tag.as_deref() {
             Some(tag) => registry.total_pages_for_tag(tag),
-            None => registry.total_pages(),
+            None => registry.non_featured_total_pages(),
         }
     });
 
     rsx! {
         div { class: "max-w-6xl mx-auto px-4 py-12",
+            if let Some(ref site_url) = ctx.site_url {
+                {
+                    let active_tag = active_tag();
+                    let (title, description) = match active_tag.as_deref() {
+                        Some(tag) => (
+                            format!("Blog: {tag}"),
+                            format!("Browse blog posts tagged {tag}."),
+                        ),
+                        None => (
+                            "Blog".to_string(),
+                            "Latest blog posts and updates.".to_string(),
+                        ),
+                    };
+                    rsx! {
+                        BlogIndexMeta {
+                            title,
+                            description,
+                            site_url: site_url.clone(),
+                        }
+                    }
+                }
+            }
             if let Some(hero) = hero {
                 {hero}
             }

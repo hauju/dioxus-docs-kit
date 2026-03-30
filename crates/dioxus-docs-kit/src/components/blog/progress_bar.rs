@@ -11,8 +11,11 @@ pub fn ReadingProgressBar() -> Element {
         spawn(async move {
             let mut eval = document::eval(
                 r#"
+                if (window.__dioxusDocsKitReadingProgressCleanup) {
+                    window.__dioxusDocsKitReadingProgressCleanup();
+                }
                 let ticking = false;
-                window.addEventListener('scroll', () => {
+                const handleScroll = () => {
                     if (!ticking) {
                         requestAnimationFrame(() => {
                             const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -22,13 +25,31 @@ pub fn ReadingProgressBar() -> Element {
                         });
                         ticking = true;
                     }
-                }, { passive: true });
+                };
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                handleScroll();
+                window.__dioxusDocsKitReadingProgressCleanup = () => {
+                    window.removeEventListener('scroll', handleScroll);
+                    delete window.__dioxusDocsKitReadingProgressCleanup;
+                };
                 while (true) { await new Promise(r => setTimeout(r, 1000000)); }
                 "#,
             );
             while let Ok(val) = eval.recv::<f64>().await {
                 progress.set(val);
             }
+        });
+    });
+
+    use_drop(|| {
+        spawn(async move {
+            let _ = document::eval(
+                r#"
+                if (window.__dioxusDocsKitReadingProgressCleanup) {
+                    window.__dioxusDocsKitReadingProgressCleanup();
+                }
+                "#,
+            );
         });
     });
 
