@@ -77,6 +77,8 @@ pub struct BlogContext {
     pub base_path: String,
     /// Callback to navigate to a blog post by slug (empty string = blog index).
     pub navigate: Callback<String>,
+    /// Optional full site URL for SEO meta tags (e.g. "https://example.com").
+    pub site_url: Option<String>,
 }
 
 // ============================================================================
@@ -106,12 +108,13 @@ pub use dioxus_mdx::MermaidDiagram;
 // Blog re-exports
 // ============================================================================
 
-pub use blog::{BlogConfig, BlogProviders, BlogRegistry, use_blog_providers};
 pub use blog::types::{Author, BlogFrontmatter, BlogPost, BlogSearchEntry};
+pub use blog::{BlogConfig, BlogProviders, BlogRegistry, use_blog_providers};
 
 pub use components::{
-    AuthorInfo, BlogCard, BlogLayout, BlogList, BlogMobileDrawer, BlogPostNav, BlogPostView,
-    BlogSearchButton, BlogSearchModal, BlogThemeToggle, ReadingTimeBadge, TagFilter,
+    AuthorInfo, BlogCard, BlogIndexMeta, BlogLayout, BlogList, BlogMobileDrawer, BlogPostMeta,
+    BlogPostNav, BlogPostView, BlogSearchButton, BlogSearchModal, BlogThemeToggle,
+    ReadingProgressBar, ReadingTimeBadge, RelatedPosts, TagFilter,
 };
 
 // ============================================================================

@@ -398,6 +398,46 @@ impl DocsRegistry {
     }
 
     // ========================================================================
+    // Sitemap
+    // ========================================================================
+
+    /// Generate a sitemap.xml for all documentation pages.
+    pub fn generate_sitemap(&self, site_url: &str, docs_path: &str) -> String {
+        let mut xml = String::from(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+             <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
+        );
+
+        // Docs index
+        xml.push_str(&format!(
+            "<url>\n<loc>{site_url}{docs_path}</loc>\n<changefreq>weekly</changefreq>\n<priority>1.0</priority>\n</url>\n"
+        ));
+
+        // Individual doc pages
+        for group in &self.nav.groups {
+            for page in &group.pages {
+                let loc = format!("{site_url}{docs_path}/{page}");
+                xml.push_str(&format!(
+                    "<url>\n<loc>{loc}</loc>\n<changefreq>weekly</changefreq>\n<priority>0.7</priority>\n</url>\n"
+                ));
+            }
+        }
+
+        // API endpoint pages
+        for (prefix, spec) in &self.openapi_specs {
+            for op in &spec.operations {
+                let loc = format!("{site_url}{docs_path}/{prefix}/{}", op.slug());
+                xml.push_str(&format!(
+                    "<url>\n<loc>{loc}</loc>\n<changefreq>monthly</changefreq>\n<priority>0.5</priority>\n</url>\n"
+                ));
+            }
+        }
+
+        xml.push_str("</urlset>\n");
+        xml
+    }
+
+    // ========================================================================
     // Search
     // ========================================================================
 
