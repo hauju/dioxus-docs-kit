@@ -20,7 +20,7 @@ pub fn BlogList(hero: Option<Element>) -> Element {
     let posts = use_memo(move || {
         let tag = active_tag();
         let page = current_page();
-        let raw = match tag.as_deref() {
+        match tag.as_deref() {
             Some(tag) => registry
                 .posts_page_by_tag(tag, page)
                 .into_iter()
@@ -31,8 +31,7 @@ pub fn BlogList(hero: Option<Element>) -> Element {
                 .into_iter()
                 .cloned()
                 .collect::<Vec<_>>(),
-        };
-        raw
+        }
     });
 
     let total_pages = use_memo(move || {

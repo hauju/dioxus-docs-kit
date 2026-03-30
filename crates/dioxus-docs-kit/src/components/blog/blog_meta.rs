@@ -13,11 +13,11 @@ fn join_site_url(site_url: &str, base_path: &str, slug: Option<&str>) -> String 
         url.push_str(base_path.trim_end_matches('/'));
     }
 
-    if let Some(slug) = slug {
-        if !slug.is_empty() {
-            url.push('/');
-            url.push_str(slug.trim_start_matches('/'));
-        }
+    if let Some(slug) = slug
+        && !slug.is_empty()
+    {
+        url.push('/');
+        url.push_str(slug.trim_start_matches('/'));
     }
 
     url
