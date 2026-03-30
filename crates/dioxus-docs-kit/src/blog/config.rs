@@ -51,7 +51,7 @@ impl BlogConfig {
         self.theme = Some(ThemeConfig {
             default_theme: theme.to_string(),
             toggle_themes: None,
-            storage_key: "blog-theme".to_string(),
+            storage_key: "docs-theme".to_string(),
         });
         self
     }
@@ -61,7 +61,7 @@ impl BlogConfig {
         self.theme = Some(ThemeConfig {
             default_theme: default.to_string(),
             toggle_themes: Some((light.to_string(), dark.to_string())),
-            storage_key: "blog-theme".to_string(),
+            storage_key: "docs-theme".to_string(),
         });
         self
     }

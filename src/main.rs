@@ -2,7 +2,8 @@ use dioxus::prelude::*;
 use dioxus_docs_kit::{
     BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogSearchButton,
     CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, SearchButton,
-    SearchModal, ThemeToggle, highlight_code, use_blog_providers, use_docs_providers,
+    BlogThemeToggle, SearchModal, ThemeToggle, highlight_code, use_blog_providers,
+    use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -242,7 +243,7 @@ fn MyBlogLayout() -> Element {
                             }
                         }
                         BlogSearchButton { search_open }
-                        ThemeToggle {}
+                        BlogThemeToggle {}
                     }
                 }
             },
