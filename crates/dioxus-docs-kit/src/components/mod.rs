@@ -1,3 +1,4 @@
+pub mod blog;
 mod docs_layout;
 mod docs_page;
 mod mobile_drawer;
@@ -13,3 +14,9 @@ pub use page_nav::DocsPageNav;
 pub use search_modal::SearchModal;
 pub use sidebar::DocsSidebar;
 pub use theme_toggle::ThemeToggle;
+
+// Blog component re-exports
+pub use blog::{
+    AuthorInfo, BlogCard, BlogLayout, BlogList, BlogMobileDrawer, BlogPostNav, BlogPostView,
+    BlogSearchButton, BlogSearchModal, BlogThemeToggle, ReadingTimeBadge, TagFilter,
+};

@@ -1,0 +1,295 @@
+---
+title: Blog Integration
+description: Add a compile-time blog with post listing, tag filtering, search, and reading time to your Dioxus project
+sidebarTitle: Blog
+icon: newspaper
+---
+
+## Overview
+
+`dioxus-docs-kit` includes a full blog engine that embeds all posts at compile time. You get post listing with pagination, tag filtering, full-text search, reading time estimates, author metadata, and MDX rendering — all from a single binary with zero runtime file I/O.
+
+## Content Structure
+
+Create a `blog/` directory at your project root with a `_blog.json` manifest and `.mdx` post files:
+
+```text
+blog/
+├── _blog.json
+├── hello-world.mdx
+├── building-with-dioxus.mdx
+└── rust-web-future.mdx
+```
+
+## The `_blog.json` Manifest
+
+The manifest defines authors and lists all post slugs (filenames without `.mdx`):
+
+```json
+{
+  "authors": {
+    "hauke": {
+      "name": "Hauke Jung",
+      "bio": "Rust developer and Dioxus enthusiast",
+      "url": "https://github.com/hauju"
+    }
+  },
+  "posts": [
+    "hello-world",
+    "building-with-dioxus",
+    "rust-web-future"
+  ]
+}
+```
+
+### Author fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Display name |
+| `avatar` | No | URL or asset path for the author's avatar image |
+| `bio` | No | Short biography |
+| `url` | No | Link to the author's website or profile |
+
+## Post Frontmatter
+
+Each `.mdx` file needs YAML frontmatter at the top:
+
+```mdx
+---
+title: "Hello World"
+description: "Welcome to our blog!"
+date: "2026-03-20"
+author: "hauke"
+tags: ["announcement", "dioxus"]
+coverImage: "/assets/cover.png"
+draft: false
+---
+
+Your post content in MDX format...
+```
+
+### Frontmatter fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | Yes | Post title |
+| `description` | No | Short summary shown in post cards |
+| `date` | Yes | ISO 8601 date string (e.g. `"2026-03-20"`) — used for sorting |
+| `author` | Yes | Author ID matching a key in `_blog.json` `authors` |
+| `tags` | No | Array of tag strings for filtering |
+| `coverImage` | No | Cover image path |
+| `draft` | No | Set to `true` to hide from listing (default: `false`) |
+
+## Setup
+
+<Steps>
+  <Step title="Add the build script">
+    In your `build.rs`, add the blog content map generation alongside your docs generation:
+
+    ```rust
+    fn main() {
+        dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+        dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json");
+    }
+    ```
+
+    The blog directory is inferred from the manifest path parent (e.g. `"blog/_blog.json"` reads from `blog/`).
+  </Step>
+
+  <Step title="Create the blog registry">
+    In `main.rs`, use the `blog_content_map!()` macro and build a `BlogRegistry`:
+
+    ```rust
+    use dioxus_docs_kit::{
+        BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView,
+        BlogRegistry, BlogSearchButton, use_blog_providers,
+    };
+    use std::sync::LazyLock;
+
+    dioxus_docs_kit::blog_content_map!();
+
+    static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
+        BlogConfig::new(
+            include_str!("../blog/_blog.json"),
+            blog_content_map(),
+        )
+        .with_posts_per_page(9)
+        .with_theme_toggle("light", "dark", "dark")
+        .build()
+    });
+    ```
+  </Step>
+
+  <Step title="Add routes">
+    Add blog routes to your `Route` enum. The blog needs two routes: an index (list) page and a single post page:
+
+    ```rust
+    #[derive(Debug, Clone, Routable, PartialEq)]
+    enum Route {
+        #[layout(MyBlogLayout)]
+            #[route("/blog")]
+            BlogIndex {},
+            #[route("/blog/:slug")]
+            BlogPage { slug: String },
+    }
+    ```
+  </Step>
+
+  <Step title="Create the blog layout wrapper">
+    The blog layout wrapper provides `BlogContext` and wires up the registry, just like the docs layout does for documentation:
+
+    ```rust
+    #[component]
+    fn MyBlogLayout() -> Element {
+        let nav = use_navigator();
+        let route = use_route::<Route>();
+
+        let current_slug = use_memo(move || match route.clone() {
+            Route::BlogPage { slug } => slug,
+            _ => String::new(),
+        });
+
+        let blog_ctx = BlogContext {
+            current_slug: current_slug.into(),
+            base_path: "/blog".into(),
+            navigate: Callback::new(move |slug: String| {
+                if slug.is_empty() {
+                    nav.push(Route::BlogIndex {});
+                } else {
+                    nav.push(Route::BlogPage { slug });
+                }
+            }),
+        };
+
+        let providers = use_blog_providers(&BLOG, blog_ctx);
+        let search_open = providers.search_open;
+        let mut drawer_open = providers.drawer_open;
+
+        rsx! {
+            BlogLayout {
+                header: rsx! {
+                    div { class: "navbar bg-base-200 border-b border-base-300 px-4",
+                        div { class: "flex-1",
+                            // Your site logo / nav links
+                        }
+                        div { class: "flex-none flex items-center gap-1",
+                            BlogSearchButton { search_open }
+                        }
+                    }
+                },
+                Outlet::<Route> {}
+            }
+        }
+    }
+    ```
+
+    The `BlogProviders` struct gives you `search_open`, `drawer_open`, `active_tag`, and `current_page` signals to wire into your header.
+  </Step>
+
+  <Step title="Create the page components">
+    Add the index and post view components:
+
+    ```rust
+    #[component]
+    fn BlogIndex() -> Element {
+        rsx! {
+            BlogList {
+                hero: rsx! {
+                    div { class: "text-center mb-12",
+                        h1 { class: "text-4xl font-bold tracking-tight mb-3",
+                            "Blog"
+                        }
+                        p { class: "text-lg text-base-content/60",
+                            "Thoughts on Rust, Dioxus, and web development."
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[component]
+    fn BlogPage(slug: String) -> Element {
+        rsx! {
+            BlogPostView { slug }
+        }
+    }
+    ```
+
+    The `BlogList` component accepts an optional `hero` prop for custom content above the post grid. It includes built-in tag filtering and pagination.
+  </Step>
+</Steps>
+
+## Configuration Options
+
+The `BlogConfig` builder supports these options:
+
+| Method | Default | Description |
+|--------|---------|-------------|
+| `.with_posts_per_page(n)` | `9` | Number of posts per page |
+| `.with_date_format(fmt)` | `"%B %d, %Y"` | Date display format (`%Y`, `%m`, `%d`, `%B` for month name) |
+| `.with_theme(name)` | — | Set a fixed theme (no toggle) |
+| `.with_theme_toggle(light, dark, default)` | — | Enable light/dark theme switching |
+
+## Available Components
+
+<CardGroup cols={2}>
+  <Card title="BlogLayout" icon="layout">
+    Main layout shell with header slot, search modal, and mobile drawer
+  </Card>
+  <Card title="BlogList" icon="list">
+    Post grid with tag filtering, pagination, and optional hero section
+  </Card>
+  <Card title="BlogPostView" icon="file-text">
+    Full post renderer with author info, reading time, tags, and prev/next navigation
+  </Card>
+  <Card title="BlogSearchModal" icon="search">
+    Full-text search across all blog posts
+  </Card>
+  <Card title="BlogSearchButton" icon="search">
+    Button that opens the search modal
+  </Card>
+  <Card title="TagFilter" icon="tag">
+    Tag filter bar (included in BlogList, also usable standalone)
+  </Card>
+  <Card title="AuthorInfo" icon="user">
+    Author avatar, name, and bio display
+  </Card>
+  <Card title="ReadingTimeBadge" icon="clock">
+    Estimated reading time badge
+  </Card>
+  <Card title="BlogPostNav" icon="arrow-right">
+    Previous/next post navigation links
+  </Card>
+  <Card title="BlogThemeToggle" icon="palette">
+    Light/dark theme toggle for the blog layout
+  </Card>
+</CardGroup>
+
+## RSS Feed Generation
+
+The `BlogRegistry` can generate an RSS feed:
+
+```rust
+let rss_xml = BLOG.generate_rss(
+    "My Blog",           // site title
+    "https://example.com", // site URL
+    "/blog",             // blog base path
+);
+```
+
+You can serve this from a server function at `/blog/rss.xml`.
+
+## LLMs.txt Generation
+
+Similar to the docs registry, the blog supports `llms.txt` output:
+
+```rust
+let llms_txt = BLOG.generate_llms_txt(
+    "My Blog",
+    "A blog about Rust and Dioxus",
+    "https://example.com",
+    "/blog",
+);
+```

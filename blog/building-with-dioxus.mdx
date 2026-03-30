@@ -1,0 +1,49 @@
+---
+title: "Building Web Apps with Dioxus 0.7"
+description: "A deep dive into building fullstack web applications with Dioxus 0.7, featuring server functions, signals, and RSX."
+date: "2026-03-25"
+author: "hauke"
+tags: ["dioxus", "rust", "tutorial"]
+---
+
+## Why Dioxus?
+
+Dioxus 0.7 brings a fresh approach to building web applications in Rust. With its React-like component model, reactive signals, and fullstack capabilities, it bridges the gap between Rust's safety guarantees and modern web development.
+
+## Signals and Reactivity
+
+The signal-based reactivity system is at the heart of Dioxus 0.7:
+
+```rust
+#[component]
+fn Counter() -> Element {
+    let mut count = use_signal(|| 0);
+
+    rsx! {
+        button {
+            onclick: move |_| count += 1,
+            "Count: {count}"
+        }
+    }
+}
+```
+
+<Tip>
+Signals automatically track dependencies. When a signal updates, only the components that read it will re-render.
+</Tip>
+
+## Server Functions
+
+Dioxus makes fullstack development seamless with server functions:
+
+```rust
+#[post("/api/create-post")]
+async fn create_post(title: String, content: String) -> Result<Post, ServerFnError> {
+    let db = get_database();
+    db.insert_post(title, content).await
+}
+```
+
+## Conclusion
+
+Dioxus 0.7 is a powerful framework for building web applications entirely in Rust. Give it a try!
