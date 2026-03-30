@@ -40,6 +40,9 @@ pub struct BlogFrontmatter {
     /// Set to true to hide from listing
     #[serde(default)]
     pub draft: bool,
+    /// Set to true to pin this post to the featured section
+    #[serde(default)]
+    pub featured: bool,
 }
 
 /// A fully parsed blog post.

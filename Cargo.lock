@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-docs-kit"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "dioxus",
  "dioxus-free-icons",
@@ -812,7 +812,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-docs-kit-build"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "serde_json",

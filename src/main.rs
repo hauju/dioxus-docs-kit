@@ -194,6 +194,7 @@ fn MyBlogLayout() -> Element {
                 nav.push(Route::BlogPage { slug });
             }
         }),
+        site_url: None,
     };
 
     let providers = use_blog_providers(&BLOG, blog_ctx);

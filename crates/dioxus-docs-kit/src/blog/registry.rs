@@ -21,6 +21,8 @@ pub struct BlogRegistry {
     all_tags: Vec<String>,
     /// Prebuilt search index.
     search_index: Vec<BlogSearchEntry>,
+    /// Indices into `posts` for featured posts, preserving date order.
+    featured_indices: Vec<usize>,
     /// Posts per page for pagination.
     pub posts_per_page: usize,
     /// Date display format string.
@@ -68,6 +70,13 @@ impl BlogRegistry {
         tag_set.sort();
         tag_set.dedup();
 
+        let featured_indices: Vec<usize> = posts
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| p.frontmatter.featured)
+            .map(|(i, _)| i)
+            .collect();
+
         let search_index = Self::build_search_index(&posts);
 
         let posts_per_page = config.posts_per_page();
@@ -78,6 +87,7 @@ impl BlogRegistry {
             posts,
             authors: manifest.authors,
             all_tags: tag_set,
+            featured_indices,
             search_index,
             posts_per_page,
             date_format,
@@ -95,11 +105,67 @@ impl BlogRegistry {
         &self.posts
     }
 
+    /// Get all featured/pinned posts, sorted by date (newest first).
+    pub fn featured_posts(&self) -> Vec<&BlogPost> {
+        self.featured_indices
+            .iter()
+            .map(|&i| &self.posts[i])
+            .collect()
+    }
+
+    /// Check if there are any featured posts.
+    pub fn has_featured(&self) -> bool {
+        !self.featured_indices.is_empty()
+    }
+
     pub fn posts_by_tag(&self, tag: &str) -> Vec<&BlogPost> {
         self.posts
             .iter()
             .filter(|p| p.frontmatter.tags.iter().any(|t| t == tag))
             .collect()
+    }
+
+    /// Find posts related to the given slug by tag overlap.
+    ///
+    /// Returns up to `max` posts sorted by number of overlapping tags (descending),
+    /// then by date (newest first). Excludes the current post.
+    pub fn related_posts(&self, slug: &str, max: usize) -> Vec<&BlogPost> {
+        let current = match self.get_post(slug) {
+            Some(p) => p,
+            None => return Vec::new(),
+        };
+        let current_tags: std::collections::HashSet<&str> = current
+            .frontmatter
+            .tags
+            .iter()
+            .map(|t| t.as_str())
+            .collect();
+
+        if current_tags.is_empty() {
+            return Vec::new();
+        }
+
+        let mut scored: Vec<(usize, &BlogPost)> = self
+            .posts
+            .iter()
+            .filter(|p| p.slug != slug)
+            .filter_map(|p| {
+                let overlap = p
+                    .frontmatter
+                    .tags
+                    .iter()
+                    .filter(|t| current_tags.contains(t.as_str()))
+                    .count();
+                if overlap > 0 {
+                    Some((overlap, p))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.0.cmp(&a.0));
+        scored.into_iter().take(max).map(|(_, p)| p).collect()
     }
 
     pub fn posts_page(&self, page: usize) -> &[BlogPost] {
@@ -236,11 +302,7 @@ impl BlogRegistry {
 
         for post in &self.posts {
             let title = &post.frontmatter.title;
-            let desc = post
-                .frontmatter
-                .description
-                .as_deref()
-                .unwrap_or_default();
+            let desc = post.frontmatter.description.as_deref().unwrap_or_default();
             let link = format!("{site_url}{blog_path}/{}", post.slug);
             rss.push_str(&format!(
                 "<item>\n<title>{title}</title>\n<link>{link}</link>\n<description>{desc}</description>\n<pubDate>{}</pubDate>\n<guid>{link}</guid>\n</item>\n",
@@ -263,11 +325,7 @@ impl BlogRegistry {
 
         for post in &self.posts {
             let title = &post.frontmatter.title;
-            let desc = post
-                .frontmatter
-                .description
-                .as_deref()
-                .unwrap_or_default();
+            let desc = post.frontmatter.description.as_deref().unwrap_or_default();
             let url = format!("{base_url}{blog_path}/{}", post.slug);
             if desc.is_empty() {
                 out.push_str(&format!("- [{title}]({url})\n"));
@@ -277,6 +335,33 @@ impl BlogRegistry {
         }
 
         out
+    }
+
+    // ── Sitemap ──────────────────────────────────────────────────────────
+
+    /// Generate a sitemap.xml for all blog posts.
+    pub fn generate_sitemap(&self, site_url: &str, blog_path: &str) -> String {
+        let mut xml = String::from(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+             <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
+        );
+
+        // Blog index page
+        xml.push_str(&format!(
+            "<url>\n<loc>{site_url}{blog_path}</loc>\n<changefreq>weekly</changefreq>\n<priority>0.8</priority>\n</url>\n"
+        ));
+
+        // Individual posts
+        for post in &self.posts {
+            let loc = format!("{site_url}{blog_path}/{}", post.slug);
+            let lastmod = &post.frontmatter.date;
+            xml.push_str(&format!(
+                "<url>\n<loc>{loc}</loc>\n<lastmod>{lastmod}</lastmod>\n<changefreq>monthly</changefreq>\n<priority>0.6</priority>\n</url>\n"
+            ));
+        }
+
+        xml.push_str("</urlset>\n");
+        xml
     }
 
     // ── Date formatting ──────────────────────────────────────────────────

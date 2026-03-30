@@ -7,7 +7,10 @@ use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
 
 use super::author_info::AuthorInfo;
+use super::blog_meta::BlogPostMeta;
 use super::post_nav::BlogPostNav;
+use super::progress_bar::ReadingProgressBar;
+use super::related_posts::RelatedPosts;
 
 /// Single blog post view.
 #[component]
@@ -41,6 +44,10 @@ pub fn BlogPostView(slug: String) -> Element {
     let headers = extract_headers(&post.raw_markdown);
 
     rsx! {
+        ReadingProgressBar {}
+        if let Some(ref site_url) = ctx.site_url {
+            BlogPostMeta { slug: slug.clone(), site_url: site_url.clone() }
+        }
         div { class: "flex max-w-6xl mx-auto",
             main { class: "flex-1 min-w-0 px-4 py-12 lg:px-12",
                 article { class: "max-w-3xl mx-auto",
@@ -98,6 +105,7 @@ pub fn BlogPostView(slug: String) -> Element {
                         DocContent { nodes: post.content.clone() }
                     }
 
+                    RelatedPosts { slug: slug.clone() }
                     BlogPostNav { current_slug: slug.clone() }
                 }
             }

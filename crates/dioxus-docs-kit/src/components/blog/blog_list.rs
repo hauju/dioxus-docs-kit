@@ -17,13 +17,21 @@ pub fn BlogList(hero: Option<Element>) -> Element {
     let posts = use_memo(move || {
         let tag = active_tag();
         let page = current_page();
-        match tag.as_deref() {
+        let raw = match tag.as_deref() {
             Some(tag) => registry
                 .posts_page_by_tag(tag, page)
                 .into_iter()
                 .cloned()
                 .collect::<Vec<_>>(),
             None => registry.posts_page(page).to_vec(),
+        };
+        // When showing all posts, exclude featured ones (they appear in the featured section)
+        if tag.is_none() {
+            raw.into_iter()
+                .filter(|p| !p.frontmatter.featured)
+                .collect()
+        } else {
+            raw
         }
     });
 
@@ -44,6 +52,20 @@ pub fn BlogList(hero: Option<Element>) -> Element {
             if !registry.all_tags().is_empty() {
                 div { class: "mb-8",
                     TagFilter {}
+                }
+            }
+
+            // Featured posts section (only when no tag filter is active)
+            if active_tag().is_none() && registry.has_featured() {
+                div { class: "mb-10",
+                    h2 { class: "text-lg font-semibold mb-4 flex items-center gap-2",
+                        span { class: "badge badge-primary badge-sm", "Featured" }
+                    }
+                    div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
+                        for post in registry.featured_posts() {
+                            BlogCard { key: "{post.slug}", post: post.clone() }
+                        }
+                    }
                 }
             }
 

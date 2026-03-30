@@ -13,10 +13,7 @@ pub struct BlogProviders {
 }
 
 /// One-call setup for all context providers that `BlogLayout` and its children expect.
-pub fn use_blog_providers(
-    registry: &'static BlogRegistry,
-    blog_ctx: BlogContext,
-) -> BlogProviders {
+pub fn use_blog_providers(registry: &'static BlogRegistry, blog_ctx: BlogContext) -> BlogProviders {
     use_context_provider(|| registry);
     use_context_provider(|| blog_ctx);
 
