@@ -1,0 +1,35 @@
+---
+title: "Hello World"
+description: "Welcome to our blog! This is the first post built with dioxus-blog-kit."
+date: "2026-03-20"
+author: "hauke"
+tags: ["announcement", "dioxus"]
+---
+
+## Welcome
+
+This is the first blog post built with **dioxus-blog-kit** — a compile-time blog engine for Dioxus applications.
+
+All content is embedded at build time using `include_str!()`, which means:
+
+- Zero runtime file I/O
+- Instant page loads
+- Single binary deployment
+
+## How It Works
+
+Write your posts in MDX format with YAML frontmatter. The build script reads `_blog.json`, finds all `.mdx` files, and generates a content map that gets compiled into your binary.
+
+```rust
+dioxus_blog_kit::blog_content_map!();
+
+static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
+    BlogConfig::new(include_str!("../posts/_blog.json"), blog_content_map())
+        .with_posts_per_page(9)
+        .build()
+});
+```
+
+## What's Next
+
+Stay tuned for more posts about building web applications with Rust and Dioxus!

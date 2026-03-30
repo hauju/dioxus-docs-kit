@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
+    BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogSearchButton,
     CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, SearchButton,
-    SearchModal, ThemeToggle, highlight_code, use_docs_providers,
+    SearchModal, ThemeToggle, highlight_code, use_blog_providers, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -28,6 +29,19 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 });
 
 // ============================================================================
+// Blog Registry
+// ============================================================================
+
+dioxus_docs_kit::blog_content_map!();
+
+static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
+    BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+        .with_posts_per_page(9)
+        .with_theme_toggle("light", "dark", "dark")
+        .build()
+});
+
+// ============================================================================
 // Routes
 // ============================================================================
 
@@ -42,6 +56,12 @@ enum Route {
         #[redirect("/docs", || Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] })]
         #[route("/docs/:..slug")]
         DocsPage { slug: Vec<String> },
+    #[end_layout]
+    #[layout(MyBlogLayout)]
+        #[route("/blog")]
+        BlogIndex {},
+        #[route("/blog/:slug")]
+        BlogPage { slug: String },
 }
 
 const SEGGWAT_LOGO: Asset = asset!("/assets/seggwat_logo.avif");
@@ -119,8 +139,15 @@ fn MyDocsLayout() -> Element {
                             }
                             li {
                                 Link {
-                                    to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
+                                    to: Route::BlogIndex {},
                                     class: "btn btn-ghost btn-sm rounded-lg font-medium",
+                                    "Blog"
+                                }
+                            }
+                            li {
+                                Link {
+                                    to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
+                                    class: "btn btn-ghost btn-sm rounded-lg font-medium btn-active",
                                     "Docs"
                                 }
                             }
@@ -140,6 +167,109 @@ fn MyDocsLayout() -> Element {
 fn DocsPage(slug: Vec<String>) -> Element {
     rsx! {
         DocsPageContent { path: slug.join("/") }
+    }
+}
+
+// ============================================================================
+// Blog Layout Wrapper
+// ============================================================================
+
+#[component]
+fn MyBlogLayout() -> Element {
+    let nav = use_navigator();
+    let route = use_route::<Route>();
+
+    let current_slug = use_memo(move || match route.clone() {
+        Route::BlogPage { slug } => slug,
+        _ => String::new(),
+    });
+
+    let blog_ctx = BlogContext {
+        current_slug: current_slug.into(),
+        base_path: "/blog".into(),
+        navigate: Callback::new(move |slug: String| {
+            if slug.is_empty() {
+                nav.push(Route::BlogIndex {});
+            } else {
+                nav.push(Route::BlogPage { slug });
+            }
+        }),
+    };
+
+    let providers = use_blog_providers(&BLOG, blog_ctx);
+    let search_open = providers.search_open;
+    let mut drawer_open = providers.drawer_open;
+
+    rsx! {
+        BlogLayout {
+            header: rsx! {
+                div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
+                    div { class: "flex-1 gap-2",
+                        button {
+                            class: "btn btn-ghost btn-sm btn-square lg:hidden",
+                            onclick: move |_| drawer_open.toggle(),
+                            Icon { class: "size-5", icon: LdMenu }
+                        }
+                        Link {
+                            to: Route::Home {},
+                            class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
+                            "Dioxus Docs Kit"
+                        }
+                    }
+                    div { class: "flex-none flex items-center gap-1",
+                        ul { class: "menu menu-horizontal gap-1 hidden lg:flex",
+                            li {
+                                Link {
+                                    to: Route::Home {},
+                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
+                                    "Home"
+                                }
+                            }
+                            li {
+                                Link {
+                                    to: Route::BlogIndex {},
+                                    class: "btn btn-ghost btn-sm rounded-lg font-medium btn-active",
+                                    "Blog"
+                                }
+                            }
+                            li {
+                                Link {
+                                    to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
+                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
+                                    "Docs"
+                                }
+                            }
+                        }
+                        BlogSearchButton { search_open }
+                        ThemeToggle {}
+                    }
+                }
+            },
+            Outlet::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn BlogIndex() -> Element {
+    rsx! {
+        BlogList {
+            hero: rsx! {
+                div { class: "text-center mb-12",
+                    h1 { class: "text-4xl font-bold tracking-tight mb-3", "Blog" }
+                    p { class: "text-lg text-base-content/60",
+                        "Thoughts on Rust, Dioxus, and web development."
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn BlogPage(slug: String) -> Element {
+    rsx! {
+        BlogPostView { slug }
     }
 }
 
@@ -245,6 +375,13 @@ fn Navbar() -> Element {
                             to: Route::Home {},
                             class: "btn btn-ghost btn-sm rounded-lg font-medium",
                             "Home"
+                        }
+                    }
+                    li {
+                        Link {
+                            to: Route::BlogIndex {},
+                            class: "btn btn-ghost btn-sm rounded-lg font-medium",
+                            "Blog"
                         }
                     }
                     li {

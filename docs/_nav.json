@@ -9,7 +9,7 @@
     {
       "group": "Guides",
       "tab": "Guides",
-      "pages": ["guides/basic-usage", "guides/customization", "guides/integration"]
+      "pages": ["guides/basic-usage", "guides/customization", "guides/integration", "guides/blog"]
     },
     {
       "group": "API Reference",

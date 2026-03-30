@@ -1,0 +1,14 @@
+{
+  "authors": {
+    "hauke": {
+      "name": "Hauke Jung",
+      "bio": "Rust developer and Dioxus enthusiast",
+      "url": "https://github.com/hauju"
+    }
+  },
+  "posts": [
+    "hello-world",
+    "building-with-dioxus",
+    "rust-web-future"
+  ]
+}
