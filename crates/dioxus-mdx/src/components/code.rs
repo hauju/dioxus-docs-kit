@@ -53,12 +53,11 @@ pub fn DocCodeBlock(props: DocCodeBlockProps) -> Element {
             }
 
             // Code content with syntax highlighting
-            // Note: mt-0 overrides prose typography margins
             pre {
                 class: if props.block.language.is_some() || props.block.filename.is_some() {
-                    "bg-base-300/50 px-4 py-4 overflow-x-auto syntax-highlight mt-0"
+                    "bg-base-200 px-4 py-4 overflow-x-auto syntax-highlight mt-0"
                 } else {
-                    "bg-base-300/50 p-4 overflow-x-auto relative syntax-highlight"
+                    "bg-base-200 p-4 overflow-x-auto relative syntax-highlight"
                 },
                 code {
                     class: "text-sm font-mono leading-relaxed",
@@ -98,7 +97,7 @@ pub fn DocCodeGroup(props: DocCodeGroupProps) -> Element {
                     button {
                         key: "{i}",
                         class: if active_tab() == i {
-                            "px-4 py-2.5 text-sm font-medium text-primary border-b-2 border-primary -mb-px bg-base-300/30 transition-colors"
+                            "px-4 py-2.5 text-sm font-medium text-primary border-b-2 border-primary -mb-px bg-base-200/60 transition-colors"
                         } else {
                             "px-4 py-2.5 text-sm font-medium text-base-content/60 hover:text-base-content hover:bg-base-300/20 transition-colors"
                         },
@@ -140,7 +139,8 @@ fn CodeGroupBlock(props: CodeGroupBlockProps) -> Element {
     rsx! {
         div { class: "relative group",
             // mt-0 overrides prose typography margins
-            pre { class: "bg-base-300/50 px-4 py-4 overflow-x-auto syntax-highlight mt-0",
+            pre {
+                class: "bg-base-200 px-4 py-4 overflow-x-auto syntax-highlight mt-0",
                 code {
                     class: "text-sm font-mono leading-relaxed",
                     dangerous_inner_html: "{highlighted}",

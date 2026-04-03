@@ -25,7 +25,7 @@ pub use content::{get_raw_markdown, parse_mdx};
 pub use frontmatter::extract_frontmatter;
 pub use openapi_parser::{OpenApiError, parse_openapi};
 pub use openapi_types::*;
-pub use syntax::highlight_code;
+pub use syntax::{highlight_code, syntax_highlight_css};
 pub use types::*;
 
 /// Parse a complete MDX document, extracting frontmatter and content.

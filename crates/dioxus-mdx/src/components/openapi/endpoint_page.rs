@@ -130,7 +130,7 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                     "{op.path}"
                                 }
                             }
-                            pre { class: "bg-base-300/30 p-4 overflow-x-auto syntax-highlight",
+                            pre { class: "bg-base-200 p-4 overflow-x-auto syntax-highlight",
                                 code {
                                     class: "text-sm font-mono leading-relaxed",
                                     dangerous_inner_html: "{curl_highlighted}",
@@ -164,7 +164,7 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                                 "application/json"
                                             }
                                         }
-                                        pre { class: "bg-base-300/30 p-4 overflow-x-auto syntax-highlight max-h-[60vh]",
+                                        pre { class: "bg-base-200 p-4 overflow-x-auto syntax-highlight max-h-[60vh]",
                                             code {
                                                 class: "text-sm font-mono leading-relaxed",
                                                 dangerous_inner_html: "{json_highlighted}",

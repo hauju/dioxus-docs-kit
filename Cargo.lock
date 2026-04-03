@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-docs-kit"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "dioxus",
  "dioxus-free-icons",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-docs-kit-example"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "dioxus",
  "dioxus-docs-kit",
@@ -1089,7 +1089,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-mdx"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "dioxus",
  "dioxus-free-icons",

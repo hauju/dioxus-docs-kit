@@ -1,22 +1,23 @@
 //! Syntax highlighting for code blocks using syntect.
 //!
-//! Generates HTML with inline styles for code syntax highlighting.
+//! Generates HTML with CSS classes for code syntax highlighting.
+//! Token colors are defined via CSS custom properties so they adapt
+//! to both light and dark DaisyUI themes.
 
 use std::sync::LazyLock;
-use syntect::highlighting::ThemeSet;
-use syntect::html::highlighted_html_for_string;
+use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
 
 /// Lazily loaded syntax set with default syntaxes.
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
 
-/// Lazily loaded theme set with default themes.
-static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
-
 /// Apply syntax highlighting to code.
 ///
-/// Returns HTML string with inline styles for syntax highlighting.
-/// Falls back to plain code wrapped in `<code>` if highlighting fails.
+/// Returns HTML string with CSS classes for syntax highlighting.
+/// Token spans use classes like `sy-keyword`, `sy-string`, etc.
+/// that are styled via CSS custom properties (see `syntax_highlight_css()`).
+/// Falls back to plain escaped code if highlighting fails.
 pub fn highlight_code(code: &str, language: Option<&str>) -> String {
     let lang = language.unwrap_or("txt");
 
@@ -31,34 +32,36 @@ pub fn highlight_code(code: &str, language: Option<&str>) -> String {
         .or_else(|| SYNTAX_SET.find_syntax_by_name(lang))
         .unwrap_or_else(|| SYNTAX_SET.find_syntax_plain_text());
 
-    // Use a dark theme suitable for dark mode
-    // "base16-ocean.dark" is a good dark theme included in syntect
-    let theme = THEME_SET
-        .themes
-        .get("base16-ocean.dark")
-        .or_else(|| THEME_SET.themes.get("InspiredGitHub"))
-        .unwrap_or_else(|| THEME_SET.themes.values().next().unwrap());
+    // Use ClassedHTMLGenerator to emit CSS classes instead of inline styles.
+    // This lets us control colors via CSS custom properties that adapt to the
+    // active DaisyUI theme.
+    let mut generator = ClassedHTMLGenerator::new_with_class_style(
+        syntax,
+        &SYNTAX_SET,
+        ClassStyle::SpacedPrefixed { prefix: "sy-" },
+    );
 
-    // Generate highlighted HTML
-    match highlighted_html_for_string(code, &SYNTAX_SET, syntax, theme) {
-        Ok(html) => {
-            // The output is wrapped in <pre style="..."><code>...</code></pre>
-            // We want just the inner content since we have our own wrapper
-            // Extract the content between <pre...> and </pre>
-            if let Some(start) = html.find('>')
-                && let Some(end) = html.rfind("</pre>")
-            {
-                // Trim leading/trailing whitespace from the extracted HTML
-                // syntect adds a newline after <pre> which we don't want
-                return html[start + 1..end].trim().to_string();
-            }
-            html
-        }
-        Err(_) => {
-            // Fallback: escape HTML and return plain code
-            escape_html(code)
+    for line in LinesWithEndings::from(code) {
+        if generator
+            .parse_html_for_line_which_includes_newline(line)
+            .is_err()
+        {
+            return escape_html(code);
         }
     }
+
+    generator.finalize()
+}
+
+/// Returns CSS content (without `<style>` tags) for syntax highlighting.
+///
+/// Defines CSS custom properties for token colors under two selectors:
+/// - `[data-theme="dark"]` — colors for dark backgrounds
+/// - `[data-theme="light"]` — colors for light backgrounds
+///
+/// Inject this once via `document::Style` in your layout component.
+pub fn syntax_highlight_css() -> &'static str {
+    include_str!("syntax_highlight.css")
 }
 
 /// Map common language aliases to syntect syntax names.
@@ -223,8 +226,9 @@ mod tests {
     println!("Hello, world!");
 }"#;
         let html = highlight_code(code, Some("rust"));
-        // Should contain syntax highlighting spans
+        // Should contain syntax highlighting spans with class attributes
         assert!(html.contains("<span"));
+        assert!(html.contains("sy-"));
         assert!(html.contains("fn"));
     }
 
@@ -233,6 +237,14 @@ mod tests {
         let code = "const x = 42;";
         let html = highlight_code(code, Some("js"));
         assert!(html.contains("<span"));
+    }
+
+    #[test]
+    fn test_highlight_no_inline_styles() {
+        let code = "let x = 42;";
+        let html = highlight_code(code, Some("rust"));
+        // Should NOT contain inline style attributes
+        assert!(!html.contains("style="));
     }
 
     #[test]
