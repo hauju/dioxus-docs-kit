@@ -1,14 +1,14 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
     BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogSearchButton,
-    CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, SearchButton,
-    BlogThemeToggle, SearchModal, ThemeToggle, highlight_code, use_blog_providers,
+    BlogThemeToggle, CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
+    DocsRegistry, SearchButton, SearchModal, ThemeToggle, highlight_code, use_blog_providers,
     use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
-    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdMenu, LdPackage, LdPalette,
-    LdSearch, LdServer,
+    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdLock, LdMenu, LdPackage,
+    LdPalette, LdSearch, LdServer,
 };
 use std::sync::LazyLock;
 
@@ -67,9 +67,51 @@ enum Route {
 
 const SEGGWAT_LOGO: Asset = asset!("/assets/seggwat_logo.avif");
 const INFRAPAGE_LOGO: Asset = asset!("/assets/infrapage_logo.ico");
+const STEPSHOTS_LOGO: Asset = asset!("/assets/stepshots_logo.svg");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
+
+// ============================================================================
+// Theme preset picker (demos the dk-* theming surface)
+// ============================================================================
+
+const THEME_PRESET_DEFAULT: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/default.css");
+const THEME_PRESET_WARM: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/warm-editorial.css");
+const THEME_PRESET_BRUTALIST: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/brutalist-light.css");
+const THEME_PRESET_SHADCN_LIGHT: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/shadcn-light.css");
+const THEME_PRESET_SHADCN_DARK: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/shadcn-dark.css");
+
+const THEME_PRESET_STORAGE_KEY: &str = "dk-theme-preset";
+const DAISY_THEME_STORAGE_KEY: &str = "docs-theme";
+
+#[derive(Clone, Copy)]
+struct CurrentPreset(Signal<String>);
+
+fn preset_css(name: &str) -> &'static str {
+    match name {
+        "warm-editorial" => THEME_PRESET_WARM,
+        "brutalist-light" => THEME_PRESET_BRUTALIST,
+        "shadcn-light" => THEME_PRESET_SHADCN_LIGHT,
+        "shadcn-dark" => THEME_PRESET_SHADCN_DARK,
+        _ => THEME_PRESET_DEFAULT,
+    }
+}
+
+/// Mode each preset locks DaisyUI's `data-theme` to. `None` means the preset
+/// is identity-only and the user's manual dark/light toggle keeps control.
+fn preset_mode(name: &str) -> Option<&'static str> {
+    match name {
+        "warm-editorial" | "brutalist-light" | "shadcn-light" => Some("light"),
+        "shadcn-dark" => Some("dark"),
+        _ => None,
+    }
+}
 
 fn main() {
     dioxus::launch(App);
@@ -77,11 +119,141 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let mut preset = use_signal(|| "default".to_string());
+    use_context_provider(|| CurrentPreset(preset));
+
+    // Read stored preset from localStorage on mount.
+    use_effect(move || {
+        spawn(async move {
+            let mut eval = document::eval(&format!(
+                r#"
+                let p = null;
+                try {{ p = localStorage.getItem('{THEME_PRESET_STORAGE_KEY}'); }} catch(e) {{}}
+                dioxus.send(p || 'default');
+                "#
+            ));
+            if let Ok(stored) = eval.recv::<String>().await {
+                preset.set(stored);
+            }
+        });
+    });
+
+    // Sync DaisyUI's data-theme to whichever preset is active.
+    // Non-default presets lock the mode (currently both ship as light themes).
+    // Default presets defer to the user's manual ThemeToggle choice in localStorage.
+    use_effect(move || {
+        let mode = preset_mode(&preset());
+        spawn(async move {
+            match mode {
+                Some(forced) => {
+                    let _ = document::eval(&format!(
+                        "document.documentElement.setAttribute('data-theme', '{forced}');"
+                    ));
+                }
+                None => {
+                    let _ = document::eval(&format!(
+                        r#"
+                        try {{
+                            let t = localStorage.getItem('{DAISY_THEME_STORAGE_KEY}') || 'dark';
+                            document.documentElement.setAttribute('data-theme', t);
+                        }} catch(e) {{}}
+                        "#
+                    ));
+                }
+            }
+        });
+    });
+
+    let css = preset_css(&preset());
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+        style { id: "dk-theme-preset", dangerous_inner_html: "{css}" }
         Router::<Route> {}
+    }
+}
+
+/// Dropdown that swaps the active `dk-*` theme preset.
+#[component]
+fn ThemePresetPicker() -> Element {
+    let CurrentPreset(mut preset) = use_context::<CurrentPreset>();
+    let current = preset();
+
+    // (slug, label, locked-mode)
+    let options: [(&str, &str, Option<&str>); 5] = [
+        ("default", "Default", None),
+        ("warm-editorial", "Warm editorial", Some("light")),
+        ("brutalist-light", "Brutalist light", Some("light")),
+        ("shadcn-light", "shadcn light", Some("light")),
+        ("shadcn-dark", "shadcn dark", Some("dark")),
+    ];
+
+    rsx! {
+        div { class: "dropdown dropdown-end",
+            div {
+                tabindex: "0",
+                role: "button",
+                class: "btn btn-ghost btn-sm gap-2",
+                "aria-label": "Theme preset",
+                Icon { class: "size-4", icon: LdPalette }
+                span { class: "hidden sm:inline text-sm", "Preset" }
+            }
+            ul {
+                tabindex: "0",
+                class: "dropdown-content z-[60] menu p-2 shadow-lg bg-base-200 border border-base-300 rounded-lg w-60 mt-2",
+                for (name, label, mode) in options {
+                    {
+                        let is_active = current == name;
+                        let name_owned = name.to_string();
+                        rsx! {
+                            li {
+                                button {
+                                    class: if is_active { "active font-medium flex items-center justify-between gap-3" } else { "flex items-center justify-between gap-3" },
+                                    onclick: move |_| {
+                                        let n = name_owned.clone();
+                                        preset.set(n.clone());
+                                        spawn(async move {
+                                            let _ = document::eval(&format!(
+                                                "try {{ localStorage.setItem('{THEME_PRESET_STORAGE_KEY}', '{n}'); }} catch(e) {{}}"
+                                            ));
+                                        });
+                                    },
+                                    span { "{label}" }
+                                    match mode {
+                                        Some(m) => rsx! {
+                                            span { class: "text-[10px] uppercase tracking-wider opacity-60", "{m}" }
+                                        },
+                                        None => rsx! {
+                                            span { class: "text-[10px] uppercase tracking-wider opacity-60", "auto" }
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Renders either the consumer-supplied ThemeToggle (default preset) or a
+/// small locked badge showing which mode the active preset forces.
+#[component]
+fn ThemeControl(toggle: Element) -> Element {
+    let CurrentPreset(preset) = use_context::<CurrentPreset>();
+    match preset_mode(&preset()) {
+        None => toggle,
+        Some(mode) => rsx! {
+            span {
+                class: "badge badge-ghost badge-sm gap-1 capitalize",
+                title: "Locked by theme preset",
+                Icon { class: "size-3", icon: LdLock }
+                "{mode}"
+            }
+        },
     }
 }
 
@@ -154,7 +326,8 @@ fn MyDocsLayout() -> Element {
                             }
                         }
                         SearchButton { search_open }
-                        ThemeToggle {}
+                        ThemePresetPicker {}
+                        ThemeControl { toggle: rsx! { ThemeToggle {} } }
                     }
                 }
             },
@@ -243,7 +416,8 @@ fn MyBlogLayout() -> Element {
                             }
                         }
                         BlogSearchButton { search_open }
-                        BlogThemeToggle {}
+                        ThemePresetPicker {}
+                        ThemeControl { toggle: rsx! { BlogThemeToggle {} } }
                     }
                 }
             },
@@ -395,13 +569,14 @@ fn Navbar() -> Element {
                     }
                 }
                 SearchButton { search_open }
+                ThemePresetPicker {}
                 if has_theme {
-                    ThemeToggle {}
+                    ThemeControl { toggle: rsx! { ThemeToggle {} } }
                 }
             }
         }
 
-        main { class: "min-h-screen bg-base-100",
+        main { class: "min-h-screen bg-base-100 dk-root",
             Outlet::<Route> {}
         }
 
@@ -540,7 +715,7 @@ fn UsedBySection() -> Element {
                         "Projects powered by Dioxus Docs Kit."
                     }
                 }
-                div { class: "grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto",
+                div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto",
                     a {
                         href: "https://seggwat.com",
                         target: "_blank",
@@ -571,6 +746,22 @@ fn UsedBySection() -> Element {
                         }
                         p { class: "text-sm text-base-content/60 leading-relaxed",
                             "Widget-based dashboard connecting GitHub, Polar, uptime monitors, and more into a single status page."
+                        }
+                    }
+                    a {
+                        href: "https://stepshots.com",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "group flex flex-col gap-4 p-6 rounded-xl border border-base-300 bg-base-200/30 hover:border-primary/30 transition-all duration-200",
+                        div { class: "flex items-center justify-between",
+                            div { class: "flex items-center gap-3",
+                                img { src: STEPSHOTS_LOGO, alt: "Stepshots logo", class: "size-8 rounded" }
+                                h3 { class: "font-semibold text-lg text-base-content", "stepshots.com" }
+                            }
+                            Icon { class: "size-4 text-base-content/40 group-hover:text-primary transition-colors", icon: LdExternalLink }
+                        }
+                        p { class: "text-sm text-base-content/60 leading-relaxed",
+                            "Screenshot-based product demos — record clickthrough walkthroughs and generate polished step-by-step guides."
                         }
                     }
                 }

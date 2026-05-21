@@ -18,10 +18,10 @@ A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MD
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = { version = "0.2", default-features = false }
+dioxus-docs-kit = { version = "0.4", default-features = false }
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.2"
+dioxus-docs-kit-build = "0.4"
 
 [features]
 default = ["web"]
@@ -174,6 +174,10 @@ The skill walks Claude through all 5 steps: dependencies, build.rs, content file
 curl -sSL http://dioxus.dev/install.sh | sh
 dx serve
 ```
+
+## Used in production
+
+- [Stepshots](https://stepshots.com/)
 
 ## License
 

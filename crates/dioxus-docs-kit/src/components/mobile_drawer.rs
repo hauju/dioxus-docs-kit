@@ -27,9 +27,9 @@ pub fn MobileDrawer(mut open: Signal<bool>) -> Element {
     };
 
     let panel_class = if is_open {
-        "fixed left-0 top-0 bottom-0 z-[70] w-72 bg-base-200 lg:hidden transition-transform duration-300 translate-x-0 shadow-2xl"
+        "dk-drawer fixed left-0 top-0 bottom-0 z-[70] w-72 bg-base-200 lg:hidden transition-transform duration-300 translate-x-0 shadow-2xl"
     } else {
-        "fixed left-0 top-0 bottom-0 z-[70] w-72 bg-base-200 lg:hidden transition-transform duration-300 -translate-x-full shadow-2xl"
+        "dk-drawer fixed left-0 top-0 bottom-0 z-[70] w-72 bg-base-200 lg:hidden transition-transform duration-300 -translate-x-full shadow-2xl"
     };
 
     rsx! {

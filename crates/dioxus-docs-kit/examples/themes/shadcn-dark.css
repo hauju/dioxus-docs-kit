@@ -1,0 +1,49 @@
+/*
+ * shadcn-dark.css
+ *
+ * The dark counterpart to shadcn-light. Mirrors the layered neutral
+ * palette used by DioxusLabs/dioxus-components: jet-black canvas,
+ * #0e0e0e panels, #1a1a1a hovers, #232323 borders, Geist typography,
+ * and the same #2b7fff focus accent.
+ *
+ * Drop-in: import after theme.css.
+ */
+
+.dk-root {
+    /* -------- surface colors -------- */
+    --dk-bg:      #0a0a0a;   /* primary-color-2 / canvas */
+    --dk-bg-sub:  #0e0e0e;   /* primary-color-1 / panels, sidebar */
+    --dk-bg-alt:  #1a1a1a;   /* primary-color-4 / hover, dividers */
+    --dk-border:  #232323;   /* primary-color-6 / hairline borders */
+
+    /* -------- foreground -------- */
+    --dk-fg:      #fafafa;   /* secondary-color-1 / near-white ink */
+
+    /* -------- accent (matches dx-components --focused-border-color) -------- */
+    --dk-accent:      #2b7fff;
+    --dk-accent-fg:   #ffffff;
+    --dk-accent-soft: color-mix(in srgb, #2b7fff 18%, transparent);
+
+    /* -------- radii — shadcn-style modest curvature -------- */
+    --dk-radius-sm: 4px;
+    --dk-radius:    8px;
+    --dk-radius-lg: 12px;
+
+    /* -------- typography — Geist with system fallbacks -------- */
+    --dk-font-body:    'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dk-font-heading: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dk-font-mono:    'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* -------- layout -------- */
+    --dk-article-width: 72ch;
+
+    /* -------- DAISYUI BRIDGE (mandatory) --------
+       Without this, components keep their default DaisyUI colors and the
+       preset only affects heading font + article width. */
+    --color-base-100:        var(--dk-bg);
+    --color-base-200:        var(--dk-bg-sub);
+    --color-base-300:        var(--dk-bg-alt);
+    --color-base-content:    var(--dk-fg);
+    --color-primary:         var(--dk-accent);
+    --color-primary-content: var(--dk-accent-fg);
+}

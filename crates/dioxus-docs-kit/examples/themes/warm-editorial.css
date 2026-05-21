@@ -1,0 +1,46 @@
+/*
+ * warm-editorial.css
+ *
+ * A content-first theme: warm amber accent, display serif for headings,
+ * soft cream surfaces, generous radii. Best for documentation that reads
+ * more like a long-form guide than a reference manual.
+ *
+ * Drop-in: import after theme.css.
+ */
+
+.dk-root {
+    /* Paper-like surfaces with a warm undertone */
+    --dk-bg:      #fbf7f1;
+    --dk-bg-sub:  #f5efe4;
+    --dk-bg-alt:  #ebe2d2;
+    --dk-border:  #e0d4bc;
+
+    /* Ink, not black — warmer and softer at high sizes */
+    --dk-fg:      #2b2217;
+
+    /* Amber accent */
+    --dk-accent:      #c2612c;
+    --dk-accent-fg:   #fffaf3;
+    --dk-accent-soft: color-mix(in srgb, #c2612c 12%, transparent);
+
+    /* Editorial radii — round enough to feel generous, not rounded-rectangle UI */
+    --dk-radius-sm: 4px;
+    --dk-radius:    12px;
+    --dk-radius-lg: 24px;
+
+    /* Serif headings, sans body — classic magazine typography */
+    --dk-font-body:    'Inter', system-ui, -apple-system, sans-serif;
+    --dk-font-heading: 'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+
+    /* A touch wider — serif reads well with more characters per line */
+    --dk-article-width: 78ch;
+
+    /* Bridge dk-* into DaisyUI's tokens so every component (buttons, cards,
+       badges, navbar) inherits the preset palette — not just .dk-article. */
+    --color-base-100:        var(--dk-bg);
+    --color-base-200:        var(--dk-bg-sub);
+    --color-base-300:        var(--dk-bg-alt);
+    --color-base-content:    var(--dk-fg);
+    --color-primary:         var(--dk-accent);
+    --color-primary-content: var(--dk-accent-fg);
+}

@@ -37,7 +37,7 @@ pub fn SearchModal() -> Element {
     rsx! {
         // Backdrop
         div {
-            class: "fixed inset-0 z-[100] bg-black/50 flex items-start justify-center pt-[15vh]",
+            class: "dk-search-backdrop fixed inset-0 z-[100] bg-black/50 flex items-start justify-center pt-[15vh]",
             onclick: move |_| {
                 search_open.set(false);
                 query.set(String::new());
@@ -45,14 +45,14 @@ pub fn SearchModal() -> Element {
 
             // Modal container
             div {
-                class: "bg-base-200 rounded-xl w-full max-w-lg mx-4 border border-base-300 shadow-2xl overflow-hidden",
+                class: "dk-search-dialog bg-base-200 rounded-xl w-full max-w-lg mx-4 border border-base-300 shadow-2xl overflow-hidden",
                 onclick: move |e| e.stop_propagation(),
 
                 // Search input row
                 div { class: "flex items-center gap-3 px-4 py-3 border-b border-base-300",
                     Icon { class: "size-5 text-base-content/50 shrink-0", icon: LdSearch }
                     input {
-                        class: "flex-1 bg-transparent outline-none text-base placeholder:text-base-content/40",
+                        class: "dk-search-input flex-1 bg-transparent outline-none text-base placeholder:text-base-content/40",
                         placeholder: "Search documentation...",
                         autofocus: true,
                         value: "{query}",
@@ -70,7 +70,7 @@ pub fn SearchModal() -> Element {
                 }
 
                 // Results list
-                div { class: "max-h-80 overflow-y-auto",
+                div { class: "dk-search-results max-h-80 overflow-y-auto",
                     if query().trim().is_empty() {
                         div { class: "px-4 py-8 text-center text-base-content/50 text-sm",
                             "Type to search..."
@@ -125,7 +125,7 @@ fn SearchResultItem(
 
     rsx! {
         button {
-            class: "w-full text-left px-4 py-3 hover:bg-base-300/50 transition-colors flex items-center gap-3 border-b border-base-300/50 last:border-b-0",
+            class: "dk-search-result w-full text-left px-4 py-3 hover:bg-base-300/50 transition-colors flex items-center gap-3 border-b border-base-300/50 last:border-b-0",
             onclick: move |_| {
                 (ctx.navigate)(path_for_click.clone());
                 search_open.set(false);

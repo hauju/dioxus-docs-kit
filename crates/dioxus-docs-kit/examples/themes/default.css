@@ -1,0 +1,13 @@
+/*
+ * default.css — baseline theme
+ *
+ * This file intentionally overrides nothing. It exists so the examples/themes/
+ * directory has a clear "starting point" you can copy and diff against.
+ *
+ * Everything here is already the default from theme.css — see that file for
+ * the canonical token list.
+ */
+
+.dk-root {
+    /* No overrides. */
+}

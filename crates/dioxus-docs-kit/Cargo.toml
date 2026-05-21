@@ -13,7 +13,7 @@ categories = ["web-programming", "gui"]
 readme = "README.md"
 
 [dependencies]
-dioxus = { version = "0.7", features = ["lib", "router"] }
+dioxus = { version = "0.7.9", features = ["lib", "router"] }
 dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 dioxus-mdx = { version = "0.3.1", path = "../dioxus-mdx", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
