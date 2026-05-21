@@ -6,6 +6,7 @@ use crate::DocsContext;
 use crate::registry::DocsRegistry;
 
 use super::docs_layout::LayoutOffsets;
+use super::docs_meta::DocsPageMeta;
 use super::page_nav::DocsPageNav;
 
 /// Documentation page content renderer.
@@ -31,7 +32,11 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
     if let Some(operation) = registry.get_api_operation(&path)
         && let Some(spec) = registry.get_first_api_spec()
     {
+        let site_url = ctx.site_url.clone();
         return rsx! {
+            if let Some(site_url) = site_url {
+                DocsPageMeta { path: path.clone(), site_url }
+            }
             div { class: "dk-endpoint flex flex-col",
                 EndpointPage { operation: operation.clone(), spec: spec.clone() }
                 main { class: "px-8 lg:px-12 pb-12",
@@ -75,8 +80,12 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
     };
 
     let headers = extract_headers(&doc.raw_markdown);
+    let site_url = ctx.site_url.clone();
 
     rsx! {
+        if let Some(site_url) = site_url {
+            DocsPageMeta { path: path.clone(), site_url }
+        }
         div { class: "flex",
             // Main content
             main { class: "flex-1 min-w-0 px-8 py-12 lg:px-12",

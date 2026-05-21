@@ -60,6 +60,8 @@ pub struct DocsContext {
     pub base_path: String,
     /// Callback to navigate to a docs page by content path.
     pub navigate: Callback<String>,
+    /// Optional full site URL for SEO meta tags (e.g. "https://example.com").
+    pub site_url: Option<String>,
 }
 
 // ============================================================================
@@ -90,8 +92,8 @@ pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
 pub use components::{
-    CurrentTheme, DocsLayout, DocsPageContent, DocsPageNav, DocsSidebar, DocsVariant, DrawerOpen,
-    LayoutOffsets, MobileDrawer, SearchButton, SearchModal, ThemeToggle,
+    CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta, DocsPageNav, DocsSidebar, DocsVariant,
+    DrawerOpen, LayoutOffsets, MobileDrawer, SearchButton, SearchModal, ThemeToggle,
 };
 
 pub use hooks::{DocsProviders, use_docs_providers};
