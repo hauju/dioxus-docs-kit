@@ -1,0 +1,49 @@
+/*
+ * shadcn-light.css
+ *
+ * Neutral, near-monochrome surface inspired by the shadcn-styled
+ * dioxus-components preview (DioxusLabs/dioxus-components). Pure white
+ * canvas, zinc-tinted panels, hairline #e5e5e5 borders, Geist typography,
+ * and the same #2b7fff focus accent used by the components library.
+ *
+ * Drop-in: import after theme.css.
+ */
+
+.dk-root {
+    /* -------- surface colors -------- */
+    --dk-bg:      #ffffff;   /* primary-color-2 / canvas */
+    --dk-bg-sub:  #fbfbfb;   /* primary-color-1 / panels, sidebar */
+    --dk-bg-alt:  #f5f5f5;   /* primary-color-5 / hover, dividers */
+    --dk-border:  #e5e5e5;   /* primary-color-6 / hairline borders */
+
+    /* -------- foreground -------- */
+    --dk-fg:      #0a0a0a;   /* near-black ink */
+
+    /* -------- accent (matches dx-components --focused-border-color) -------- */
+    --dk-accent:      #2b7fff;
+    --dk-accent-fg:   #ffffff;
+    --dk-accent-soft: color-mix(in srgb, #2b7fff 12%, transparent);
+
+    /* -------- radii — shadcn-style modest curvature -------- */
+    --dk-radius-sm: 4px;
+    --dk-radius:    8px;
+    --dk-radius-lg: 12px;
+
+    /* -------- typography — Geist with system fallbacks -------- */
+    --dk-font-body:    'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dk-font-heading: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dk-font-mono:    'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* -------- layout -------- */
+    --dk-article-width: 72ch;
+
+    /* -------- DAISYUI BRIDGE (mandatory) --------
+       Without this, components keep their default DaisyUI colors and the
+       preset only affects heading font + article width. */
+    --color-base-100:        var(--dk-bg);
+    --color-base-200:        var(--dk-bg-sub);
+    --color-base-300:        var(--dk-bg-alt);
+    --color-base-content:    var(--dk-fg);
+    --color-primary:         var(--dk-accent);
+    --color-primary-content: var(--dk-accent-fg);
+}

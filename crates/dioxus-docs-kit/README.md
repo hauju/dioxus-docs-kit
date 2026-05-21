@@ -164,6 +164,105 @@ When using as a **workspace path dependency**, you can point directly at the sou
 @source "./crates/dioxus-mdx/src/**/*.rs";
 ```
 
+## Theming
+
+The kit exposes a public theming surface so consumers can restyle without
+forking or fighting DaisyUI internals.
+
+### Public CSS variables
+
+Copy `theme.css` from the crate into your project and import it alongside
+Tailwind:
+
+```css
+@import "tailwindcss";
+@import "./theme.css";
+```
+
+All tokens have DaisyUI fallbacks, so DaisyUI users inherit the current theme;
+non-DaisyUI users get a sensible neutral default. Override any of them:
+
+```css
+.my-site .dk-root {
+  --dk-accent: #f0a57c;
+  --dk-font-heading: 'Instrument Serif', serif;
+  --dk-radius-lg: 20px;
+}
+```
+
+| Token | Purpose |
+|-------|---------|
+| `--dk-bg`, `--dk-bg-sub`, `--dk-bg-alt` | Surface colors |
+| `--dk-fg`, `--dk-muted`, `--dk-dim` | Foreground / text colors |
+| `--dk-border` | Border color |
+| `--dk-accent`, `--dk-accent-fg`, `--dk-accent-soft` | Accent |
+| `--dk-radius-sm`, `--dk-radius`, `--dk-radius-lg` | Corner radii |
+| `--dk-font-body`, `--dk-font-heading`, `--dk-font-mono` | Typography |
+| `--dk-article-width`, `--dk-sidebar-width`, `--dk-toc-width` | Layout widths |
+
+### Stable `dk-*` classes
+
+Structural nodes carry semver-stable `dk-*` class names. Target these in your
+own CSS instead of DaisyUI or internal classes:
+
+| Class | What it wraps |
+|-------|---------------|
+| `dk-root`, `dk-docs-root` | Outermost docs wrapper |
+| `dk-header`, `dk-shell`, `dk-sidebar`, `dk-main`, `dk-toc` | Layout regions |
+| `dk-tabs`, `dk-tab`, `dk-tab-active` | Tab bar |
+| `dk-nav`, `dk-nav-group`, `dk-nav-group-title`, `dk-nav-item`, `dk-nav-item-active` | Sidebar navigation |
+| `dk-article`, `dk-article-header`, `dk-article-title`, `dk-article-description`, `dk-article-body` | Article regions |
+| `dk-pagination`, `dk-page-prev`, `dk-page-next` | Previous/next links |
+| `dk-search-trigger`, `dk-search-dialog`, `dk-search-input`, `dk-search-results`, `dk-search-result` | Search |
+| `dk-drawer` | Mobile drawer |
+
+### Slots on `DocsLayout`
+
+`DocsLayout` accepts optional element slots. Each slot is wrapped in a
+`dk-*-slot` class for CSS hooks.
+
+```rust
+DocsLayout {
+    announcement_bar: Some(rsx!{ AnnouncementBar {} }),
+    sidebar_header: Some(rsx!{ MyProductSwitcher {} }),
+    sidebar_footer: Some(rsx!{ EditOnGitHub {} }),
+    footer: Some(rsx!{ SiteFooter {} }),
+    Outlet::<Route> {}
+}
+```
+
+`DocsPageContent` additionally accepts an `article_footer` slot (rendered
+below the article body, before pagination) — useful for "Was this helpful?"
+widgets.
+
+### Density variants
+
+`DocsLayout` accepts a `variant` prop for two built-in density presets:
+
+```rust
+DocsLayout { variant: DocsVariant::Reference, Outlet::<Route> {} }
+```
+
+| Variant | Feel | `--dk-article-width` |
+|---------|------|----------------------|
+| `Prose` (default) | Wide margins, serif-friendly, long-form reading | `72ch` |
+| `Reference` | Tighter column, smaller type, denser headings | `64ch` |
+
+The variant is emitted as a class on `dk-root` (`dk-variant-prose` or
+`dk-variant-reference`) so consumers can layer further tweaks.
+
+### Pre-built theme examples
+
+`examples/themes/` ships three drop-in visual identities built entirely on
+top of `--dk-*` tokens:
+
+- `warm-editorial.css` — amber accent, serif headings, cream surfaces
+- `brutalist-light.css` — high contrast, zero-radius, monospace
+- `default.css` — baseline (nothing overridden)
+
+See [THEMING.md](./THEMING.md) for the full roadmap and proposals open for
+community contribution.
+
 ## Features
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)

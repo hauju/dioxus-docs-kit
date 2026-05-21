@@ -18,7 +18,7 @@ pub fn DocsSidebar() -> Element {
     };
 
     rsx! {
-        nav { class: "space-y-6",
+        nav { class: "dk-nav space-y-6",
             for group in groups.iter() {
                 SidebarGroup { group: (*group).clone() }
             }
@@ -35,8 +35,8 @@ fn SidebarGroup(group: NavGroup) -> Element {
 
     if is_api_group {
         rsx! {
-            div { class: "space-y-2",
-                h3 { class: "font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
+            div { class: "dk-nav-group space-y-2",
+                h3 { class: "dk-nav-group-title font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
                     "{group.group}"
                 }
                 ul { class: "space-y-1",
@@ -46,8 +46,8 @@ fn SidebarGroup(group: NavGroup) -> Element {
                 }
                 // Dynamic API endpoints grouped by tag
                 for (tag, entries) in api_entries.iter() {
-                    div { class: "mt-3",
-                        h4 { class: "text-xs font-medium text-base-content/50 uppercase tracking-wider px-3 mb-1",
+                    div { class: "dk-nav-subgroup mt-3",
+                        h4 { class: "dk-nav-subgroup-title text-xs font-medium text-base-content/50 uppercase tracking-wider px-3 mb-1",
                             "{tag.name}"
                         }
                         ul { class: "space-y-0.5",
@@ -65,8 +65,8 @@ fn SidebarGroup(group: NavGroup) -> Element {
         }
     } else {
         rsx! {
-            div { class: "space-y-2",
-                h3 { class: "font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
+            div { class: "dk-nav-group space-y-2",
+                h3 { class: "dk-nav-group-title font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
                     "{group.group}"
                 }
                 ul { class: "space-y-1",
@@ -91,7 +91,7 @@ fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
     let is_active = (ctx.current_path)() == path;
 
     let active_class = if is_active {
-        "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+        "dk-nav-item-active bg-primary/10 text-primary font-medium border-l-2 border-primary"
     } else {
         "text-base-content/70 hover:text-base-content hover:bg-base-200"
     };
@@ -109,7 +109,7 @@ fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
         li {
             Link {
                 to: NavigationTarget::Internal(href),
-                class: "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors {active_class}",
+                class: "dk-nav-item dk-nav-item-api flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors {active_class}",
                 span { class: "badge badge-xs font-mono font-bold {badge_class} shrink-0",
                     "{method_label}"
                 }
@@ -136,7 +136,7 @@ fn SidebarLink(path: String) -> Element {
     let is_active = current == path || (current.is_empty() && path == registry.default_path);
 
     let active_class = if is_active {
-        "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+        "dk-nav-item-active bg-primary/10 text-primary font-medium border-l-2 border-primary"
     } else {
         "text-base-content/70 hover:text-base-content hover:bg-base-200"
     };
@@ -147,7 +147,7 @@ fn SidebarLink(path: String) -> Element {
         li {
             Link {
                 to: NavigationTarget::Internal(href),
-                class: "block px-3 py-2 text-sm rounded-lg transition-colors {active_class}",
+                class: "dk-nav-item block px-3 py-2 text-sm rounded-lg transition-colors {active_class}",
                 "{title}"
             }
         }

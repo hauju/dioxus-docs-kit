@@ -55,7 +55,7 @@ pub fn DocsPageNav(current_path: String) -> Element {
     });
 
     rsx! {
-        nav { class: "mt-16 pt-8 border-t border-base-300 flex justify-between gap-4",
+        nav { class: "dk-pagination mt-16 pt-8 border-t border-base-300 flex justify-between gap-4",
             // Previous link
             div { class: "flex-1",
                 if let Some(prev) = prev_page {
@@ -65,7 +65,7 @@ pub fn DocsPageNav(current_path: String) -> Element {
                         rsx! {
                             Link {
                                 to: NavigationTarget::Internal(href),
-                                class: "group flex flex-col p-4 rounded-lg border border-base-300 hover:border-primary/50 hover:bg-base-200/50 transition-all",
+                                class: "dk-page-prev group flex flex-col p-4 rounded-lg border border-base-300 hover:border-primary/50 hover:bg-base-200/50 transition-all",
                                 span { class: "text-xs text-base-content/50 mb-1", "Previous" }
                                 span { class: "font-medium group-hover:text-primary transition-colors",
                                     "{title}"
@@ -85,7 +85,7 @@ pub fn DocsPageNav(current_path: String) -> Element {
                         rsx! {
                             Link {
                                 to: NavigationTarget::Internal(href),
-                                class: "group flex flex-col p-4 rounded-lg border border-base-300 hover:border-primary/50 hover:bg-base-200/50 transition-all items-end",
+                                class: "dk-page-next group flex flex-col p-4 rounded-lg border border-base-300 hover:border-primary/50 hover:bg-base-200/50 transition-all items-end",
                                 span { class: "text-xs text-base-content/50 mb-1", "Next" }
                                 span { class: "font-medium group-hover:text-primary transition-colors",
                                     "{title}"

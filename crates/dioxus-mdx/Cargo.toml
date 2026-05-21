@@ -13,7 +13,7 @@ categories = ["parsing", "web-programming", "text-processing"]
 readme = "README.md"
 
 [dependencies]
-dioxus = { version = "0.7", features = ["lib"] }
+dioxus = { version = "0.7.9", features = ["lib"] }
 dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 
 serde = { version = "1.0", features = ["derive"] }

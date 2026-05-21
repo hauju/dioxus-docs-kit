@@ -1,0 +1,46 @@
+/*
+ * brutalist-light.css
+ *
+ * High-contrast, zero-radius, all-monospace. Developer-tool docs that want
+ * to feel like a terminal dropped into a browser. Good for CLI docs, API
+ * references, and projects with a strong technical identity.
+ *
+ * Drop-in: import after theme.css.
+ */
+
+.dk-root {
+    /* Paper-white, hard edges */
+    --dk-bg:      #ffffff;
+    --dk-bg-sub:  #f4f4f4;
+    --dk-bg-alt:  #e8e8e8;
+    --dk-border:  #000000;
+
+    /* Pure black ink */
+    --dk-fg:      #000000;
+
+    /* Yellow hazard accent — unmistakable, slightly aggressive */
+    --dk-accent:      #ffda00;
+    --dk-accent-fg:   #000000;
+    --dk-accent-soft: color-mix(in srgb, #ffda00 20%, transparent);
+
+    /* Zero radius — everything is a hard rectangle */
+    --dk-radius-sm: 0;
+    --dk-radius:    0;
+    --dk-radius-lg: 0;
+
+    /* Monospace everywhere */
+    --dk-font-body:    'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+    --dk-font-heading: 'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+
+    /* Narrower column — dense, reference-manual feel */
+    --dk-article-width: 64ch;
+
+    /* Bridge dk-* into DaisyUI's tokens so every component (buttons, cards,
+       badges, navbar) inherits the preset palette — not just .dk-article. */
+    --color-base-100:        var(--dk-bg);
+    --color-base-200:        var(--dk-bg-sub);
+    --color-base-300:        var(--dk-bg-alt);
+    --color-base-content:    var(--dk-fg);
+    --color-primary:         var(--dk-accent);
+    --color-primary-content: var(--dk-accent-fg);
+}

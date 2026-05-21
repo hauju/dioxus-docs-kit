@@ -8,6 +8,20 @@
 @source "./src/**/*.{rs,html,css}";
 @source "./crates/**/*.{rs,html,css}";
 
+/* Base --dk-* token surface from dioxus-docs-kit. The runtime theme picker in
+   src/main.rs overrides these via an inline <style id="dk-theme-preset">. */
+@import "./crates/dioxus-docs-kit/theme.css";
+
+/* Brand override: swap DaisyUI's default blue primary for a rusty orange. */
+:root,
+[data-theme="dark"],
+[data-theme="light"] {
+    --color-primary: #d47731;
+    --color-primary-content: #fff7f0;
+    --p: #d47731;
+    --pc: #fff7f0;
+}
+
 /* For git/crates.io dependency users who can't use @source on crate paths, use:
    @source "./safelist.html";
    Copy safelist.html from crates/dioxus-docs-kit/ into your project root. */

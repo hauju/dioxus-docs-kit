@@ -11,8 +11,19 @@ use super::page_nav::DocsPageNav;
 /// Documentation page content renderer.
 ///
 /// Checks if the path is an API endpoint page or a regular MDX page and renders accordingly.
+///
+/// # Props
+///
+/// - `path`: Current docs page path.
+/// - `article_footer`: Optional element rendered after the article body, before
+///   pagination (e.g. "Was this helpful?" widget).
+///
+/// # Stable public classes
+///
+/// Uses `dk-article`, `dk-article-title`, `dk-article-body`, `dk-article-header`,
+/// and `dk-article-footer-slot` for consumer CSS hooks.
 #[component]
-pub fn DocsPageContent(path: String) -> Element {
+pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let ctx = use_context::<DocsContext>();
 
@@ -21,10 +32,13 @@ pub fn DocsPageContent(path: String) -> Element {
         && let Some(spec) = registry.get_first_api_spec()
     {
         return rsx! {
-            div { class: "flex flex-col",
+            div { class: "dk-endpoint flex flex-col",
                 EndpointPage { operation: operation.clone(), spec: spec.clone() }
                 main { class: "px-8 lg:px-12 pb-12",
                     div { class: "max-w-2xl",
+                        if let Some(ft) = article_footer {
+                            div { class: "dk-article-footer-slot mb-6", {ft} }
+                        }
                         DocsPageNav { current_path: path.clone() }
                     }
                 }
@@ -66,24 +80,24 @@ pub fn DocsPageContent(path: String) -> Element {
         div { class: "flex",
             // Main content
             main { class: "flex-1 min-w-0 px-8 py-12 lg:px-12",
-                article { class: "max-w-3xl mx-auto",
+                article { class: "dk-article max-w-3xl mx-auto",
                     // Page header
-                    header { class: "mb-8 pb-8 border-b border-base-300",
+                    header { class: "dk-article-header mb-8 pb-8 border-b border-base-300",
                         div { class: "flex items-start justify-between gap-4",
-                            h1 { class: "text-4xl font-bold tracking-tight mb-3",
+                            h1 { class: "dk-article-title text-4xl font-bold tracking-tight mb-3",
                                 "{doc.frontmatter.title}"
                             }
                             CopyMdxButton { content: doc.raw_markdown.clone() }
                         }
                         if let Some(desc) = &doc.frontmatter.description {
-                            p { class: "text-lg text-base-content/70",
+                            p { class: "dk-article-description text-lg text-base-content/70",
                                 "{desc}"
                             }
                         }
                     }
 
                     // MDX content
-                    div { class: "prose prose-base max-w-none
+                    div { class: "dk-article-body prose prose-base max-w-none
                         prose-headings:{offsets.scroll_mt}
                         prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-10 prose-h2:mb-4
                         prose-h3:text-xl prose-h3:font-medium prose-h3:mt-8 prose-h3:mb-3
@@ -94,6 +108,11 @@ pub fn DocsPageContent(path: String) -> Element {
                         DocContent { nodes: doc.content.clone() }
                     }
 
+                    // Optional consumer footer slot (e.g. "Was this helpful?")
+                    if let Some(ft) = article_footer {
+                        div { class: "dk-article-footer-slot mt-12", {ft} }
+                    }
+
                     // Page navigation
                     DocsPageNav { current_path: path.clone() }
                 }
@@ -101,7 +120,7 @@ pub fn DocsPageContent(path: String) -> Element {
 
             // Table of Contents sidebar (right side)
             if !headers.is_empty() {
-                aside { class: "w-56 shrink-0 hidden xl:block",
+                aside { class: "dk-toc w-56 shrink-0 hidden xl:block",
                     div { class: "sticky {offsets.sticky_top} p-6",
                         DocTableOfContents { headers }
                     }

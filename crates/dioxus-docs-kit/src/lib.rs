@@ -90,8 +90,8 @@ pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
 pub use components::{
-    CurrentTheme, DocsLayout, DocsPageContent, DocsPageNav, DocsSidebar, DrawerOpen, LayoutOffsets,
-    MobileDrawer, SearchButton, SearchModal, ThemeToggle,
+    CurrentTheme, DocsLayout, DocsPageContent, DocsPageNav, DocsSidebar, DocsVariant, DrawerOpen,
+    LayoutOffsets, MobileDrawer, SearchButton, SearchModal, ThemeToggle,
 };
 
 pub use hooks::{DocsProviders, use_docs_providers};

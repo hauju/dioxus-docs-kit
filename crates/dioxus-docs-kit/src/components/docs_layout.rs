@@ -24,6 +24,30 @@ pub struct LayoutOffsets {
 #[derive(Clone, Copy)]
 pub struct CurrentTheme(pub Signal<String>);
 
+/// Density preset for the docs layout.
+///
+/// Consumers target the emitted class (`dk-variant-prose` or `dk-variant-reference`)
+/// in their own CSS to further tweak the look. The shipped `theme.css` applies
+/// width / type-scale differences out of the box.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DocsVariant {
+    /// Default: wide margins, generous line-height, optimized for long-form prose.
+    #[default]
+    Prose,
+    /// Tight: narrower article column, denser type, better for API/reference docs.
+    Reference,
+}
+
+impl DocsVariant {
+    /// The CSS class appended to `dk-root` for this variant.
+    pub fn class(self) -> &'static str {
+        match self {
+            DocsVariant::Prose => "dk-variant-prose",
+            DocsVariant::Reference => "dk-variant-reference",
+        }
+    }
+}
+
 /// Newtype wrapper for the drawer-open signal, so it can coexist with
 /// `Signal<bool>` (used for `search_open`) in the context system.
 ///
@@ -54,11 +78,28 @@ use super::theme_toggle::ThemeToggle;
 /// - `show_header`: Whether to render the internal header area (default header/custom header *and*
 ///   tab bar). Defaults to `true`. Set to `false` when the consumer provides their own header
 ///   and tab bar outside of `DocsLayout`.
+/// - `announcement_bar`: Optional element rendered at the very top, above `header`.
+/// - `sidebar_header`: Optional element rendered above the generated sidebar nav.
+/// - `sidebar_footer`: Optional element rendered below the generated sidebar nav
+///   (e.g. "Edit this page" links).
+/// - `footer`: Optional element rendered at the bottom of the layout (site-wide footer).
+/// - `variant`: Density preset (`Prose` default, `Reference` for denser API/reference docs).
 /// - `children`: The routed page content (from `Outlet` or explicit child).
+///
+/// # Stable public classes
+///
+/// `DocsLayout` tags its structural nodes with semver-stable `dk-*` classes so
+/// CSS overrides don't drift: `dk-root`, `dk-docs-root`, `dk-header`, `dk-shell`,
+/// `dk-sidebar`, `dk-main`, and slot wrappers like `dk-announcement-slot`.
 #[component]
 pub fn DocsLayout(
     header: Option<Element>,
     #[props(default = true)] show_header: bool,
+    announcement_bar: Option<Element>,
+    sidebar_header: Option<Element>,
+    sidebar_footer: Option<Element>,
+    footer: Option<Element>,
+    #[props(default)] variant: DocsVariant,
     children: Element,
 ) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
@@ -182,10 +223,15 @@ pub fn DocsLayout(
         // Syntax highlighting theme-aware CSS (injected into <head> once)
         SyntaxStyles {}
 
-        div { class: "min-h-screen bg-base-100",
+        div { class: "dk-root dk-docs-root {variant.class()} min-h-screen bg-base-100",
+            // Optional announcement bar (rendered above everything)
+            if let Some(bar) = announcement_bar {
+                div { class: "dk-announcement-slot", {bar} }
+            }
+
             // Top area
             if show_header {
-                div { class: "sticky top-0 z-50",
+                div { class: "dk-header sticky top-0 z-50",
                     // Header (consumer-provided or default)
                     if let Some(hdr) = header {
                         {hdr}
@@ -208,20 +254,20 @@ pub fn DocsLayout(
 
                     // Tab bar (below header)
                     if has_tabs {
-                        div { class: "bg-base-200/80 backdrop-blur border-b border-base-300 px-4 lg:px-8",
+                        div { class: "dk-tabs bg-base-200/80 backdrop-blur border-b border-base-300 px-4 lg:px-8",
                             div { class: "flex gap-6",
                                 for tab in nav.tabs.iter() {
                                     {
                                         let is_active = *tab == active_tab();
                                         let tab_clone = tab.clone();
                                         let style = if is_active {
-                                            "text-primary border-b-2 border-primary font-medium"
+                                            "dk-tab-active text-primary border-b-2 border-primary font-medium"
                                         } else {
                                             "text-base-content/60 hover:text-base-content border-b-2 border-transparent"
                                         };
                                         rsx! {
                                             button {
-                                                class: "px-1 py-2.5 text-sm transition-colors -mb-px {style}",
+                                                class: "dk-tab px-1 py-2.5 text-sm transition-colors -mb-px {style}",
                                                 onclick: move |_| {
                                                     active_tab.set(tab_clone.clone());
                                                     let groups = nav.groups_for_tab(&tab_clone);
@@ -241,18 +287,29 @@ pub fn DocsLayout(
             }
 
             // Main docs content with sidebar
-            div { class: "flex",
+            div { class: "dk-shell flex",
                 // Sidebar
-                aside { class: "w-64 shrink-0 border-r border-base-300 bg-base-200/30 hidden lg:block",
-                    div { class: "sticky {offsets.sticky_top} {offsets.sidebar_height} overflow-y-auto p-6",
+                aside { class: "dk-sidebar w-64 shrink-0 border-r border-base-300 bg-base-200/30 hidden lg:block",
+                    div { class: "sticky {offsets.sticky_top} {offsets.sidebar_height} overflow-y-auto p-6 flex flex-col gap-6",
+                        if let Some(sh) = sidebar_header {
+                            div { class: "dk-sidebar-header-slot", {sh} }
+                        }
                         DocsSidebar {}
+                        if let Some(sf) = sidebar_footer {
+                            div { class: "dk-sidebar-footer-slot mt-auto pt-4", {sf} }
+                        }
                     }
                 }
 
                 // Main content area
-                div { class: "flex-1 min-w-0",
+                div { class: "dk-main flex-1 min-w-0",
                     {children}
                 }
+            }
+
+            // Optional site-wide footer
+            if let Some(ft) = footer {
+                div { class: "dk-footer-slot", {ft} }
             }
         }
 
@@ -286,7 +343,7 @@ pub fn SearchButton(search_open: Signal<bool>) -> Element {
 
     rsx! {
         button {
-            class: "btn btn-ghost btn-sm gap-2",
+            class: "dk-search-trigger btn btn-ghost btn-sm gap-2",
             onclick: move |_| search_open.set(true),
             Icon { class: "size-4", icon: LdSearch }
             span { class: "hidden sm:inline text-base-content/60 text-sm", "Search" }
