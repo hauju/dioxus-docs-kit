@@ -45,9 +45,7 @@ pub fn BlogPostView(slug: String) -> Element {
 
     rsx! {
         ReadingProgressBar {}
-        if let Some(ref site_url) = ctx.site_url {
-            BlogPostMeta { slug: slug.clone(), site_url: site_url.clone() }
-        }
+        BlogPostMeta { slug: slug.clone() }
         div { class: "flex max-w-6xl mx-auto",
             main { class: "flex-1 min-w-0 px-4 py-12 lg:px-12",
                 article { class: "max-w-3xl mx-auto",

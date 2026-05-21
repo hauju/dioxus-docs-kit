@@ -23,14 +23,20 @@ fn join_site_url(site_url: &str, base_path: &str, path: &str) -> String {
 
 /// Injects SEO meta tags and document title for a single docs page (MDX or API endpoint).
 ///
-/// Pulls title/description from the registry — frontmatter for MDX pages, the
-/// OpenAPI operation's `summary`/`description` for API endpoint pages. Emits
-/// `<title>`, `<meta name="description">`, Open Graph, Twitter Card, and
-/// `<link rel="canonical">` so each docs page is a well-formed SEO target.
+/// Reads `auto_meta` and `site_url` from [`DocsContext`]. When `auto_meta` is
+/// off, emits nothing. Otherwise pulls title/description from the registry —
+/// frontmatter for MDX pages, the OpenAPI operation's `summary`/`description`
+/// for API endpoint pages — and emits `<title>`, `<meta name="description">`,
+/// Open Graph and Twitter Card tags. Canonical and `og:url` are only emitted
+/// when `site_url` is also set.
 #[component]
-pub fn DocsPageMeta(path: String, site_url: String) -> Element {
+pub fn DocsPageMeta(path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let ctx = use_context::<DocsContext>();
+
+    if !ctx.auto_meta {
+        return rsx! {};
+    }
 
     let (title, description) = if let Some(op) = registry.get_api_operation(&path) {
         let title = op
@@ -51,18 +57,25 @@ pub fn DocsPageMeta(path: String, site_url: String) -> Element {
         return rsx! {};
     }
 
-    let url = join_site_url(&site_url, &ctx.base_path, &path);
+    let canonical = ctx
+        .site_url
+        .as_deref()
+        .map(|origin| join_site_url(origin, &ctx.base_path, &path));
 
     rsx! {
         document::Title { "{title}" }
         document::Meta { name: "description", content: "{description}" }
-        document::Link { rel: "canonical", href: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Link { rel: "canonical", href: "{url}" }
+        }
 
         // Open Graph
         document::Meta { property: "og:title", content: "{title}" }
         document::Meta { property: "og:description", content: "{description}" }
         document::Meta { property: "og:type", content: "article" }
-        document::Meta { property: "og:url", content: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Meta { property: "og:url", content: "{url}" }
+        }
 
         // Twitter Card
         document::Meta { name: "twitter:card", content: "summary" }

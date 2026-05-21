@@ -28,7 +28,7 @@ fn join_site_url(site_url: &str, base_path: &str, slug: Option<&str>) -> String 
 fn build_article_jsonld(
     title: &str,
     description: &str,
-    url: &str,
+    url: Option<&str>,
     date: &str,
     author_name: &str,
     image: Option<&str>,
@@ -39,12 +39,14 @@ fn build_article_jsonld(
         "headline": title,
         "description": description,
         "datePublished": date,
-        "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": url,
-        },
     });
 
+    if let Some(url) = url {
+        payload["mainEntityOfPage"] = serde_json::json!({
+            "@type": "WebPage",
+            "@id": url,
+        });
+    }
     if !author_name.is_empty() {
         payload["author"] = serde_json::json!({
             "@type": "Person",
@@ -61,10 +63,20 @@ fn build_article_jsonld(
 }
 
 /// Injects Open Graph / SEO meta tags and document title for a single blog post.
+///
+/// Reads `auto_meta` and `site_url` from [`BlogContext`]. When `auto_meta` is
+/// off, emits nothing. Otherwise emits title/description, Open Graph, Twitter
+/// Card, article metadata, and schema.org Article JSON-LD from frontmatter.
+/// Canonical, `og:url`, and the JSON-LD `@id` are only emitted when `site_url`
+/// is also set.
 #[component]
-pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
+pub fn BlogPostMeta(slug: String) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
     let ctx = use_context::<BlogContext>();
+
+    if !ctx.auto_meta {
+        return rsx! {};
+    }
 
     let post = match registry.get_post(&slug) {
         Some(p) => p,
@@ -73,7 +85,10 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
 
     let title = &post.frontmatter.title;
     let description = post.frontmatter.description.as_deref().unwrap_or("");
-    let url = join_site_url(&site_url, &ctx.base_path, Some(&slug));
+    let canonical = ctx
+        .site_url
+        .as_deref()
+        .map(|origin| join_site_url(origin, &ctx.base_path, Some(&slug)));
     let date = &post.frontmatter.date;
     let author_name = registry
         .get_author(&post.frontmatter.author)
@@ -83,7 +98,7 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
     let json_ld = build_article_jsonld(
         title,
         description,
-        &url,
+        canonical.as_deref(),
         date,
         author_name,
         post.frontmatter.cover_image.as_deref(),
@@ -92,13 +107,17 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
     rsx! {
         document::Title { "{title}" }
         document::Meta { name: "description", content: "{description}" }
-        document::Link { rel: "canonical", href: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Link { rel: "canonical", href: "{url}" }
+        }
 
         // Open Graph
         document::Meta { property: "og:title", content: "{title}" }
         document::Meta { property: "og:description", content: "{description}" }
         document::Meta { property: "og:type", content: "article" }
-        document::Meta { property: "og:url", content: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Meta { property: "og:url", content: "{url}" }
+        }
         if let Some(ref cover) = post.frontmatter.cover_image {
             document::Meta { property: "og:image", content: "{cover}" }
         }
@@ -126,19 +145,34 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
 }
 
 /// Injects basic SEO meta tags for the blog index/listing page.
+///
+/// Reads `auto_meta` and `site_url` from [`BlogContext`]. When `auto_meta` is
+/// off, emits nothing. Canonical and `og:url` only emit when `site_url` is set.
 #[component]
-pub fn BlogIndexMeta(title: String, description: String, site_url: String) -> Element {
+pub fn BlogIndexMeta(title: String, description: String) -> Element {
     let ctx = use_context::<BlogContext>();
-    let url = join_site_url(&site_url, &ctx.base_path, None);
+
+    if !ctx.auto_meta {
+        return rsx! {};
+    }
+
+    let canonical = ctx
+        .site_url
+        .as_deref()
+        .map(|origin| join_site_url(origin, &ctx.base_path, None));
 
     rsx! {
         document::Title { "{title}" }
         document::Meta { name: "description", content: "{description}" }
-        document::Link { rel: "canonical", href: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Link { rel: "canonical", href: "{url}" }
+        }
         document::Meta { property: "og:title", content: "{title}" }
         document::Meta { property: "og:description", content: "{description}" }
         document::Meta { property: "og:type", content: "website" }
-        document::Meta { property: "og:url", content: "{url}" }
+        if let Some(ref url) = canonical {
+            document::Meta { property: "og:url", content: "{url}" }
+        }
         document::Meta { name: "twitter:card", content: "summary" }
         document::Meta { name: "twitter:title", content: "{title}" }
         document::Meta { name: "twitter:description", content: "{description}" }
@@ -154,7 +188,7 @@ mod tests {
         let out = build_article_jsonld(
             "Hello",
             "A post",
-            "https://example.com/blog/hello",
+            Some("https://example.com/blog/hello"),
             "2026-05-21",
             "Jane",
             Some("https://example.com/cover.png"),
@@ -176,17 +210,11 @@ mod tests {
 
     #[test]
     fn jsonld_omits_author_and_image_when_missing() {
-        let out = build_article_jsonld(
-            "Hello",
-            "A post",
-            "https://example.com/blog/hello",
-            "2026-05-21",
-            "",
-            None,
-        );
+        let out = build_article_jsonld("Hello", "A post", None, "2026-05-21", "", None);
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert!(parsed.get("author").is_none());
         assert!(parsed.get("image").is_none());
+        assert!(parsed.get("mainEntityOfPage").is_none());
     }
 
     #[test]
@@ -195,7 +223,7 @@ mod tests {
         let out = build_article_jsonld(
             "evil </script><script>alert(1)</script>",
             "",
-            "https://example.com/",
+            Some("https://example.com/"),
             "2026-05-21",
             "",
             None,

@@ -280,6 +280,7 @@ fn MyDocsLayout() -> Element {
             nav.push(Route::DocsPage { slug });
         }),
         site_url: None,
+        auto_meta: true,
     };
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
@@ -370,6 +371,7 @@ fn MyBlogLayout() -> Element {
             }
         }),
         site_url: None,
+        auto_meta: true,
     };
 
     let providers = use_blog_providers(&BLOG, blog_ctx);
@@ -529,6 +531,7 @@ fn Navbar() -> Element {
             nav.push(Route::DocsPage { slug });
         }),
         site_url: None,
+        auto_meta: true,
     });
 
     // Search open signal (consumed by SearchModal via context)
