@@ -6,7 +6,7 @@ use crate::blog::types::{
     extract_blog_frontmatter,
 };
 use crate::config::ThemeConfig;
-use dioxus_mdx::{get_raw_markdown, parse_mdx};
+use dioxus_mdx::{get_raw_markdown, parse_mdx, strip_leading_h1};
 use std::collections::HashMap;
 
 /// Central blog registry holding all parsed content.
@@ -47,7 +47,10 @@ impl BlogRegistry {
                     return None;
                 }
 
-                let nodes = parse_mdx(remaining);
+                // Blog post views render the frontmatter title in their own
+                // <h1>; strip a duplicate body H1 so each page emits exactly one.
+                let body = strip_leading_h1(remaining);
+                let nodes = parse_mdx(body);
                 let raw_markdown = get_raw_markdown(&nodes);
                 let reading_time_minutes = calculate_reading_time(&raw_markdown);
 

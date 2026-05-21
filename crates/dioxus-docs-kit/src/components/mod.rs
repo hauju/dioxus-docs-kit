@@ -1,5 +1,6 @@
 pub mod blog;
 mod docs_layout;
+mod docs_meta;
 mod docs_page;
 mod mobile_drawer;
 mod page_nav;
@@ -10,6 +11,7 @@ mod theme_toggle;
 pub use docs_layout::{
     CurrentTheme, DocsLayout, DocsVariant, DrawerOpen, LayoutOffsets, SearchButton,
 };
+pub use docs_meta::DocsPageMeta;
 pub use docs_page::DocsPageContent;
 pub use mobile_drawer::MobileDrawer;
 pub use page_nav::DocsPageNav;

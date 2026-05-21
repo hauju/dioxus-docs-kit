@@ -23,6 +23,43 @@ fn join_site_url(site_url: &str, base_path: &str, slug: Option<&str>) -> String 
     url
 }
 
+/// Build a schema.org Article JSON-LD string, with `</` escaped to `<\/` so the
+/// payload cannot break out of its `<script>` container.
+fn build_article_jsonld(
+    title: &str,
+    description: &str,
+    url: &str,
+    date: &str,
+    author_name: &str,
+    image: Option<&str>,
+) -> String {
+    let mut payload = serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": title,
+        "description": description,
+        "datePublished": date,
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": url,
+        },
+    });
+
+    if !author_name.is_empty() {
+        payload["author"] = serde_json::json!({
+            "@type": "Person",
+            "name": author_name,
+        });
+    }
+    if let Some(image) = image {
+        payload["image"] = serde_json::Value::String(image.to_string());
+    }
+
+    serde_json::to_string(&payload)
+        .unwrap_or_default()
+        .replace("</", "<\\/")
+}
+
 /// Injects Open Graph / SEO meta tags and document title for a single blog post.
 #[component]
 pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
@@ -43,9 +80,19 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
         .map(|a| a.name.as_str())
         .unwrap_or("");
 
+    let json_ld = build_article_jsonld(
+        title,
+        description,
+        &url,
+        date,
+        author_name,
+        post.frontmatter.cover_image.as_deref(),
+    );
+
     rsx! {
         document::Title { "{title}" }
         document::Meta { name: "description", content: "{description}" }
+        document::Link { rel: "canonical", href: "{url}" }
 
         // Open Graph
         document::Meta { property: "og:title", content: "{title}" }
@@ -72,6 +119,9 @@ pub fn BlogPostMeta(slug: String, site_url: String) -> Element {
         for tag in post.frontmatter.tags.iter() {
             document::Meta { property: "article:tag", content: "{tag}" }
         }
+
+        // schema.org Article JSON-LD for rich-result eligibility.
+        document::Script { r#type: "application/ld+json", "{json_ld}" }
     }
 }
 
@@ -84,6 +134,7 @@ pub fn BlogIndexMeta(title: String, description: String, site_url: String) -> El
     rsx! {
         document::Title { "{title}" }
         document::Meta { name: "description", content: "{description}" }
+        document::Link { rel: "canonical", href: "{url}" }
         document::Meta { property: "og:title", content: "{title}" }
         document::Meta { property: "og:description", content: "{description}" }
         document::Meta { property: "og:type", content: "website" }
@@ -96,7 +147,65 @@ pub fn BlogIndexMeta(title: String, description: String, site_url: String) -> El
 
 #[cfg(test)]
 mod tests {
-    use super::join_site_url;
+    use super::{build_article_jsonld, join_site_url};
+
+    #[test]
+    fn jsonld_includes_required_fields() {
+        let out = build_article_jsonld(
+            "Hello",
+            "A post",
+            "https://example.com/blog/hello",
+            "2026-05-21",
+            "Jane",
+            Some("https://example.com/cover.png"),
+        );
+        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(parsed["@context"], "https://schema.org");
+        assert_eq!(parsed["@type"], "Article");
+        assert_eq!(parsed["headline"], "Hello");
+        assert_eq!(parsed["description"], "A post");
+        assert_eq!(parsed["datePublished"], "2026-05-21");
+        assert_eq!(parsed["author"]["@type"], "Person");
+        assert_eq!(parsed["author"]["name"], "Jane");
+        assert_eq!(parsed["image"], "https://example.com/cover.png");
+        assert_eq!(
+            parsed["mainEntityOfPage"]["@id"],
+            "https://example.com/blog/hello"
+        );
+    }
+
+    #[test]
+    fn jsonld_omits_author_and_image_when_missing() {
+        let out = build_article_jsonld(
+            "Hello",
+            "A post",
+            "https://example.com/blog/hello",
+            "2026-05-21",
+            "",
+            None,
+        );
+        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert!(parsed.get("author").is_none());
+        assert!(parsed.get("image").is_none());
+    }
+
+    #[test]
+    fn jsonld_escapes_script_close_sequence() {
+        // A title containing `</script>` must not break out of the <script> tag.
+        let out = build_article_jsonld(
+            "evil </script><script>alert(1)</script>",
+            "",
+            "https://example.com/",
+            "2026-05-21",
+            "",
+            None,
+        );
+        assert!(
+            !out.contains("</script"),
+            "expected </ sequences to be escaped, got: {out}"
+        );
+        assert!(out.contains("<\\/script"));
+    }
 
     #[test]
     fn joins_site_url_without_duplicate_slashes() {

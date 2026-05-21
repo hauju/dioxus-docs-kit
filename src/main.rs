@@ -279,6 +279,7 @@ fn MyDocsLayout() -> Element {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
+        site_url: None,
     };
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
@@ -472,6 +473,44 @@ async fn llms_full_txt() -> Result<String, ServerFnError> {
 }
 
 // ============================================================================
+// Sitemaps & robots.txt
+// ============================================================================
+//
+// Replace SITE_URL below with your real public URL (no trailing slash) when
+// deploying. Crawlers use the canonical host in the sitemap URLs, so a
+// placeholder here will produce links nobody can follow.
+
+const SITE_URL: &str = "https://example.com";
+
+#[get("/sitemap.xml")]
+async fn sitemap_index() -> Result<String, ServerFnError> {
+    Ok(format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+         <sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
+         <sitemap><loc>{SITE_URL}/sitemap-docs.xml</loc></sitemap>\n\
+         <sitemap><loc>{SITE_URL}/sitemap-blog.xml</loc></sitemap>\n\
+         </sitemapindex>\n"
+    ))
+}
+
+#[get("/sitemap-docs.xml")]
+async fn sitemap_docs() -> Result<String, ServerFnError> {
+    Ok(DOCS.generate_sitemap(SITE_URL, "/docs"))
+}
+
+#[get("/sitemap-blog.xml")]
+async fn sitemap_blog() -> Result<String, ServerFnError> {
+    Ok(BLOG.generate_sitemap(SITE_URL, "/blog"))
+}
+
+#[get("/robots.txt")]
+async fn robots_txt() -> Result<String, ServerFnError> {
+    Ok(format!(
+        "User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n"
+    ))
+}
+
+// ============================================================================
 // App-specific pages (Navbar, Home)
 // ============================================================================
 
@@ -489,6 +528,7 @@ fn Navbar() -> Element {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
+        site_url: None,
     });
 
     // Search open signal (consumed by SearchModal via context)

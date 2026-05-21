@@ -107,7 +107,7 @@ pub use parser::{
     ParameterLocation, ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode,
     SchemaDefinition, SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode,
     extract_frontmatter, get_raw_markdown, highlight_code, parse_document, parse_mdx,
-    parse_openapi, syntax_highlight_css,
+    parse_openapi, strip_leading_h1, syntax_highlight_css,
 };
 
 // Re-export components
