@@ -2,7 +2,6 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdChevronLeft, LdChevronRight};
 
-use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
 
 use super::blog_card::BlogCard;
@@ -13,7 +12,6 @@ use super::tag_filter::TagFilter;
 #[component]
 pub fn BlogList(hero: Option<Element>) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
-    let ctx = use_context::<BlogContext>();
     let active_tag = use_context::<Signal<Option<String>>>();
     let mut current_page = use_context::<Signal<usize>>();
 
@@ -44,26 +42,20 @@ pub fn BlogList(hero: Option<Element>) -> Element {
 
     rsx! {
         div { class: "max-w-6xl mx-auto px-4 py-12",
-            if let Some(ref site_url) = ctx.site_url {
-                {
-                    let active_tag = active_tag();
-                    let (title, description) = match active_tag.as_deref() {
-                        Some(tag) => (
-                            format!("Blog: {tag}"),
-                            format!("Browse blog posts tagged {tag}."),
-                        ),
-                        None => (
-                            "Blog".to_string(),
-                            "Latest blog posts and updates.".to_string(),
-                        ),
-                    };
-                    rsx! {
-                        BlogIndexMeta {
-                            title,
-                            description,
-                            site_url: site_url.clone(),
-                        }
-                    }
+            {
+                let active_tag = active_tag();
+                let (title, description) = match active_tag.as_deref() {
+                    Some(tag) => (
+                        format!("Blog: {tag}"),
+                        format!("Browse blog posts tagged {tag}."),
+                    ),
+                    None => (
+                        "Blog".to_string(),
+                        "Latest blog posts and updates.".to_string(),
+                    ),
+                };
+                rsx! {
+                    BlogIndexMeta { title, description }
                 }
             }
             if let Some(hero) = hero {

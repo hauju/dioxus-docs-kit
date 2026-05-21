@@ -60,8 +60,19 @@ pub struct DocsContext {
     pub base_path: String,
     /// Callback to navigate to a docs page by content path.
     pub navigate: Callback<String>,
-    /// Optional full site URL for SEO meta tags (e.g. "https://example.com").
+    /// Optional full site URL (e.g. "https://example.com"). Used as the canonical
+    /// host for emitted `<link rel="canonical">` and `og:url` tags. Independent
+    /// of [`auto_meta`](Self::auto_meta) — set it whenever you want kit helpers
+    /// (sitemap generation, canonical URLs) to know the public origin, even if
+    /// you suppress automatic meta emission.
     pub site_url: Option<String>,
+    /// When true, the kit emits per-page `<title>`, `<meta name="description">`,
+    /// Open Graph and Twitter Card tags from frontmatter. Set to `false` if your
+    /// app manages its own `<head>` (e.g. brand-specific OG images, structured
+    /// data) and the kit's emissions would conflict. Title and description tags
+    /// always emit when this is on; canonical and `og:url` only emit when
+    /// [`site_url`](Self::site_url) is also set.
+    pub auto_meta: bool,
 }
 
 // ============================================================================
@@ -79,8 +90,19 @@ pub struct BlogContext {
     pub base_path: String,
     /// Callback to navigate to a blog post by slug (empty string = blog index).
     pub navigate: Callback<String>,
-    /// Optional full site URL for SEO meta tags (e.g. "https://example.com").
+    /// Optional full site URL (e.g. "https://example.com"). Used as the canonical
+    /// host for emitted `<link rel="canonical">`, `og:url`, and JSON-LD URLs.
+    /// Independent of [`auto_meta`](Self::auto_meta) — set it whenever you want
+    /// kit helpers (sitemap/RSS, canonical URLs) to know the public origin, even
+    /// if you suppress automatic meta emission.
     pub site_url: Option<String>,
+    /// When true, the kit emits per-page `<title>`, `<meta name="description">`,
+    /// Open Graph, Twitter Card, and Article JSON-LD tags from frontmatter. Set
+    /// to `false` if your app manages its own `<head>` (e.g. brand-specific OG
+    /// images, structured data) and the kit's emissions would conflict. Title
+    /// and description tags always emit when this is on; canonical, `og:url`,
+    /// and JSON-LD `@id` only emit when [`site_url`](Self::site_url) is also set.
+    pub auto_meta: bool,
 }
 
 // ============================================================================
