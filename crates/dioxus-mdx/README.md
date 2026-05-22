@@ -81,13 +81,9 @@ The `EndpointPage` component renders a two-column Mintlify-style API reference f
 
 ## Syntax Highlighting
 
-Code blocks get automatic syntax highlighting via [syntect](https://crates.io/crates/syntect):
+Code blocks get automatic syntax highlighting via [dioxus-code](https://crates.io/crates/dioxus-code). `DocCodeBlock` and `DocCodeGroup` render through it on both server and wasm targets — no extra wiring required.
 
-```rust
-use dioxus_mdx::highlight_code;
-
-let html = highlight_code("let x = 42;", Some("rust"));
-```
+The crate ships a common set of languages baked in (bash, c#, c++, css, dockerfile, html, javascript, json, markdown, python, rust, toml, tsx, typescript, yaml). To support more, add `dioxus-code` directly to your `Cargo.toml` with the desired `lang-*` features — Cargo unifies them into the transitive dep, so no fork or wrapper feature is needed.
 
 ## Styling Setup
 

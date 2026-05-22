@@ -106,8 +106,8 @@ pub use parser::{
     MediaTypeContent, OpenApiError, OpenApiNode, OpenApiSpec, ParamFieldNode, ParamLocation,
     ParameterLocation, ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode,
     SchemaDefinition, SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode,
-    extract_frontmatter, get_raw_markdown, highlight_code, parse_document, parse_mdx,
-    parse_openapi, strip_leading_h1, syntax_highlight_css,
+    extract_frontmatter, get_raw_markdown, parse_document, parse_mdx, parse_openapi,
+    strip_leading_h1,
 };
 
 // Re-export components

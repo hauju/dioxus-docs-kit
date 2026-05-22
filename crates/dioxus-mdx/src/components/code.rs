@@ -3,11 +3,12 @@
 //! Features syntax highlighting for common programming languages.
 
 use dioxus::prelude::*;
+use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 #[cfg(feature = "mermaid")]
 use super::mermaid::MermaidDiagram;
-use crate::parser::{CodeBlockNode, CodeGroupNode, highlight_code};
+use crate::parser::{CodeBlockNode, CodeGroupNode};
 
 /// Props for DocCodeBlock component.
 #[derive(Props, Clone, PartialEq)]
@@ -29,11 +30,8 @@ pub fn DocCodeBlock(props: DocCodeBlockProps) -> Element {
     let code = props.block.code.clone();
     let code_for_copy = code.clone();
 
-    // Apply syntax highlighting
-    let highlighted = highlight_code(&code, props.block.language.as_deref());
-
     rsx! {
-        div { class: "my-6 relative group rounded-lg border border-base-content/10 overflow-hidden",
+        div { class: "dk-code-block my-6 relative group inline-block max-w-full rounded-lg border border-base-content/10 overflow-hidden",
             // Language label and filename - refined header
             if props.block.language.is_some() || props.block.filename.is_some() {
                 div { class: "flex items-center justify-between bg-base-200/80 px-4 py-2.5 border-b border-base-content/10 text-sm",
@@ -53,15 +51,16 @@ pub fn DocCodeBlock(props: DocCodeBlockProps) -> Element {
             }
 
             // Code content with syntax highlighting
-            pre {
+            div {
                 class: if props.block.language.is_some() || props.block.filename.is_some() {
-                    "bg-base-200 px-4 py-4 overflow-x-auto syntax-highlight mt-0"
+                    "dk-code-block-body bg-base-200"
                 } else {
-                    "bg-base-200 p-4 overflow-x-auto relative syntax-highlight"
+                    "dk-code-block-body dk-code-block-body--bare bg-base-200 relative"
                 },
-                code {
-                    class: "text-sm font-mono leading-relaxed",
-                    dangerous_inner_html: "{highlighted}",
+                HighlightedCode {
+                    code: code.clone(),
+                    language: props.block.language.clone(),
+                    filename: props.block.filename.clone(),
                 }
                 // Copy button for blocks without header
                 if props.block.language.is_none() && props.block.filename.is_none() {
@@ -90,7 +89,7 @@ pub fn DocCodeGroup(props: DocCodeGroupProps) -> Element {
     let mut active_tab = use_signal(|| 0usize);
 
     rsx! {
-        div { class: "my-6 rounded-lg border border-base-content/10 overflow-hidden",
+        div { class: "dk-code-block my-6 inline-block max-w-full rounded-lg border border-base-content/10 overflow-hidden",
             // Tab headers - refined styling with subtle shadows
             div { class: "flex items-center bg-base-200/80 border-b border-base-content/10",
                 for (i, block) in props.group.blocks.iter().enumerate() {
@@ -133,18 +132,12 @@ fn CodeGroupBlock(props: CodeGroupBlockProps) -> Element {
     let copied = use_signal(|| false);
     let code = props.block.code.clone();
 
-    // Apply syntax highlighting
-    let highlighted = highlight_code(&code, props.block.language.as_deref());
-
     rsx! {
-        div { class: "relative group",
-            // mt-0 overrides prose typography margins
-            pre {
-                class: "bg-base-200 px-4 py-4 overflow-x-auto syntax-highlight mt-0",
-                code {
-                    class: "text-sm font-mono leading-relaxed",
-                    dangerous_inner_html: "{highlighted}",
-                }
+        div { class: "dk-code-group-block bg-base-200 relative group",
+            HighlightedCode {
+                code: code.clone(),
+                language: props.block.language.clone(),
+                filename: props.block.filename.clone(),
             }
             div { class: "absolute top-3 right-3",
                 CopyButton {
@@ -153,6 +146,55 @@ fn CodeGroupBlock(props: CodeGroupBlockProps) -> Element {
                 }
             }
         }
+    }
+}
+
+#[derive(Props, Clone, PartialEq)]
+struct HighlightedCodeProps {
+    code: String,
+    language: Option<String>,
+    filename: Option<String>,
+}
+
+#[component]
+fn HighlightedCode(props: HighlightedCodeProps) -> Element {
+    let language = code_language(props.language.as_deref(), props.filename.as_deref());
+    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
+
+    rsx! {
+        Code {
+            src: SourceCode::new(language, props.code),
+            theme,
+        }
+    }
+}
+
+pub(crate) fn code_language(language: Option<&str>, filename: Option<&str>) -> Language {
+    language
+        .and_then(language_from_alias)
+        .or_else(|| filename.and_then(Language::detect))
+        .or_else(|| language.and_then(Language::detect))
+        .unwrap_or(Language::Markdown)
+}
+
+fn language_from_alias(language: &str) -> Option<Language> {
+    let normalized = language.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "bash" | "sh" | "shell" | "zsh" | "console" | "terminal" => Some(Language::Bash),
+        "c++" | "cc" | "cxx" | "hpp" => Some(Language::Cpp),
+        "c#" | "cs" => Some(Language::CSharp),
+        "docker" | "dockerfile" | "containerfile" => Some(Language::Dockerfile),
+        "html" | "htm" => Some(Language::Html),
+        "js" | "javascript" | "jsx" | "mjs" | "cjs" => Some(Language::JavaScript),
+        "json" | "jsonc" => Some(Language::Json),
+        "markdown" | "md" | "mdx" => Some(Language::Markdown),
+        "py" | "python" => Some(Language::Python),
+        "rs" | "rust" => Some(Language::Rust),
+        "ts" | "typescript" => Some(Language::TypeScript),
+        "tsx" => Some(Language::Tsx),
+        "toml" => Some(Language::Toml),
+        "yaml" | "yml" => Some(Language::Yaml),
+        other => Language::from_slug(other),
     }
 }
 

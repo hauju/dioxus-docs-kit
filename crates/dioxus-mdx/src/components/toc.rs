@@ -29,7 +29,7 @@ pub fn DocTableOfContents(props: DocTableOfContentsProps) -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         let header_ids_for_effect = header_ids.clone();
-        use_effect(move || {
+        use_effect(use_reactive!(|header_ids_for_effect| {
             let ids = header_ids_for_effect.clone();
             if ids.is_empty() {
                 return;
@@ -105,7 +105,7 @@ pub fn DocTableOfContents(props: DocTableOfContentsProps) -> Element {
             spawn(async move {
                 let _ = document::eval(&js);
             });
-        });
+        }));
     }
 
     if props.headers.is_empty() {

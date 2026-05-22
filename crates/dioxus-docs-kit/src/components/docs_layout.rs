@@ -4,7 +4,6 @@ use dioxus_free_icons::icons::ld_icons::LdMenu;
 
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-use dioxus_mdx::syntax_highlight_css;
 
 /// Layout offset values computed by `DocsLayout` and consumed by child components
 /// (e.g. `DocsPageContent`) via context.
@@ -220,9 +219,6 @@ pub fn DocsLayout(
     use_context_provider(|| offsets.clone());
 
     rsx! {
-        // Syntax highlighting theme-aware CSS (injected into <head> once)
-        SyntaxStyles {}
-
         div { class: "dk-root dk-docs-root {variant.class()} min-h-screen bg-base-100",
             // Optional announcement bar (rendered above everything)
             if let Some(bar) = announcement_bar {
@@ -317,23 +313,6 @@ pub fn DocsLayout(
         MobileDrawer { open: drawer_open }
         SearchModal {}
     }
-}
-
-/// Injects syntax highlighting CSS into `<head>` exactly once.
-///
-/// Separated from `DocsLayout` so re-renders of the layout don't
-/// trigger the "Changing the props of Style {} is not supported" warning.
-#[component]
-fn SyntaxStyles() -> Element {
-    use std::sync::atomic::{AtomicBool, Ordering};
-    static INJECTED: AtomicBool = AtomicBool::new(false);
-
-    if INJECTED.swap(true, Ordering::Relaxed) {
-        return rsx! {};
-    }
-
-    let css = syntax_highlight_css();
-    rsx! { document::Style { {css} } }
 }
 
 /// Reusable search button component for headers.
