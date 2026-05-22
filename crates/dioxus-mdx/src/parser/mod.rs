@@ -16,7 +16,6 @@ mod openapi_parser;
 mod openapi_tag;
 mod openapi_types;
 mod steps;
-mod syntax;
 mod tabs;
 mod types;
 mod update;
@@ -27,7 +26,6 @@ pub use frontmatter::extract_frontmatter;
 pub use heading::strip_leading_h1;
 pub use openapi_parser::{OpenApiError, parse_openapi};
 pub use openapi_types::*;
-pub use syntax::{highlight_code, syntax_highlight_css};
 pub use types::*;
 
 /// Parse a complete MDX document, extracting frontmatter and content.

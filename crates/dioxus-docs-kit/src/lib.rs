@@ -122,8 +122,10 @@ pub use hooks::{DocsProviders, use_docs_providers};
 
 pub use dioxus_mdx::{
     ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
-    ParsedDoc, extract_headers, highlight_code,
+    ParsedDoc, extract_headers,
 };
+
+pub use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 
 #[cfg(feature = "mermaid")]
 pub use dioxus_mdx::MermaidDiagram;

@@ -267,6 +267,28 @@ community contribution.
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 
+## Syntax Highlighting
+
+Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code). The kit ships highlighting for a common set of languages out of the box:
+
+`bash`, `c#`, `c++`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `tsx`, `typescript`, `yaml`
+
+To add another language (e.g. Go, Zig, Kotlin), depend on `dioxus-code` directly with its `lang-*` feature flag — Cargo unifies it into the kit's transitive dependency, so no kit changes are needed:
+
+```toml
+[dependencies]
+dioxus-docs-kit = "0.5"
+dioxus-code = { version = "0.1", default-features = false, features = ["lang-go", "lang-zig"] }
+```
+
+For everything dioxus-code supports in one go:
+
+```toml
+dioxus-code = { version = "0.1", default-features = false, features = ["all-languages"] }
+```
+
+See the [dioxus-code feature list](https://github.com/DioxusLabs/dioxus-code/blob/main/Cargo.toml) for every available `lang-*` flag.
+
 ## License
 
 MIT

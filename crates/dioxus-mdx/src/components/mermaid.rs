@@ -35,7 +35,7 @@ pub fn MermaidDiagram(props: MermaidDiagramProps) -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         let element_id = id().clone();
-        use_effect(move || {
+        use_effect(use_reactive!(|element_id, code| {
             let element_id = element_id.clone();
             let code = code.clone();
             spawn(async move {
@@ -109,7 +109,7 @@ pub fn MermaidDiagram(props: MermaidDiagramProps) -> Element {
                 );
                 let _ = document::eval(&js);
             });
-        });
+        }));
     }
 
     rsx! {

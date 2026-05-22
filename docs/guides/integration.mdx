@@ -22,10 +22,10 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
 
     ```toml
     [dependencies]
-    dioxus-docs-kit = { version = "0.2", default-features = false }
+    dioxus-docs-kit = { version = "0.5", default-features = false }
 
     [build-dependencies]
-    dioxus-docs-kit-build = "0.2"
+    dioxus-docs-kit-build = "0.5"
 
     [features]
     default = ["web"]
@@ -151,6 +151,12 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
                     path.split('/').map(String::from).collect();
                 nav.push(Route::DocsPage { slug });
             }),
+            // Public origin used for canonical URLs and sitemap entries.
+            // Set to `Some("https://your-site.com".into())` in production.
+            site_url: None,
+            // Emit per-page title / description / OG / Twitter tags from
+            // frontmatter. Set to `false` if your app manages its own <head>.
+            auto_meta: true,
         };
 
         let providers = use_docs_providers(&*DOCS, docs_ctx);

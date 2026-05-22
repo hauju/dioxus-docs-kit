@@ -114,3 +114,26 @@
 .dk-footer-slot {
     /* Wrapper hooks around optional <DocsLayout> slots. */
 }
+
+/* -------------------------------------------------------------------------- */
+/* Code blocks — dioxus-code container fit                                    */
+/* dioxus-code renders into a `.dxc` element with its own padding and radii. */
+/* Tame it so it inherits the kit's container chrome and wraps long lines.   */
+/* -------------------------------------------------------------------------- */
+
+.dk-code-block .dxc {
+    border-radius: 0;
+    font-size: 0.875rem;
+    line-height: 1.625;
+    margin: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+    padding: 1rem;
+    white-space: pre-wrap;
+}
+
+.dk-code-block-body--bare .dxc,
+.dk-code-group-block .dxc {
+    padding-right: 3.5rem;
+}

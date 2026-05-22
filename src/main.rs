@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
     BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogSearchButton,
-    BlogThemeToggle, CurrentTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
-    DocsRegistry, SearchButton, SearchModal, ThemeToggle, highlight_code, use_blog_providers,
-    use_docs_providers,
+    BlogThemeToggle, Code, CodeTheme, CurrentTheme, DocsConfig, DocsContext, DocsLayout,
+    DocsPageContent, DocsRegistry, Language, SearchButton, SearchModal, SourceCode, Theme,
+    ThemeToggle, use_blog_providers, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -267,10 +267,10 @@ fn MyDocsLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_path = use_memo(move || match route.clone() {
+    let current_path = use_memo(use_reactive!(|route| match route {
         Route::DocsPage { slug } => slug.join("/"),
         _ => String::new(),
-    });
+    }));
 
     let docs_ctx = DocsContext {
         current_path: current_path.into(),
@@ -355,10 +355,10 @@ fn MyBlogLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_slug = use_memo(move || match route.clone() {
+    let current_slug = use_memo(use_reactive!(|route| match route {
         Route::BlogPage { slug } => slug,
         _ => String::new(),
-    });
+    }));
 
     let blog_ctx = BlogContext {
         current_slug: current_slug.into(),
@@ -911,9 +911,10 @@ fn CodeSection() -> Element {
                         }
                         span { class: "text-xs text-base-content/40 ml-2 font-mono", "main.rs" }
                     }
-                    pre { class: "p-4 overflow-x-auto text-sm font-mono leading-relaxed text-base-content/80",
-                        code {
-                            dangerous_inner_html: highlight_code(CODE_SNIPPET, Some("rust")),
+                    div { class: "dk-code-block-body bg-base-200",
+                        Code {
+                            src: SourceCode::new(Language::Rust, CODE_SNIPPET.to_string()),
+                            theme: CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT),
                         }
                     }
                 }

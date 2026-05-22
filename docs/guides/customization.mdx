@@ -21,6 +21,89 @@ DaisyUI themes control all component colors automatically. To use a different bu
 See the full list of built-in DaisyUI themes at [daisyui.com/docs/themes](https://daisyui.com/docs/themes/).
 </Tip>
 
+## Density Variants
+
+`DocsLayout` accepts a `variant` prop with two built-in density presets:
+
+```rust
+use dioxus_docs_kit::{DocsLayout, DocsVariant};
+
+DocsLayout { variant: DocsVariant::Reference, Outlet::<Route> {} }
+```
+
+| Variant | Feel | `--dk-article-width` |
+|---------|------|----------------------|
+| `Prose` (default) | Wide margins, serif-friendly, long-form reading | `72ch` |
+| `Reference` | Tighter column, smaller type, denser headings | `64ch` |
+
+The variant emits a class on `dk-root` (`dk-variant-prose` / `dk-variant-reference`) so you can layer further CSS tweaks per variant.
+
+## CSS Token Surface
+
+Visual identity lives in a flat set of `--dk-*` custom properties on `dk-root`. Override any subset to retheme without touching DaisyUI — useful when you need a brand look that DaisyUI's palette doesn't cover:
+
+```css
+.dk-root {
+  --dk-article-width: 68ch;
+  --dk-heading-font: "Inter Tight", system-ui, sans-serif;
+  --dk-accent: oklch(0.65 0.20 250);
+  --dk-radius: 0.25rem;
+}
+```
+
+### Pre-built theme presets
+
+The crate ships drop-in presets in `crates/dioxus-docs-kit/examples/themes/`:
+
+- `warm-editorial.css` — amber accent, serif headings, cream surfaces
+- `brutalist-light.css` — high contrast, zero radius, monospace
+- `shadcn-light.css` / `shadcn-dark.css` — shadcn-style neutrals
+- `default.css` — baseline (nothing overridden)
+
+Copy any of them into your `assets/` and import via `document::Stylesheet`. See `crates/dioxus-docs-kit/THEMING.md` for the full token reference.
+
+## SEO Meta
+
+Set `auto_meta: true` on your `DocsContext` (the default in fresh integrations) and the kit emits `<title>`, `<meta name="description">`, OpenGraph, and Twitter Card tags from each page's frontmatter:
+
+```rust
+let docs_ctx = DocsContext {
+    current_path: current_path.into(),
+    base_path: "/docs".into(),
+    navigate: /* ... */,
+    site_url: Some("https://your-site.com".into()),
+    auto_meta: true,
+};
+```
+
+- `auto_meta = true` emits title and description unconditionally.
+- Canonical URLs (`<link rel="canonical">`) and `og:url` only emit when `site_url` is also set.
+- Set `auto_meta = false` if your app already manages `<head>` (custom OG images, JSON-LD, etc.) and you want to avoid duplicate tags.
+
+## Sitemap Generation
+
+`DocsRegistry::generate_sitemap(site_url, docs_path)` returns a fully-formed XML sitemap for every doc page. Wire it up as a server function so crawlers can fetch it:
+
+```rust
+const SITE_URL: &str = "https://your-site.com";
+
+#[get("/sitemap-docs.xml")]
+async fn sitemap_docs() -> Result<String, ServerFnError> {
+    Ok(DOCS.generate_sitemap(SITE_URL, "/docs"))
+}
+
+#[get("/robots.txt")]
+async fn robots_txt() -> Result<String, ServerFnError> {
+    Ok(format!(
+        "User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap-docs.xml\n"
+    ))
+}
+```
+
+<Note>
+If you also use the blog engine, `BlogRegistry` exposes the same `generate_sitemap()` method — combine both behind a `sitemap.xml` index. See `src/main.rs` in the example for the full pattern.
+</Note>
+
 ## Configuring Navigation
 
 Navigation is defined in `docs/_nav.json`. The structure supports **tabs**, **groups**, and **pages**:
@@ -57,16 +140,16 @@ Each page path must correspond to a `.mdx` file in the `docs/` directory. The `b
   <Step title="Create the MDX file">
     Create `docs/my-section/my-page.mdx` with frontmatter:
 
-    ```mdx
-    ---
-    title: My Page
-    description: A brief description
-    sidebarTitle: My Page
-    icon: file-text
-    ---
+```mdx
+---
+title: My Page
+description: A brief description
+sidebarTitle: My Page
+icon: file-text
+---
 
-    Your content here.
-    ```
+Your content here.
+```
   </Step>
 
   <Step title="Add to _nav.json">

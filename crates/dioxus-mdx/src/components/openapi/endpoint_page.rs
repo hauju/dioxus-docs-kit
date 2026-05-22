@@ -1,8 +1,9 @@
 //! Two-column Mintlify-style endpoint page component.
 
 use dioxus::prelude::*;
+use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 
-use crate::parser::{ApiOperation, OpenApiSpec, highlight_code};
+use crate::parser::{ApiOperation, OpenApiSpec};
 
 use super::method_badge::MethodBadge;
 use super::parameters_list::ParametersList;
@@ -34,9 +35,8 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
         .unwrap_or("https://api.example.com");
 
     let curl = op.generate_curl(base_url);
-    let curl_highlighted = highlight_code(&curl, Some("bash"));
-
     let response_example = op.generate_response_example();
+    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
 
     let method_bg = op.method.bg_class();
 
@@ -130,10 +130,10 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                     "{op.path}"
                                 }
                             }
-                            pre { class: "bg-base-200 p-4 overflow-x-auto syntax-highlight",
-                                code {
-                                    class: "text-sm font-mono leading-relaxed",
-                                    dangerous_inner_html: "{curl_highlighted}",
+                            div { class: "dk-code-block-body bg-base-200",
+                                Code {
+                                    src: SourceCode::new(Language::Bash, curl.clone()),
+                                    theme,
                                 }
                             }
                         }
@@ -142,7 +142,6 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                     // Response example
                     if let Some((status_code, response_json)) = &response_example {
                         {
-                            let json_highlighted = highlight_code(response_json, Some("json"));
                             let status_color = if status_code.starts_with('2') {
                                 "badge-success"
                             } else if status_code.starts_with('3') {
@@ -164,10 +163,13 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                                 "application/json"
                                             }
                                         }
-                                        pre { class: "bg-base-200 p-4 overflow-x-auto syntax-highlight max-h-[60vh]",
-                                            code {
-                                                class: "text-sm font-mono leading-relaxed",
-                                                dangerous_inner_html: "{json_highlighted}",
+                                        div { class: "dk-code-block-body bg-base-200 max-h-[60vh] overflow-y-auto",
+                                            Code {
+                                                src: SourceCode::new(
+                                                    Language::Json,
+                                                    response_json.clone(),
+                                                ),
+                                                theme,
                                             }
                                         }
                                     }
