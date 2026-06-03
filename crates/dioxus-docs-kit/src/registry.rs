@@ -189,6 +189,35 @@ impl DocsRegistry {
         })
     }
 
+    /// Get the page title for the document `<head>`.
+    ///
+    /// Resolves MDX frontmatter titles *and* OpenAPI operation pages (which are
+    /// not in `parsed_docs`): for an endpoint path it returns the operation
+    /// summary, falling back to a humanised slug. Branding/suffixes are left to
+    /// the caller.
+    pub fn get_page_title(&self, path: &str) -> Option<String> {
+        if let Some(op) = self.get_api_operation(path) {
+            return op
+                .summary
+                .clone()
+                .or_else(|| Some(op.slug().replace('-', " ")));
+        }
+        self.get_doc_title(path)
+    }
+
+    /// Get the meta description for the document `<head>`.
+    ///
+    /// Resolves MDX frontmatter descriptions *and* OpenAPI operation
+    /// descriptions, so endpoint pages ship a unique `<meta name="description">`
+    /// instead of falling through to a generic default.
+    pub fn get_page_description(&self, path: &str) -> Option<String> {
+        if let Some(op) = self.get_api_operation(path) {
+            return op.description.clone();
+        }
+        self.get_parsed_doc(path)
+            .and_then(|doc| doc.frontmatter.description.clone())
+    }
+
     /// Get the icon for a documentation path from frontmatter.
     pub fn get_doc_icon(&self, path: &str) -> Option<String> {
         self.get_parsed_doc(path)
