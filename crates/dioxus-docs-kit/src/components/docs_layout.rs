@@ -1,8 +1,11 @@
 use dioxus::prelude::*;
+use dioxus_code::CodeTheme;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdMenu;
+use dioxus_mdx::CodeThemeOverride;
 
 use crate::DocsContext;
+use crate::config::CodeThemeConfig;
 use crate::registry::DocsRegistry;
 
 /// Layout offset values computed by `DocsLayout` and consumed by child components
@@ -136,6 +139,26 @@ pub fn DocsLayout(
 
     let mut current_theme = use_signal(|| theme_default.clone());
     use_context_provider(|| CurrentTheme(current_theme));
+
+    // Resolve the code-block syntax theme. When a light/dark toggle is configured, the
+    // choice tracks the active `data-theme` so code backgrounds match the site toggle
+    // rather than the reader's OS `prefers-color-scheme`. Provided reactively so blocks
+    // restyle when the theme switches. (See `CodeThemeOverride` in dioxus-mdx.)
+    let code_theme_config = registry.code_theme;
+    let toggle_dark = registry
+        .theme
+        .as_ref()
+        .and_then(|t| t.toggle_themes.as_ref())
+        .map(|(_, dark)| dark.clone());
+    let code_theme = use_memo(move || match code_theme_config {
+        CodeThemeConfig::Fixed(theme) => CodeTheme::fixed(theme),
+        CodeThemeConfig::Adaptive { light, dark } => match &toggle_dark {
+            Some(dark_name) if current_theme() == *dark_name => CodeTheme::fixed(dark),
+            Some(_) => CodeTheme::fixed(light),
+            None => CodeTheme::system(light, dark),
+        },
+    });
+    use_context_provider(|| CodeThemeOverride(code_theme.into()));
 
     // On mount: read stored preference and apply data-theme
     use_effect(move || {

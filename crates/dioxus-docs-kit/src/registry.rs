@@ -2,7 +2,7 @@
 //!
 //! Holds parsed docs, nav config, search index, and OpenAPI specs.
 
-use crate::config::{DocsConfig, ThemeConfig};
+use crate::config::{CodeThemeConfig, DocsConfig, ThemeConfig};
 use dioxus_mdx::{
     ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, parse_openapi,
 };
@@ -82,6 +82,8 @@ pub struct DocsRegistry {
     pub api_group_name: String,
     /// Optional theme configuration.
     pub theme: Option<ThemeConfig>,
+    /// Syntax-highlighting theme for code blocks.
+    pub code_theme: CodeThemeConfig,
 }
 
 impl DocsRegistry {
@@ -126,6 +128,7 @@ impl DocsRegistry {
             .unwrap_or_else(|| "API Reference".to_string());
 
         let theme = config.theme_config().cloned();
+        let code_theme = config.code_theme_value();
 
         // Warn if OpenAPI specs were registered but no nav group matches api_group_name
         if !openapi_specs.is_empty() && !nav.groups.iter().any(|g| g.group == api_group_name) {
@@ -149,6 +152,7 @@ impl DocsRegistry {
             default_path,
             api_group_name,
             theme,
+            code_theme,
         }
     }
 

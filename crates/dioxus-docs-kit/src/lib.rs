@@ -109,7 +109,7 @@ pub struct BlogContext {
 // Docs re-exports
 // ============================================================================
 
-pub use config::{DocsConfig, ThemeConfig};
+pub use config::{CodeThemeConfig, DocsConfig, ThemeConfig};
 pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
@@ -121,8 +121,8 @@ pub use components::{
 pub use hooks::{DocsProviders, use_docs_providers};
 
 pub use dioxus_mdx::{
-    ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
-    ParsedDoc, extract_headers,
+    ApiOperation, ApiTag, CodeThemeOverride, DocContent, DocTableOfContents, EndpointPage,
+    HttpMethod, OpenApiSpec, ParsedDoc, extract_headers,
 };
 
 pub use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
