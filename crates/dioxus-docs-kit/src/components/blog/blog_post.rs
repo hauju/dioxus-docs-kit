@@ -98,8 +98,7 @@ pub fn BlogPostView(slug: String) -> Element {
                         prose-h3:text-xl prose-h3:font-medium prose-h3:mt-8 prose-h3:mb-3
                         prose-p:text-base-content/80 prose-p:leading-relaxed
                         prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                        prose-code:bg-base-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-                        prose-pre:bg-base-200 prose-pre:border prose-pre:border-base-300",
+                        prose-code:bg-base-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
                         DocContent { nodes: post.content.clone() }
                     }
 
