@@ -10,6 +10,18 @@ use dioxus_free_icons::{Icon, icons::ld_icons::*};
 use super::mermaid::MermaidDiagram;
 use crate::parser::{CodeBlockNode, CodeGroupNode};
 
+/// Reactive override for the syntax-highlighting theme used by rendered code blocks.
+///
+/// Provide this context above [`MdxContent`](crate::MdxContent) (or any component that
+/// renders [`DocCodeBlock`]) to control the code theme — for example to track a
+/// site-wide light/dark toggle driven by the `data-theme` attribute.
+///
+/// When no override is provided, code blocks fall back to
+/// `CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT)`, which switches on the
+/// reader's OS `prefers-color-scheme`.
+#[derive(Clone, Copy)]
+pub struct CodeThemeOverride(pub ReadSignal<CodeTheme>);
+
 /// Props for DocCodeBlock component.
 #[derive(Props, Clone, PartialEq)]
 pub struct DocCodeBlockProps {
@@ -159,7 +171,10 @@ struct HighlightedCodeProps {
 #[component]
 fn HighlightedCode(props: HighlightedCodeProps) -> Element {
     let language = code_language(props.language.as_deref(), props.filename.as_deref());
-    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
+    let theme = match try_use_context::<CodeThemeOverride>() {
+        Some(CodeThemeOverride(theme)) => theme(),
+        None => CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT),
+    };
 
     rsx! {
         Code {
