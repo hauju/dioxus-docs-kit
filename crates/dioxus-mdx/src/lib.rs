@@ -118,12 +118,11 @@ pub use dioxus_code::{CodeTheme, Theme};
 pub use components::{
     ApiInfoHeader, CodeThemeOverride, DocAccordionGroup, DocAccordionItem, DocCallout, DocCard,
     DocCardGroup, DocCodeBlock, DocCodeGroup, DocContent, DocExpandable, DocNodeRenderer,
-    DocParamField,
-    DocRequestExample, DocResponseExample, DocResponseField, DocSteps, DocTableOfContents, DocTabs,
-    DocUpdate, EndpointCard, EndpointPage, MdxContent, MdxIcon, MdxRenderer, MethodBadge,
-    OpenApiViewer, ParameterItem, ParametersList, RequestBodySection, ResponseItem, ResponsesList,
-    SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup, UngroupedEndpoints,
-    extract_headers, slugify,
+    DocParamField, DocRequestExample, DocResponseExample, DocResponseField, DocSteps,
+    DocTableOfContents, DocTabs, DocUpdate, EndpointCard, EndpointPage, MdxContent, MdxIcon,
+    MdxRenderer, MethodBadge, OpenApiViewer, ParameterItem, ParametersList, RequestBodySection,
+    ResponseItem, ResponsesList, SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup,
+    UngroupedEndpoints, extract_headers, slugify,
 };
 
 #[cfg(feature = "mermaid")]
