@@ -71,8 +71,9 @@ pub fn BlogList(hero: Option<Element>) -> Element {
             // Featured posts section (only when no tag filter is active)
             if active_tag().is_none() && registry.has_featured() {
                 div { class: "mb-10",
-                    h2 { class: "text-lg font-semibold mb-4 flex items-center gap-2",
+                    div { class: "flex items-center gap-3 mb-4",
                         span { class: "badge badge-primary badge-sm", "Featured" }
+                        div { class: "h-px flex-1 bg-base-300" }
                     }
                     div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
                         for post in registry.featured_posts() {

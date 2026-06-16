@@ -34,9 +34,12 @@ pub fn BlogCard(post: BlogPost) -> Element {
             div { class: "flex flex-col flex-1 p-5 gap-3",
                 if !post.frontmatter.tags.is_empty() {
                     div { class: "flex flex-wrap gap-1.5",
-                        for tag in post.frontmatter.tags.iter() {
-                            span { class: "badge badge-sm badge-outline badge-primary font-medium",
-                                "{tag}"
+                        for tag in post.frontmatter.tags.iter().take(3) {
+                            span { class: "badge badge-sm badge-outline", "{tag}" }
+                        }
+                        if post.frontmatter.tags.len() > 3 {
+                            span { class: "badge badge-sm badge-ghost",
+                                "+{post.frontmatter.tags.len() - 3}"
                             }
                         }
                     }
@@ -52,7 +55,7 @@ pub fn BlogCard(post: BlogPost) -> Element {
                     }
                 }
 
-                div { class: "mt-auto pt-3 flex items-center gap-3 text-xs text-base-content/50",
+                div { class: "mt-auto pt-3 border-t border-base-300/60 flex items-center gap-3 text-xs text-base-content/50",
                     if let Some(author) = author {
                         div { class: "flex items-center gap-1.5",
                             if let Some(ref avatar) = author.avatar {
