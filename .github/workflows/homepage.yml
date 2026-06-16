@@ -109,6 +109,11 @@ jobs:
 
       - name: Build
         run: dx bundle --web --release
+        env:
+          # DOCS_SITE_URL is a repo Actions variable holding this site's public
+          # origin (https://dioxus-docs-kit.oxidt.com). Read at COMPILE time by
+          # option_env! — it must be on this build step, not Coolify's runtime env.
+          DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

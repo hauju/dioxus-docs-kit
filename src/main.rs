@@ -113,8 +113,164 @@ fn preset_mode(name: &str) -> Option<&'static str> {
     }
 }
 
+// On the client (wasm) build, launch normally.
+#[cfg(not(feature = "server"))]
 fn main() {
     dioxus::launch(App);
+}
+
+// On the server build, serve a custom Axum router. The crawler-facing endpoints
+// below are plain Axum routes, NOT `#[get]` server functions: a server function
+// JSON-encodes its `String` return value (quoted body, `application/json`
+// content type), which robots.txt/sitemap/llms.txt consumers can't parse. Plain
+// routes let us return the raw body with the correct content type.
+//   * `<page-url>.md` — raw Markdown for every doc page (e.g.
+//     `/docs/getting-started/introduction.md`). Registered as literal routes,
+//     one per known doc path, so they take priority over the Dioxus SSR fallback
+//     without shadowing the HTML pages. OpenAPI pages have no Markdown source.
+//   * `/llms.txt`, `/llms-full.txt`, `/sitemap*.xml`, `/robots.txt`.
+#[cfg(feature = "server")]
+fn main() {
+    use dioxus::server::axum::{http::header, routing::get};
+
+    const TEXT: &str = "text/plain; charset=utf-8";
+    const XML: &str = "application/xml; charset=utf-8";
+    const MD: &str = "text/markdown; charset=utf-8";
+    const RSS: &str = "application/rss+xml; charset=utf-8";
+    const LLMS_TITLE: &str = "Dioxus Docs Kit";
+    const LLMS_DESC: &str = "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.";
+    const LLMS_URL: &str = "https://github.com/hauju/dioxus-docs-kit";
+
+    dioxus::server::serve(|| async {
+        let mut router = dioxus::server::router(App);
+
+        // Raw Markdown for each doc page at `<page-url>.md`.
+        for path in DOCS.get_all_paths() {
+            if let Some(markdown) = DOCS.get_doc_content(path) {
+                router = router.route(
+                    &format!("/docs/{path}.md"),
+                    get(move || async move { ([(header::CONTENT_TYPE, MD)], markdown) }),
+                );
+            }
+        }
+
+        // Raw Markdown for each blog post at `/blog/<slug>.md`.
+        for post in BLOG.all_posts() {
+            let markdown = post.raw_markdown.as_str();
+            router = router.route(
+                &format!("/blog/{}.md", post.slug),
+                get(move || async move { ([(header::CONTENT_TYPE, MD)], markdown) }),
+            );
+        }
+
+        Ok(router
+            .route(
+                "/llms.txt",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, TEXT)],
+                        DOCS.generate_llms_txt(LLMS_TITLE, LLMS_DESC, LLMS_URL),
+                    )
+                }),
+            )
+            .route(
+                "/llms-full.txt",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, TEXT)],
+                        DOCS.generate_llms_full_txt(LLMS_TITLE, LLMS_DESC, LLMS_URL),
+                    )
+                }),
+            )
+            .route(
+                "/sitemap.xml",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, XML)],
+                        format!(
+                            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+                             <sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
+                             <sitemap><loc>{SITE_URL}/sitemap-docs.xml</loc></sitemap>\n\
+                             <sitemap><loc>{SITE_URL}/sitemap-blog.xml</loc></sitemap>\n\
+                             </sitemapindex>\n"
+                        ),
+                    )
+                }),
+            )
+            .route(
+                "/sitemap-docs.xml",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, XML)],
+                        DOCS.generate_sitemap(SITE_URL, "/docs"),
+                    )
+                }),
+            )
+            .route(
+                "/sitemap-blog.xml",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, XML)],
+                        BLOG.generate_sitemap(SITE_URL, "/blog"),
+                    )
+                }),
+            )
+            .route(
+                "/blog/rss.xml",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, RSS)],
+                        BLOG.generate_rss(LLMS_TITLE, SITE_URL, "/blog"),
+                    )
+                }),
+            )
+            .route(
+                "/robots.txt",
+                get(|| async {
+                    // AI crawlers are listed explicitly so each can be controlled with a
+                    // single line: flip its `Allow: /` to `Disallow: /` to block that bot.
+                    // Covers training crawlers (GPTBot, ClaudeBot, anthropic-ai,
+                    // Google-Extended, CCBot) and live-retrieval/search agents
+                    // (ChatGPT-User, OAI-SearchBot, PerplexityBot).
+                    (
+                        [(header::CONTENT_TYPE, TEXT)],
+                        format!(
+                            "User-agent: *\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: GPTBot\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: ChatGPT-User\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: OAI-SearchBot\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: ClaudeBot\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: anthropic-ai\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: Claude-Web\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: Google-Extended\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: PerplexityBot\n\
+                             Allow: /\n\
+                             \n\
+                             User-agent: CCBot\n\
+                             Allow: /\n\
+                             \n\
+                             Sitemap: {SITE_URL}/sitemap.xml\n"
+                        ),
+                    )
+                }),
+            ))
+    });
 }
 
 #[component]
@@ -279,8 +435,9 @@ fn MyDocsLayout() -> Element {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-        site_url: None,
+        site_url: Some(SITE_URL.into()),
         auto_meta: true,
+        markdown_alternate: true,
     };
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
@@ -370,8 +527,9 @@ fn MyBlogLayout() -> Element {
                 nav.push(Route::BlogPage { slug });
             }
         }),
-        site_url: None,
+        site_url: Some(SITE_URL.into()),
         auto_meta: true,
+        markdown_alternate: true,
     };
 
     let providers = use_blog_providers(&BLOG, blog_ctx);
@@ -452,65 +610,18 @@ fn BlogPage(slug: String) -> Element {
     }
 }
 
-// ============================================================================
-// LLMs.txt Server Functions
-// ============================================================================
-
-#[get("/llms.txt")]
-async fn llms_txt() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_llms_txt(
-        "Dioxus Docs Kit",
-        "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.",
-        "https://github.com/hauju/dioxus-docs-kit",
-    ))
-}
-
-#[get("/llms-full.txt")]
-async fn llms_full_txt() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_llms_full_txt(
-        "Dioxus Docs Kit",
-        "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.",
-        "https://github.com/hauju/dioxus-docs-kit",
-    ))
-}
-
-// ============================================================================
-// Sitemaps & robots.txt
-// ============================================================================
-//
-// Replace SITE_URL below with your real public URL (no trailing slash) when
-// deploying. Crawlers use the canonical host in the sitemap URLs, so a
-// placeholder here will produce links nobody can follow.
-
-const SITE_URL: &str = "https://example.com";
-
-#[get("/sitemap.xml")]
-async fn sitemap_index() -> Result<String, ServerFnError> {
-    Ok(format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-         <sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
-         <sitemap><loc>{SITE_URL}/sitemap-docs.xml</loc></sitemap>\n\
-         <sitemap><loc>{SITE_URL}/sitemap-blog.xml</loc></sitemap>\n\
-         </sitemapindex>\n"
-    ))
-}
-
-#[get("/sitemap-docs.xml")]
-async fn sitemap_docs() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_sitemap(SITE_URL, "/docs"))
-}
-
-#[get("/sitemap-blog.xml")]
-async fn sitemap_blog() -> Result<String, ServerFnError> {
-    Ok(BLOG.generate_sitemap(SITE_URL, "/blog"))
-}
-
-#[get("/robots.txt")]
-async fn robots_txt() -> Result<String, ServerFnError> {
-    Ok(format!(
-        "User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n"
-    ))
-}
+// SITE_URL is the deployed origin (no trailing slash), read at BUILD time from
+// DOCS_SITE_URL (set on the CI bundle step). It is deliberately a build-time,
+// docs-specific name — separate from any runtime BASE_URL — because the page
+// canonical/og/breadcrumb are baked into both the server SSR and the client
+// wasm and must match, so they can't be sourced from a runtime-only env. Feeds
+// the server sitemap/robots/RSS routes AND the page contexts below. Falls back
+// to localhost when DOCS_SITE_URL is unset or empty, so a misconfigured build
+// degrades to dev URLs instead of emitting broken empty-origin links.
+const SITE_URL: &str = match option_env!("DOCS_SITE_URL") {
+    Some(url) if !url.is_empty() => url,
+    _ => "http://localhost:8080",
+};
 
 // ============================================================================
 // App-specific pages (Navbar, Home)
@@ -530,8 +641,10 @@ fn Navbar() -> Element {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-        site_url: None,
+        site_url: Some(SITE_URL.into()),
         auto_meta: true,
+        // This search-only context never renders page meta; no .md alternate.
+        markdown_alternate: false,
     });
 
     // Search open signal (consumed by SearchModal via context)

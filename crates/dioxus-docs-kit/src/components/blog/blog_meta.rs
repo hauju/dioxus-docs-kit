@@ -89,6 +89,11 @@ pub fn BlogPostMeta(slug: String) -> Element {
         .site_url
         .as_deref()
         .map(|origin| join_site_url(origin, &ctx.base_path, Some(&slug)));
+    // Root-relative `<base_path>/<slug>.md`; `join_site_url` with an empty origin
+    // yields the path portion only.
+    let markdown_href = ctx
+        .markdown_alternate
+        .then(|| format!("{}.md", join_site_url("", &ctx.base_path, Some(&slug))));
     let date = &post.frontmatter.date;
     let author_name = registry
         .get_author(&post.frontmatter.author)
@@ -109,6 +114,9 @@ pub fn BlogPostMeta(slug: String) -> Element {
         document::Meta { name: "description", content: "{description}" }
         if let Some(ref url) = canonical {
             document::Link { rel: "canonical", href: "{url}" }
+        }
+        if let Some(ref href) = markdown_href {
+            document::Link { rel: "alternate", r#type: "text/markdown", href: "{href}" }
         }
 
         // Open Graph

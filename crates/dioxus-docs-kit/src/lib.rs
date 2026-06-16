@@ -73,6 +73,14 @@ pub struct DocsContext {
     /// always emit when this is on; canonical and `og:url` only emit when
     /// [`site_url`](Self::site_url) is also set.
     pub auto_meta: bool,
+    /// When true, [`DocsPageMeta`](crate::DocsPageMeta) emits a
+    /// `<link rel="alternate" type="text/markdown">` pointing at the page's raw
+    /// Markdown source (`<base_path>/<path>.md`), a discoverability hint for AI
+    /// crawlers and "view as Markdown" tooling. Enable this only if your server
+    /// actually serves those `.md` URLs — the kit does not register them for
+    /// you. Emitted only for MDX pages (OpenAPI endpoint pages have no Markdown
+    /// source), and only when [`auto_meta`](Self::auto_meta) is also on.
+    pub markdown_alternate: bool,
 }
 
 // ============================================================================
@@ -103,6 +111,13 @@ pub struct BlogContext {
     /// and description tags always emit when this is on; canonical, `og:url`,
     /// and JSON-LD `@id` only emit when [`site_url`](Self::site_url) is also set.
     pub auto_meta: bool,
+    /// When true, [`BlogPostMeta`](crate::BlogPostMeta) emits a
+    /// `<link rel="alternate" type="text/markdown">` pointing at the post's raw
+    /// Markdown source (`<base_path>/<slug>.md`), a discoverability hint for AI
+    /// crawlers and "view as Markdown" tooling. Enable this only if your server
+    /// actually serves those `.md` URLs — the kit does not register them for
+    /// you. Emitted only when [`auto_meta`](Self::auto_meta) is also on.
+    pub markdown_alternate: bool,
 }
 
 // ============================================================================
