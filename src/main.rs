@@ -12,6 +12,27 @@ use dioxus_free_icons::icons::ld_icons::{
 };
 use std::sync::LazyLock;
 
+// On wasm32, the C tree-sitter parsers (pulled in via `dioxus-code` → `arborium-*`
+// for syntax highlighting) reference the libc global `stderr`. Its definition
+// lives in `arborium-sysroot`'s C shim, but that shim links as a plain static
+// archive whose `stdio.o` member only gets pulled in when `stderr` is undefined
+// as the linker reaches it — and on some host toolchains (notably Homebrew LLVM
+// on macOS) it isn't, so the wasm link fails with `undefined symbol: stderr`.
+//
+// We define `stderr` here, in the binary's root object, mirroring exactly what
+// the sysroot shim does (a non-null pointer to an empty `FILE`). Because a strong
+// definition preempts the sysroot's lazy archive member, this is safe on every
+// toolchain: where the shim already links cleanly, its `stdio.o` simply isn't
+// pulled, so there is never a duplicate symbol. `fprintf` is a no-op macro in the
+// shim's headers, so `stderr` is referenced but never dereferenced at runtime.
+#[cfg(target_arch = "wasm32")]
+mod wasm_sysroot_stderr {
+    use core::ffi::c_void;
+    static mut DUMMY_FILE: u8 = 0;
+    #[unsafe(no_mangle)]
+    static mut stderr: *mut c_void = &raw mut DUMMY_FILE as *mut c_void;
+}
+
 // ============================================================================
 // Documentation Registry
 // ============================================================================
@@ -594,7 +615,7 @@ fn BlogIndex() -> Element {
             hero: rsx! {
                 div { class: "text-center mb-12",
                     h1 { class: "text-4xl font-bold tracking-tight mb-3", "Blog" }
-                    p { class: "text-lg text-base-content/60",
+                    p { class: "text-lg text-base-content/60 max-w-2xl mx-auto",
                         "Thoughts on Rust, Dioxus, and web development."
                     }
                 }

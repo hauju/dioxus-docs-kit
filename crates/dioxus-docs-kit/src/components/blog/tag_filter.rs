@@ -51,7 +51,7 @@ pub fn TagFilter() -> Element {
                                 current_page.set(0);
                             },
                             "{tag}"
-                            span { class: "badge badge-xs ml-1", "{count}" }
+                            span { class: "ml-1 text-xs opacity-50", "{count}" }
                         }
                     }
                 }
