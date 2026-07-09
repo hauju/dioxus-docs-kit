@@ -103,7 +103,7 @@ Route enum (main.rs):
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `highlight_code(code, Some("lang"))` returns HTML for `dangerous_inner_html`
 - Cargo features: `default = ["web"]`, `server = ["dioxus/server"]`
-- CI toolchain: Rust 1.91.0, Dioxus CLI 0.7.3, Bun for Tailwind
+- CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.3, Bun for Tailwind
 
 ---
 
