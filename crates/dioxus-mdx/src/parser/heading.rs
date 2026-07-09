@@ -7,7 +7,14 @@
 //! elements detected". Frontmatter is the source of truth, so we drop the
 //! leading body H1 instead of promoting it.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
+
+static ATX_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^ {0,3}#[ \t]+\S[^\n]*(?:\r?\n|$)").unwrap());
+static SETEXT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[^\n]+\r?\n {0,3}=+[ \t]*(?:\r?\n|$)").unwrap());
 
 /// Strip a single leading H1 (ATX `# Title` or setext `Title\n===`) from `body`.
 ///
@@ -36,13 +43,11 @@ pub fn strip_leading_h1(body: &str) -> &str {
         return body;
     }
 
-    let atx = Regex::new(r"^ {0,3}#[ \t]+\S[^\n]*(?:\r?\n|$)").unwrap();
-    if let Some(m) = atx.find(rest) {
+    if let Some(m) = ATX_RE.find(rest) {
         return &rest[m.end()..];
     }
 
-    let setext = Regex::new(r"^[^\n]+\r?\n {0,3}=+[ \t]*(?:\r?\n|$)").unwrap();
-    if let Some(m) = setext.find(rest) {
+    if let Some(m) = SETEXT_RE.find(rest) {
         return &rest[m.end()..];
     }
 

@@ -1,9 +1,14 @@
 //! CodeGroup, RequestExample, and ResponseExample parsers.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use super::utils::find_closing_tag;
 use crate::parser::types::*;
+
+static CODE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"```(\w+)?(?:\s+([^\n]+))?\n([\s\S]*?)```").unwrap());
 
 /// Try to parse a CodeGroup container.
 pub(super) fn try_parse_code_group(content: &str) -> Option<(DocNode, &str)> {
@@ -60,9 +65,8 @@ pub(super) fn try_parse_response_example(content: &str) -> Option<(DocNode, &str
 /// Parse fenced code blocks from content.
 fn parse_code_blocks(content: &str) -> Vec<CodeBlockNode> {
     let mut blocks = Vec::new();
-    let code_re = Regex::new(r"```(\w+)?(?:\s+([^\n]+))?\n([\s\S]*?)```").unwrap();
 
-    for caps in code_re.captures_iter(content) {
+    for caps in CODE_RE.captures_iter(content) {
         let language = caps.get(1).map(|m| m.as_str().to_string());
         let filename = caps.get(2).map(|m| m.as_str().to_string());
         let code = caps

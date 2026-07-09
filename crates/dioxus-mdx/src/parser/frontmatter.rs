@@ -23,8 +23,10 @@ pub fn extract_frontmatter(content: &str) -> (DocFrontmatter, &str) {
         match serde_yaml::from_str(yaml_content) {
             Ok(fm) => (fm, remaining),
             Err(e) => {
-                eprintln!("Failed to parse frontmatter: {}", e);
-                (DocFrontmatter::default(), content)
+                tracing::warn!("Failed to parse frontmatter: {e}");
+                // Still strip the frontmatter block so the raw YAML doesn't
+                // render as page text.
+                (DocFrontmatter::default(), remaining)
             }
         }
     } else {
@@ -80,6 +82,19 @@ Content"#;
     #[test]
     fn test_empty_frontmatter() {
         let content = r#"---
+---
+
+Content"#;
+
+        let (fm, remaining) = extract_frontmatter(content);
+        assert_eq!(fm.title, "");
+        assert!(remaining.starts_with("Content"));
+    }
+
+    #[test]
+    fn test_malformed_frontmatter_is_stripped() {
+        let content = r#"---
+title: [unclosed
 ---
 
 Content"#;

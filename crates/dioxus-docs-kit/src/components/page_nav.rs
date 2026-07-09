@@ -4,6 +4,11 @@ use crate::DocsContext;
 use crate::registry::DocsRegistry;
 
 /// Page navigation (previous/next).
+///
+/// Page order follows `_nav.json`. API endpoint pages are included in the
+/// ordering only if the owning spec's nav group contains a page named
+/// `<prefix>/overview` — endpoints are inserted right after it. Without an
+/// overview page, endpoint pages render without prev/next links.
 #[component]
 pub fn DocsPageNav(current_path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
@@ -20,18 +25,20 @@ pub fn DocsPageNav(current_path: String) -> Element {
         nav.groups.iter().collect()
     };
 
-    let api_prefix = registry.get_first_api_prefix();
-    let overview_path = api_prefix.map(|p| format!("{p}/overview"));
-
     let mut all_pages: Vec<String> = Vec::new();
     for group in &tab_groups {
         for page in &group.pages {
             all_pages.push(page.clone());
-            // Insert API endpoint pages right after overview
-            if let Some(ref ov) = overview_path
-                && page == ov
+            // Insert a spec's endpoint pages right after its "<prefix>/overview"
+            // page, so endpoints participate in prev/next ordering.
+            if let Some(prefix) = page.strip_suffix("/overview")
+                && let Some(spec) = registry.get_api_spec(prefix)
             {
-                all_pages.extend(registry.get_api_endpoint_paths());
+                all_pages.extend(
+                    spec.operations
+                        .iter()
+                        .map(|op| format!("{prefix}/{}", op.slug())),
+                );
             }
         }
     }

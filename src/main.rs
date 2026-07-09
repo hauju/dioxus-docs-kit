@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogSearchButton,
-    BlogThemeToggle, Code, CodeTheme, CurrentTheme, DocsConfig, DocsContext, DocsLayout,
-    DocsPageContent, DocsRegistry, Language, SearchButton, SearchModal, SourceCode, Theme,
-    ThemeToggle, use_blog_providers, use_docs_providers,
+    BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogThemeToggle,
+    Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, Language,
+    SearchButton, SearchModal, SourceCode, Theme, ThemeToggle, use_blog_providers,
+    use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -123,157 +123,23 @@ fn main() {
     dioxus::launch(App);
 }
 
-// On the server build, serve a custom Axum router. The crawler-facing endpoints
-// below are plain Axum routes, NOT `#[get]` server functions: a server function
-// JSON-encodes its `String` return value (quoted body, `application/json`
-// content type), which robots.txt/sitemap/llms.txt consumers can't parse. Plain
-// routes let us return the raw body with the correct content type.
-//   * `<page-url>.md` — raw Markdown for every doc page (e.g.
-//     `/docs/getting-started/introduction.md`). Registered as literal routes,
-//     one per known doc path, so they take priority over the Dioxus SSR fallback
-//     without shadowing the HTML pages. OpenAPI pages have no Markdown source.
-//   * `/llms.txt`, `/llms-full.txt`, `/sitemap*.xml`, `/robots.txt`.
+// On the server build, serve the Dioxus app plus the kit's crawler-facing
+// routes (per-page `.md`, llms.txt, sitemaps, RSS, robots.txt). These are
+// plain Axum routes (see `dioxus_docs_kit::server`), NOT `#[get]` server
+// functions — a server function would JSON-encode the body.
 #[cfg(feature = "server")]
 fn main() {
-    use dioxus::server::axum::{http::header, routing::get};
+    use dioxus_docs_kit::server::SeoRouter;
 
-    const TEXT: &str = "text/plain; charset=utf-8";
-    const XML: &str = "application/xml; charset=utf-8";
-    const MD: &str = "text/markdown; charset=utf-8";
-    const RSS: &str = "application/rss+xml; charset=utf-8";
-    const LLMS_TITLE: &str = "Dioxus Docs Kit";
-    const LLMS_DESC: &str = "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.";
-    const LLMS_URL: &str = "https://github.com/hauju/dioxus-docs-kit";
+    const SITE_TITLE: &str = "Dioxus Docs Kit";
+    const SITE_DESC: &str = "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.";
 
     dioxus::server::serve(|| async {
-        let mut router = dioxus::server::router(App);
-
-        // Raw Markdown for each doc page at `<page-url>.md`.
-        for path in DOCS.get_all_paths() {
-            if let Some(markdown) = DOCS.get_doc_content(path) {
-                router = router.route(
-                    &format!("/docs/{path}.md"),
-                    get(move || async move { ([(header::CONTENT_TYPE, MD)], markdown) }),
-                );
-            }
-        }
-
-        // Raw Markdown for each blog post at `/blog/<slug>.md`.
-        for post in BLOG.all_posts() {
-            let markdown = post.raw_markdown.as_str();
-            router = router.route(
-                &format!("/blog/{}.md", post.slug),
-                get(move || async move { ([(header::CONTENT_TYPE, MD)], markdown) }),
-            );
-        }
-
-        Ok(router
-            .route(
-                "/llms.txt",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, TEXT)],
-                        DOCS.generate_llms_txt(LLMS_TITLE, LLMS_DESC, LLMS_URL),
-                    )
-                }),
-            )
-            .route(
-                "/llms-full.txt",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, TEXT)],
-                        DOCS.generate_llms_full_txt(LLMS_TITLE, LLMS_DESC, LLMS_URL),
-                    )
-                }),
-            )
-            .route(
-                "/sitemap.xml",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, XML)],
-                        format!(
-                            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-                             <sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
-                             <sitemap><loc>{SITE_URL}/sitemap-docs.xml</loc></sitemap>\n\
-                             <sitemap><loc>{SITE_URL}/sitemap-blog.xml</loc></sitemap>\n\
-                             </sitemapindex>\n"
-                        ),
-                    )
-                }),
-            )
-            .route(
-                "/sitemap-docs.xml",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, XML)],
-                        DOCS.generate_sitemap(SITE_URL, "/docs"),
-                    )
-                }),
-            )
-            .route(
-                "/sitemap-blog.xml",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, XML)],
-                        BLOG.generate_sitemap(SITE_URL, "/blog"),
-                    )
-                }),
-            )
-            .route(
-                "/blog/rss.xml",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, RSS)],
-                        BLOG.generate_rss(LLMS_TITLE, SITE_URL, "/blog"),
-                    )
-                }),
-            )
-            .route(
-                "/robots.txt",
-                get(|| async {
-                    // AI crawlers are listed explicitly so each can be controlled with a
-                    // single line: flip its `Allow: /` to `Disallow: /` to block that bot.
-                    // Covers training crawlers (GPTBot, ClaudeBot, anthropic-ai,
-                    // Google-Extended, CCBot) and live-retrieval/search agents
-                    // (ChatGPT-User, OAI-SearchBot, PerplexityBot).
-                    (
-                        [(header::CONTENT_TYPE, TEXT)],
-                        format!(
-                            "User-agent: *\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: GPTBot\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: ChatGPT-User\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: OAI-SearchBot\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: ClaudeBot\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: anthropic-ai\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: Claude-Web\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: Google-Extended\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: PerplexityBot\n\
-                             Allow: /\n\
-                             \n\
-                             User-agent: CCBot\n\
-                             Allow: /\n\
-                             \n\
-                             Sitemap: {SITE_URL}/sitemap.xml\n"
-                        ),
-                    )
-                }),
-            ))
+        let seo = SeoRouter::new(SITE_URL, SITE_TITLE, SITE_DESC)
+            .with_docs(&DOCS, "/docs")
+            .with_blog(&BLOG, "/blog")
+            .into_router();
+        Ok(dioxus::server::router(App).merge(seo))
     });
 }
 
@@ -417,6 +283,79 @@ fn ThemeControl(toggle: Element) -> Element {
     }
 }
 
+/// Which top-level section a navbar belongs to (highlights its menu entry).
+#[derive(Clone, Copy, PartialEq)]
+enum NavSection {
+    Home,
+    Docs,
+    Blog,
+}
+
+/// The site navbar, shared by the Home, docs, and blog layouts.
+///
+/// - `drawer_open`: mobile-drawer toggle signal; `None` on pages without a drawer.
+/// - `theme_toggle`: the section's toggle element (wrapped in `ThemeControl`).
+#[component]
+fn SiteNavbar(
+    section: NavSection,
+    drawer_open: Option<Signal<bool>>,
+    search_open: Signal<bool>,
+    theme_toggle: Element,
+) -> Element {
+    let link_class = |active: NavSection| {
+        if section == active {
+            "btn btn-ghost btn-sm rounded-lg font-medium btn-active"
+        } else {
+            "btn btn-ghost btn-sm rounded-lg font-medium"
+        }
+    };
+    // Without a drawer there is no mobile fallback, so keep the menu visible.
+    let menu_class = if drawer_open.is_some() {
+        "menu menu-horizontal gap-1 hidden lg:flex"
+    } else {
+        "menu menu-horizontal gap-1"
+    };
+
+    rsx! {
+        div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
+            div { class: "flex-1 gap-2",
+                if let Some(mut drawer) = drawer_open {
+                    button {
+                        class: "btn btn-ghost btn-sm btn-square lg:hidden docs-menu-btn",
+                        onclick: move |_| drawer.toggle(),
+                        Icon { class: "size-5", icon: LdMenu }
+                    }
+                }
+                Link {
+                    to: Route::Home {},
+                    class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
+                    "Dioxus Docs Kit"
+                }
+            }
+            div { class: "flex-none flex items-center gap-1",
+                ul { class: "{menu_class}",
+                    li {
+                        Link { to: Route::Home {}, class: link_class(NavSection::Home), "Home" }
+                    }
+                    li {
+                        Link { to: Route::BlogIndex {}, class: link_class(NavSection::Blog), "Blog" }
+                    }
+                    li {
+                        Link {
+                            to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
+                            class: link_class(NavSection::Docs),
+                            "Docs"
+                        }
+                    }
+                }
+                SearchButton { search_open }
+                ThemePresetPicker {}
+                ThemeControl { toggle: theme_toggle }
+            }
+        }
+    }
+}
+
 // ============================================================================
 // Docs Layout Wrapper (glue code)
 // ============================================================================
@@ -432,66 +371,27 @@ fn MyDocsLayout() -> Element {
         _ => String::new(),
     }));
 
-    let docs_ctx = DocsContext {
-        current_path: current_path.into(),
-        base_path: "/docs".into(),
-        navigate: Callback::new(move |path: String| {
+    let docs_ctx = DocsContext::new(
+        current_path,
+        "/docs",
+        Callback::new(move |path: String| {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-        site_url: Some(SITE_URL.into()),
-        auto_meta: true,
-        markdown_alternate: true,
-    };
+    )
+    .with_site_url(SITE_URL)
+    .with_markdown_alternate(true);
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
-    let search_open = providers.search_open;
-    let mut drawer_open = providers.drawer_open;
 
     rsx! {
         DocsLayout {
             header: rsx! {
-                div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
-                    div { class: "flex-1 gap-2",
-                        button {
-                            class: "btn btn-ghost btn-sm btn-square lg:hidden docs-menu-btn",
-                            onclick: move |_| drawer_open.toggle(),
-                            Icon { class: "size-5", icon: LdMenu }
-                        }
-                        Link {
-                            to: Route::Home {},
-                            class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
-                            "Dioxus Docs Kit"
-                        }
-                    }
-                    div { class: "flex-none flex items-center gap-1",
-                        ul { class: "menu menu-horizontal gap-1 hidden lg:flex",
-                            li {
-                                Link {
-                                    to: Route::Home {},
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                                    "Home"
-                                }
-                            }
-                            li {
-                                Link {
-                                    to: Route::BlogIndex {},
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                                    "Blog"
-                                }
-                            }
-                            li {
-                                Link {
-                                    to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium btn-active",
-                                    "Docs"
-                                }
-                            }
-                        }
-                        SearchButton { search_open }
-                        ThemePresetPicker {}
-                        ThemeControl { toggle: rsx! { ThemeToggle {} } }
-                    }
+                SiteNavbar {
+                    section: NavSection::Docs,
+                    drawer_open: providers.drawer_open,
+                    search_open: providers.search_open,
+                    theme_toggle: rsx! { ThemeToggle {} },
                 }
             },
             Outlet::<Route> {}
@@ -521,69 +421,30 @@ fn MyBlogLayout() -> Element {
         _ => String::new(),
     }));
 
-    let blog_ctx = BlogContext {
-        current_slug: current_slug.into(),
-        base_path: "/blog".into(),
-        navigate: Callback::new(move |slug: String| {
+    let blog_ctx = BlogContext::new(
+        current_slug,
+        "/blog",
+        Callback::new(move |slug: String| {
             if slug.is_empty() {
                 nav.push(Route::BlogIndex {});
             } else {
                 nav.push(Route::BlogPage { slug });
             }
         }),
-        site_url: Some(SITE_URL.into()),
-        auto_meta: true,
-        markdown_alternate: true,
-    };
+    )
+    .with_site_url(SITE_URL)
+    .with_markdown_alternate(true);
 
     let providers = use_blog_providers(&BLOG, blog_ctx);
-    let search_open = providers.search_open;
-    let mut drawer_open = providers.drawer_open;
 
     rsx! {
         BlogLayout {
             header: rsx! {
-                div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
-                    div { class: "flex-1 gap-2",
-                        button {
-                            class: "btn btn-ghost btn-sm btn-square lg:hidden",
-                            onclick: move |_| drawer_open.toggle(),
-                            Icon { class: "size-5", icon: LdMenu }
-                        }
-                        Link {
-                            to: Route::Home {},
-                            class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
-                            "Dioxus Docs Kit"
-                        }
-                    }
-                    div { class: "flex-none flex items-center gap-1",
-                        ul { class: "menu menu-horizontal gap-1 hidden lg:flex",
-                            li {
-                                Link {
-                                    to: Route::Home {},
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                                    "Home"
-                                }
-                            }
-                            li {
-                                Link {
-                                    to: Route::BlogIndex {},
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium btn-active",
-                                    "Blog"
-                                }
-                            }
-                            li {
-                                Link {
-                                    to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
-                                    class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                                    "Docs"
-                                }
-                            }
-                        }
-                        BlogSearchButton { search_open }
-                        ThemePresetPicker {}
-                        ThemeControl { toggle: rsx! { BlogThemeToggle {} } }
-                    }
+                SiteNavbar {
+                    section: NavSection::Blog,
+                    drawer_open: providers.drawer_open,
+                    search_open: providers.search_open,
+                    theme_toggle: rsx! { BlogThemeToggle {} },
                 }
             },
             Outlet::<Route> {}
@@ -636,104 +497,29 @@ const SITE_URL: &str = match option_env!("DOCS_SITE_URL") {
 fn Navbar() -> Element {
     let nav = use_navigator();
 
-    // Provide DocsRegistry + DocsContext so SearchModal can function
-    use_context_provider(|| &*DOCS as &'static DocsRegistry);
-    use_context_provider(|| DocsContext {
-        current_path: Signal::new(String::new()).into(),
-        base_path: "/docs".into(),
-        navigate: Callback::new(move |path: String| {
+    // Provide DocsRegistry + DocsContext + search signal so SearchModal can
+    // function outside the docs layout. This search-only context never renders
+    // page meta.
+    let docs_ctx = DocsContext::new(
+        Signal::new(String::new()),
+        "/docs",
+        Callback::new(move |path: String| {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-        site_url: Some(SITE_URL.into()),
-        auto_meta: true,
-        // This search-only context never renders page meta; no .md alternate.
-        markdown_alternate: false,
-    });
+    )
+    .with_site_url(SITE_URL);
 
-    // Search open signal (consumed by SearchModal via context)
-    let search_open = use_signal(|| false);
-    use_context_provider(|| search_open);
+    let providers = use_docs_providers(&DOCS, docs_ctx);
 
-    // Theme state
-    let registry = &*DOCS;
-    let theme_default = registry
-        .theme
-        .as_ref()
-        .map(|t| t.default_theme.clone())
-        .unwrap_or_default();
-    let theme_storage_key = registry
-        .theme
-        .as_ref()
-        .map(|t| t.storage_key.clone())
-        .unwrap_or_default();
-    let has_theme = registry.theme.is_some();
-
-    let mut current_theme = use_signal(|| theme_default.clone());
-    use_context_provider(|| CurrentTheme(current_theme));
-
-    // On mount: read stored preference and apply data-theme
-    use_effect(move || {
-        if !has_theme {
-            return;
-        }
-        let key = theme_storage_key.clone();
-        let fallback = theme_default.clone();
-        spawn(async move {
-            let mut eval = document::eval(&format!(
-                r#"
-                let theme = null;
-                try {{ theme = localStorage.getItem('{key}'); }} catch(e) {{}}
-                theme = theme || '{fallback}';
-                document.documentElement.setAttribute('data-theme', theme);
-                dioxus.send(theme);
-                "#
-            ));
-            if let Ok(stored) = eval.recv::<String>().await {
-                current_theme.set(stored);
-            }
-        });
-    });
+    // Theme state (persisted preference + data-theme application)
+    dioxus_docs_kit::use_theme_provider(DOCS.theme.clone());
 
     rsx! {
-        div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
-            div { class: "flex-1",
-                Link {
-                    to: Route::Home {},
-                    class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
-                    "Dioxus Docs Kit"
-                }
-            }
-            div { class: "flex-none gap-1",
-                ul { class: "menu menu-horizontal gap-1",
-                    li {
-                        Link {
-                            to: Route::Home {},
-                            class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                            "Home"
-                        }
-                    }
-                    li {
-                        Link {
-                            to: Route::BlogIndex {},
-                            class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                            "Blog"
-                        }
-                    }
-                    li {
-                        Link {
-                            to: Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] },
-                            class: "btn btn-ghost btn-sm rounded-lg font-medium",
-                            "Docs"
-                        }
-                    }
-                }
-                SearchButton { search_open }
-                ThemePresetPicker {}
-                if has_theme {
-                    ThemeControl { toggle: rsx! { ThemeToggle {} } }
-                }
-            }
+        SiteNavbar {
+            section: NavSection::Home,
+            search_open: providers.search_open,
+            theme_toggle: rsx! { ThemeToggle {} },
         }
 
         main { class: "min-h-screen bg-base-100 dk-root",

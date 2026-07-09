@@ -2,13 +2,14 @@ use dioxus::prelude::*;
 use dioxus_mdx::HttpMethod;
 
 use crate::DocsContext;
+use crate::components::docs_layout::ActiveTab;
 use crate::registry::{DocsRegistry, NavGroup};
 
 /// Documentation sidebar navigation.
 #[component]
 pub fn DocsSidebar() -> Element {
     let registry = use_context::<&'static DocsRegistry>();
-    let active_tab = use_context::<Signal<String>>();
+    let ActiveTab(active_tab) = use_context::<ActiveTab>();
     let nav = &registry.nav;
 
     let groups: Vec<&NavGroup> = if nav.has_tabs() {
@@ -53,6 +54,7 @@ fn SidebarGroup(group: NavGroup) -> Element {
                         ul { class: "space-y-0.5",
                             for entry in entries.iter() {
                                 ApiSidebarLink {
+                                    prefix: entry.prefix.clone(),
                                     slug: entry.slug.clone(),
                                     title: entry.title.clone(),
                                     method: entry.method,
@@ -81,11 +83,9 @@ fn SidebarGroup(group: NavGroup) -> Element {
 
 /// Sidebar link for API endpoints with method badges.
 #[component]
-fn ApiSidebarLink(slug: String, title: String, method: HttpMethod) -> Element {
+fn ApiSidebarLink(prefix: String, slug: String, title: String, method: HttpMethod) -> Element {
     let ctx = use_context::<DocsContext>();
-    let registry = use_context::<&'static DocsRegistry>();
 
-    let prefix = registry.get_first_api_prefix().unwrap_or("api-reference");
     let path = format!("{prefix}/{slug}");
 
     let is_active = (ctx.current_path)() == path;

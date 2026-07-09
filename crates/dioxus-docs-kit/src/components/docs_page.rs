@@ -29,9 +29,7 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
     let ctx = use_context::<DocsContext>();
 
     // Check if this is an API endpoint page
-    if let Some(operation) = registry.get_api_operation(&path)
-        && let Some(spec) = registry.get_first_api_spec()
-    {
+    if let Some((operation, spec)) = registry.get_api_operation_with_spec(&path) {
         return rsx! {
             DocsPageMeta { path: path.clone() }
             div { class: "dk-endpoint flex flex-col",

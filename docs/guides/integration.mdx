@@ -143,21 +143,21 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
             _ => String::new(),
         });
 
-        let docs_ctx = DocsContext {
-            current_path: current_path.into(),
-            base_path: "/docs".into(),
-            navigate: Callback::new(move |path: String| {
+        // The constructor defaults the meta fields (`auto_meta: true`,
+        // no site_url, no markdown alternate links); use the `with_*`
+        // setters to override them.
+        let docs_ctx = DocsContext::new(
+            current_path,
+            "/docs",
+            Callback::new(move |path: String| {
                 let slug: Vec<String> =
                     path.split('/').map(String::from).collect();
                 nav.push(Route::DocsPage { slug });
             }),
-            // Public origin used for canonical URLs and sitemap entries.
-            // Set to `Some("https://your-site.com".into())` in production.
-            site_url: None,
-            // Emit per-page title / description / OG / Twitter tags from
-            // frontmatter. Set to `false` if your app manages its own <head>.
-            auto_meta: true,
-        };
+        )
+        // Public origin used for canonical URLs and OG tags — set it
+        // in production.
+        .with_site_url("https://your-site.com");
 
         let providers = use_docs_providers(&*DOCS, docs_ctx);
 

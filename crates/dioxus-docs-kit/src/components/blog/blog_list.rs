@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdChevronLeft, LdChevronRight};
 
+use crate::blog::hooks::{ActiveTag, CurrentPage};
 use crate::blog::registry::BlogRegistry;
 
 use super::blog_card::BlogCard;
@@ -12,8 +13,8 @@ use super::tag_filter::TagFilter;
 #[component]
 pub fn BlogList(hero: Option<Element>) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
-    let active_tag = use_context::<Signal<Option<String>>>();
-    let mut current_page = use_context::<Signal<usize>>();
+    let ActiveTag(active_tag) = use_context::<ActiveTag>();
+    let CurrentPage(mut current_page) = use_context::<CurrentPage>();
 
     let posts = use_memo(move || {
         let tag = active_tag();

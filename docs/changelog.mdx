@@ -3,14 +3,22 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
-<Update label="v0.5.0" description="May 2026">
+<Update label="v0.5.0" description="Unreleased — July 2026">
+- **SeoRouter (server feature)**: One builder generates all crawler endpoints — per-page raw Markdown, `llms.txt` / `llms-full.txt`, sitemaps, blog RSS, and robots.txt with per-AI-crawler entries
+- **Context constructors**: `DocsContext::new()` / `BlogContext::new()` with defaulted meta fields — new fields no longer break consumer builds
+- **Better errors**: `try_build()` on both config builders; OpenAPI/nav parse errors now surface the underlying line/column detail instead of a generic panic
+- **Multi-spec OpenAPI fixed**: Sidebar links and endpoint pages now use the spec that owns each operation
+- **Blog search theming**: The blog search modal shares the docs modal shell and picks up the `dk-search-*` classes
+- **Performance**: Precompiled regexes, precomputed API sidebar entries, and O(1) operation lookup
+- **Fixes**: Windows path handling in `dioxus-docs-kit-build`, malformed frontmatter no longer renders as page text, blog posts with invalid frontmatter warn instead of vanishing silently, scroll/keyboard listener leaks fixed
 - **Theming Surface**: `DocsVariant` API with built-in presets — shadcn light/dark, brutalist, and default
 - **SEO Meta**: Auto-generated `<title>`, description, OpenGraph, and Twitter card tags from frontmatter
-- **Sitemap & Canonical URLs**: `generate_sitemap_xml()` plus conditional `<link rel="canonical">` injection
 - **Compile-time Blog Engine**: Featured posts, related posts, and a scroll progress bar
 - **Mermaid Diagrams**: ` ```mermaid ` fenced blocks render as interactive diagrams
-- **CSS-class Syntax Highlighting**: Code blocks use themable CSS classes instead of inline styles
-- **H1 Stripping**: Duplicate H1 headings are stripped automatically when a frontmatter title is present
+</Update>
+
+<Update label="v0.3.x – v0.4.x" description="February – April 2026">
+- Incremental releases on crates.io (`dioxus-docs-kit` 0.4.1, `dioxus-docs-kit-build` 0.4.0, `dioxus-mdx` 0.3.1): tabbed navigation, `use_docs_providers` one-call context setup, CSS-class syntax highlighting via `dioxus-code`, automatic duplicate-H1 stripping, and theming groundwork
 </Update>
 
 <Update label="v0.2.0" description="January 2026">

@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::DocsContext;
-use crate::components::DrawerOpen;
+use crate::components::{DrawerOpen, SearchOpen};
 use crate::registry::DocsRegistry;
 
 /// Signals returned by [`use_docs_providers`] so the consumer's header RSX
@@ -32,7 +32,7 @@ pub fn use_docs_providers(registry: &'static DocsRegistry, docs_ctx: DocsContext
     let search_open = use_signal(|| false);
     let drawer_open = use_signal(|| false);
 
-    use_context_provider(|| search_open);
+    use_context_provider(|| SearchOpen(search_open));
     use_context_provider(|| DrawerOpen(drawer_open));
 
     DocsProviders {

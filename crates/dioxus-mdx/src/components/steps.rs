@@ -1,10 +1,15 @@
 //! Steps component for sequential documentation guides.
 
+use std::sync::LazyLock;
+
 use dioxus::prelude::*;
 use regex::Regex;
 
 use crate::components::DocNodeRenderer;
 use crate::parser::{DocNode, StepsNode};
+
+static STEP_PREFIX_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^Step\s+\d+[:.]\s*").unwrap());
 
 /// Props for DocSteps component.
 #[derive(Props, Clone, PartialEq)]
@@ -47,8 +52,7 @@ pub fn DocSteps(props: DocStepsProps) -> Element {
 /// Clean up step title by removing redundant prefixes.
 fn clean_step_title(title: &str) -> String {
     // Remove "Step N:" or "Step N." prefix
-    let re = Regex::new(r"^Step\s+\d+[:.]\s*").unwrap();
-    re.replace(title, "").trim().to_string()
+    STEP_PREFIX_RE.replace(title, "").trim().to_string()
 }
 
 /// Props for StepContent.

@@ -1,25 +1,8 @@
 use dioxus::prelude::*;
 
+use super::seo::{join_site_url, jsonld_to_string};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-
-fn join_site_url(site_url: &str, base_path: &str, path: &str) -> String {
-    let mut url = site_url.trim_end_matches('/').to_string();
-
-    if !base_path.is_empty() {
-        if !base_path.starts_with('/') {
-            url.push('/');
-        }
-        url.push_str(base_path.trim_end_matches('/'));
-    }
-
-    if !path.is_empty() {
-        url.push('/');
-        url.push_str(path.trim_start_matches('/'));
-    }
-
-    url
-}
 
 /// Build a schema.org JSON-LD `@graph` for a docs page: a `TechArticle` plus an
 /// optional `BreadcrumbList`. `</` is escaped to `<\/` so the payload cannot
@@ -74,9 +57,7 @@ fn build_docs_jsonld(
         "@graph": graph,
     });
 
-    serde_json::to_string(&payload)
-        .unwrap_or_default()
-        .replace("</", "<\\/")
+    jsonld_to_string(&payload)
 }
 
 /// Injects SEO meta tags and document title for a single docs page (MDX or API endpoint).
@@ -188,7 +169,7 @@ pub fn DocsPageMeta(path: String) -> Element {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_docs_jsonld, join_site_url};
+    use super::build_docs_jsonld;
 
     #[test]
     fn jsonld_emits_techarticle_with_id_when_canonical_present() {
@@ -260,29 +241,5 @@ mod tests {
             "expected </ sequences to be escaped, got: {out}"
         );
         assert!(out.contains("<\\/script"));
-    }
-
-    #[test]
-    fn joins_site_url_without_duplicate_slashes() {
-        assert_eq!(
-            join_site_url("https://example.com/", "/docs/", "getting-started/intro"),
-            "https://example.com/docs/getting-started/intro"
-        );
-        assert_eq!(
-            join_site_url("https://example.com", "docs", "/getting-started/intro"),
-            "https://example.com/docs/getting-started/intro"
-        );
-        assert_eq!(
-            join_site_url("https://example.com/", "/docs/", ""),
-            "https://example.com/docs"
-        );
-    }
-
-    #[test]
-    fn joins_without_base_path() {
-        assert_eq!(
-            join_site_url("https://example.com", "", "page"),
-            "https://example.com/page"
-        );
     }
 }

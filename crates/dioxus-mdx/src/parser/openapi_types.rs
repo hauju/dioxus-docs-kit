@@ -552,3 +552,131 @@ impl SchemaDefinition {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::openapi_parser::parse_openapi;
+
+    const SPEC: &str = r#"
+openapi: "3.0.0"
+info:
+  title: Test API
+  version: "1.0.0"
+paths:
+  /users/{id}/posts:
+    post:
+      operationId: createUserPost
+      summary: Create post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dryRun
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+      responses:
+        "200":
+          description: OK
+  /health:
+    get:
+      summary: Health
+      responses:
+        "200":
+          description: OK
+"#;
+
+    fn find_op<'a>(spec: &'a OpenApiSpec, path: &str) -> &'a ApiOperation {
+        spec.operations.iter().find(|op| op.path == path).unwrap()
+    }
+
+    #[test]
+    fn slug_kebab_cases_operation_id() {
+        let spec = parse_openapi(SPEC).unwrap();
+        assert_eq!(
+            find_op(&spec, "/users/{id}/posts").slug(),
+            "create-user-post"
+        );
+    }
+
+    #[test]
+    fn slug_falls_back_to_method_path() {
+        let spec = parse_openapi(SPEC).unwrap();
+        assert_eq!(find_op(&spec, "/health").slug(), "get-health");
+    }
+
+    #[test]
+    fn generate_curl_includes_method_url_headers_and_body() {
+        let spec = parse_openapi(SPEC).unwrap();
+        let curl = find_op(&spec, "/users/{id}/posts").generate_curl("https://api.example.com/");
+        assert!(curl.starts_with("curl"));
+        assert!(curl.contains("-X POST"));
+        assert!(curl.contains("https://api.example.com/users/"));
+        assert!(curl.contains("dryRun="));
+        assert!(curl.contains("-H \"Content-Type: application/json\""));
+        assert!(curl.contains("-d '"));
+        assert!(curl.contains("\"title\""));
+    }
+
+    #[test]
+    fn generate_curl_omits_method_for_get() {
+        let spec = parse_openapi(SPEC).unwrap();
+        let curl = find_op(&spec, "/health").generate_curl("https://api.example.com");
+        assert!(!curl.contains("-X"));
+        assert!(curl.contains("https://api.example.com/health"));
+    }
+
+    #[test]
+    fn display_type_formats_arrays_refs_and_formats() {
+        let string_schema = SchemaDefinition {
+            schema_type: SchemaType::String,
+            ..Default::default()
+        };
+        let array = SchemaDefinition {
+            schema_type: SchemaType::Array,
+            items: Some(Box::new(string_schema.clone())),
+            ..Default::default()
+        };
+        assert_eq!(array.display_type(), "array<string>");
+
+        let reference = SchemaDefinition {
+            ref_name: Some("User".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(reference.display_type(), "User");
+
+        let email = SchemaDefinition {
+            schema_type: SchemaType::String,
+            format: Some("email".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(email.display_type(), "string (email)");
+    }
+
+    #[test]
+    fn generate_example_json_stops_at_depth_limit() {
+        let schema = SchemaDefinition::default();
+        assert_eq!(schema.generate_example_json(6), json!({}));
+    }
+
+    #[test]
+    fn generate_example_json_prefers_explicit_example() {
+        let schema = SchemaDefinition {
+            schema_type: SchemaType::Integer,
+            example: Some("42".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(schema.generate_example_json(0), json!(42));
+    }
+}

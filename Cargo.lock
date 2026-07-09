@@ -1082,6 +1082,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tracing",
 ]
 
 [[package]]
@@ -1375,6 +1376,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tracing",
 ]
 
 [[package]]

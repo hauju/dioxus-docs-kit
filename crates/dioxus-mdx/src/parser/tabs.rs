@@ -1,10 +1,15 @@
 //! Tabs component parser.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use super::content::parse_content;
 use super::utils::find_closing_tag;
 use crate::parser::types::*;
+
+static TAB_OPEN_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"^<Tab\s+title="([^"]*)">"#).unwrap());
 
 /// Try to parse a Tabs component.
 pub(super) fn try_parse_tabs(content: &str) -> Option<(DocNode, &str)> {
@@ -28,12 +33,10 @@ fn parse_tabs(content: &str) -> Vec<TabNode> {
     let mut tabs = Vec::new();
     let mut remaining = content.trim();
 
-    let tab_open_re = Regex::new(r#"^<Tab\s+title="([^"]*)">"#).unwrap();
-
     while !remaining.is_empty() {
         remaining = remaining.trim();
 
-        if let Some(caps) = tab_open_re.captures(remaining) {
+        if let Some(caps) = TAB_OPEN_RE.captures(remaining) {
             let full_match = caps.get(0).expect("regex group 0");
             let title = caps
                 .get(1)

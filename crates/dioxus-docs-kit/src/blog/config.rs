@@ -67,8 +67,20 @@ impl BlogConfig {
     }
 
     /// Build the [`BlogRegistry`].
+    ///
+    /// # Panics
+    ///
+    /// Panics with a descriptive message if `_blog.json` fails to parse.
+    /// Use [`Self::try_build`] to handle the error yourself.
     pub fn build(self) -> BlogRegistry {
-        BlogRegistry::from_config(self)
+        self.try_build()
+            .unwrap_or_else(|e| panic!("dioxus-docs-kit: {e}"))
+    }
+
+    /// Build the [`BlogRegistry`], returning an error instead of panicking when
+    /// `_blog.json` fails to parse.
+    pub fn try_build(self) -> Result<BlogRegistry, crate::error::DocsKitError> {
+        BlogRegistry::try_from_config(self)
     }
 
     pub(crate) fn manifest_json(&self) -> &str {
