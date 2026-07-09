@@ -349,6 +349,14 @@ fn SiteNavbar(
                     }
                 }
                 SearchButton { search_open }
+                a {
+                    href: "https://github.com/hauju/dioxus-docs-kit",
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    class: "btn btn-ghost btn-sm btn-square rounded-lg",
+                    "aria-label": "GitHub repository",
+                    Icon { class: "size-5", icon: LdGithub }
+                }
                 ThemePresetPicker {}
                 ThemeControl { toggle: theme_toggle }
             }
