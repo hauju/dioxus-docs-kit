@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: dtolnay/rust-toolchain@1.96.0
         with:
           components: rustfmt
       - name: Check Format
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: dtolnay/rust-toolchain@1.96.0
         with:
           components: clippy
       - uses: rui314/setup-mold@v1
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: dtolnay/rust-toolchain@1.96.0
       - name: Install cargo-machete
         uses: taiki-e/install-action@v2
         with:
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: dtolnay/rust-toolchain@1.96.0
       - uses: rui314/setup-mold@v1
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -85,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: dtolnay/rust-toolchain@1.96.0
         with:
           targets: wasm32-unknown-unknown
       - uses: rui314/setup-mold@v1
