@@ -150,21 +150,22 @@ Your post content in MDX format...
             _ => String::new(),
         });
 
-        let blog_ctx = BlogContext {
-            current_slug: current_slug.into(),
-            base_path: "/blog".into(),
-            navigate: Callback::new(move |slug: String| {
+        // The constructor defaults the meta fields; chain `.with_site_url()`
+        // etc. to override them.
+        let blog_ctx = BlogContext::new(
+            current_slug,
+            "/blog",
+            Callback::new(move |slug: String| {
                 if slug.is_empty() {
                     nav.push(Route::BlogIndex {});
                 } else {
                     nav.push(Route::BlogPage { slug });
                 }
             }),
-        };
+        );
 
         let providers = use_blog_providers(&BLOG, blog_ctx);
         let search_open = providers.search_open;
-        let mut drawer_open = providers.drawer_open;
 
         rsx! {
             BlogLayout {
@@ -279,7 +280,7 @@ let rss_xml = BLOG.generate_rss(
 );
 ```
 
-You can serve this from a server function at `/blog/rss.xml`.
+Don't serve this from a `#[get]` server function — server functions JSON-encode the body. With the `server` feature, `SeoRouter::new(...).with_blog(&BLOG, "/blog")` registers `/blog/rss.xml` (plus per-post `.md` routes and the blog sitemap) as plain Axum routes with the correct content type. See the [customization guide](/docs/guides/customization) for the full setup.
 
 ## LLMs.txt Generation
 

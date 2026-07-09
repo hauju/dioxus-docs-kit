@@ -1,15 +1,18 @@
 //! Callout (Tip, Note, Warning, Info) parser.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use crate::parser::types::*;
 
+static CALLOUT_OPEN_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^<(Tip|Note|Warning|Info)>").unwrap());
+
 /// Try to parse a callout (Tip, Note, Warning, Info).
 pub(super) fn try_parse_callout(content: &str) -> Option<(DocNode, &str)> {
     // Match opening tag to determine callout type
-    let open_re = Regex::new(r"^<(Tip|Note|Warning|Info)>").unwrap();
-
-    let caps = open_re.captures(content)?;
+    let caps = CALLOUT_OPEN_RE.captures(content)?;
     let tag_name = caps.get(1).map(|m| m.as_str()).unwrap_or_default();
     let callout_type = CalloutType::parse(tag_name)?;
 

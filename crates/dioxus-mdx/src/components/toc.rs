@@ -5,8 +5,13 @@
 //! - Tracks scroll position and highlights the current section
 //! - Uses IntersectionObserver for performant scroll tracking
 
+use std::sync::LazyLock;
+
 use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons::LdList};
+
+static HEADING_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"(?m)^(#{2,4})\s+(.+)$").unwrap());
 
 /// Props for DocTableOfContents component.
 #[derive(Props, Clone, PartialEq)]
@@ -40,6 +45,10 @@ pub fn DocTableOfContents(props: DocTableOfContentsProps) -> Element {
             let js = format!(
                 r#"
                 (function() {{
+                    // Remove the previous page's scroll listener before adding a
+                    // new one, so navigation doesn't accumulate handlers.
+                    if (window.tocCleanup) {{ window.tocCleanup(); }}
+
                     const ids = {};
 
                     // Update active TOC item
@@ -95,6 +104,8 @@ pub fn DocTableOfContents(props: DocTableOfContentsProps) -> Element {
                     // Store cleanup function
                     window.tocCleanup = () => {{
                         window.removeEventListener('scroll', handleScroll);
+                        clearTimeout(scrollTimeout);
+                        window.tocCleanup = null;
                     }};
                 }})();
                 "#,
@@ -106,6 +117,11 @@ pub fn DocTableOfContents(props: DocTableOfContentsProps) -> Element {
                 let _ = document::eval(&js);
             });
         }));
+
+        // Remove the scroll listener when the TOC unmounts (leaving docs pages).
+        use_drop(|| {
+            let _ = document::eval("if (window.tocCleanup) { window.tocCleanup(); }");
+        });
     }
 
     if props.headers.is_empty() {
@@ -216,9 +232,8 @@ fn TocItem(props: TocItemProps) -> Element {
 /// Extract headers from markdown content for table of contents.
 pub fn extract_headers(content: &str) -> Vec<(String, String, u8)> {
     let mut headers = Vec::new();
-    let heading_re = regex::Regex::new(r"(?m)^(#{2,4})\s+(.+)$").unwrap();
 
-    for caps in heading_re.captures_iter(content) {
+    for caps in HEADING_RE.captures_iter(content) {
         let level = caps[1].len() as u8;
         let title = caps[2].trim().to_string();
         let id = slugify(&title);

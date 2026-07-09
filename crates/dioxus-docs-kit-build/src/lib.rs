@@ -13,6 +13,38 @@ struct NavGroup {
     pages: Vec<String>,
 }
 
+/// Builds the absolute path used inside the generated `include_str!()`.
+///
+/// Backslashes are normalized to forward slashes so the generated string
+/// literal is valid on Windows (`C:\Users\...` would otherwise contain
+/// invalid escape sequences).
+fn include_path(manifest_dir: &str, relative: &str) -> String {
+    format!("{manifest_dir}/{relative}").replace('\\', "/")
+}
+
+/// Emits a `map.insert(...)` line for `relative` if the file exists.
+///
+/// Missing files are skipped with a warning, but still registered via
+/// `rerun-if-changed` so the build script re-runs once the file is created
+/// (cargo re-runs when a watched path does not exist).
+fn emit_entry(code: &mut String, manifest_dir: &str, key: &str, relative: &str) {
+    let full_path = include_path(manifest_dir, relative);
+
+    println!("cargo:rerun-if-changed={relative}");
+
+    if !Path::new(&full_path).exists() {
+        println!(
+            "cargo:warning=\"{key}\" is listed in the nav/manifest but {full_path} does not exist — the page will 404. Create the file or remove the entry."
+        );
+        return;
+    }
+
+    // Use absolute path so include_str! works from OUT_DIR
+    code.push_str(&format!(
+        "    map.insert(\"{key}\", include_str!(\"{full_path}\"));\n"
+    ));
+}
+
 /// Generates `doc_content_generated.rs` in `OUT_DIR` from a `_nav.json` file.
 ///
 /// Call this from your `build.rs`:
@@ -50,21 +82,7 @@ pub fn generate_content_map(nav_json_path: &str) {
     for group in &nav.groups {
         for page in &group.pages {
             let mdx_path = format!("{docs_dir}/{page}.mdx");
-            let full_path = format!("{manifest_dir}/{mdx_path}");
-
-            if !Path::new(&full_path).exists() {
-                println!(
-                    "cargo:warning=Skipping \"{page}\": {mdx_path} not found (OpenAPI endpoints don't need .mdx files)"
-                );
-                continue;
-            }
-
-            println!("cargo:rerun-if-changed={mdx_path}");
-
-            // Use absolute path so include_str! works from OUT_DIR
-            code.push_str(&format!(
-                "    map.insert(\"{page}\", include_str!(\"{full_path}\"));\n"
-            ));
+            emit_entry(&mut code, &manifest_dir, page, &mdx_path);
         }
     }
 
@@ -122,25 +140,14 @@ pub fn generate_blog_content_map(manifest_path: &str) {
     code.push_str("    let mut map = std::collections::HashMap::new();\n");
 
     // Embed the manifest JSON itself
-    let manifest_full_path = format!("{manifest_dir}/{manifest_path}");
+    let manifest_full_path = include_path(&manifest_dir, manifest_path);
     code.push_str(&format!(
         "    map.insert(\"__manifest__\", include_str!(\"{manifest_full_path}\"));\n"
     ));
 
     for slug in &manifest.posts {
         let mdx_path = format!("{blog_dir}/{slug}.mdx");
-        let full_path = format!("{manifest_dir}/{mdx_path}");
-
-        if !Path::new(&full_path).exists() {
-            println!("cargo:warning=Skipping \"{slug}\": {mdx_path} not found");
-            continue;
-        }
-
-        println!("cargo:rerun-if-changed={mdx_path}");
-
-        code.push_str(&format!(
-            "    map.insert(\"{slug}\", include_str!(\"{full_path}\"));\n"
-        ));
+        emit_entry(&mut code, &manifest_dir, slug, &mdx_path);
     }
 
     code.push_str("    map\n}\n");
@@ -148,4 +155,25 @@ pub fn generate_blog_content_map(manifest_path: &str) {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = Path::new(&out_dir).join("blog_content_generated.rs");
     fs::write(&dest, code).expect("Failed to write generated file");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn include_path_joins_with_forward_slash() {
+        assert_eq!(
+            include_path("/home/me/project", "docs/intro.mdx"),
+            "/home/me/project/docs/intro.mdx"
+        );
+    }
+
+    #[test]
+    fn include_path_normalizes_windows_backslashes() {
+        assert_eq!(
+            include_path("C:\\Users\\me\\project", "docs\\intro.mdx"),
+            "C:/Users/me/project/docs/intro.mdx"
+        );
+    }
 }

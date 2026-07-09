@@ -1,5 +1,7 @@
 //! MDX component extraction and parsing.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use super::accordion::{try_parse_accordion_group, try_parse_standalone_accordion};
@@ -16,6 +18,19 @@ use super::update::try_parse_update;
 use crate::parser::frontmatter::extract_frontmatter;
 use crate::parser::types::*;
 
+static IMPORT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?m)^import\s+.*?;\s*\n?").unwrap());
+static HELPFUL_WIDGET_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"<SeggWatIsPageHelpful\s*/?>").unwrap());
+// Match fenced code blocks with optional language and filename
+// Handle both Unix (\n) and Windows (\r\n) line endings
+// The closing ``` must be on its own line (with optional leading whitespace)
+// IMPORTANT: Use [ \t]+ (not \s+) for filename separator to avoid matching across lines
+static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*(?:\r?\n|$)")
+        .unwrap()
+});
+
 /// Parse MDX content into a tree of DocNodes.
 /// Automatically strips frontmatter and import statements.
 pub fn parse_mdx(content: &str) -> Vec<DocNode> {
@@ -28,14 +43,12 @@ pub fn parse_mdx(content: &str) -> Vec<DocNode> {
 
 /// Strip import statements from MDX content.
 fn strip_imports(content: &str) -> String {
-    let import_re = Regex::new(r"(?m)^import\s+.*?;\s*\n?").unwrap();
-    import_re.replace_all(content, "").to_string()
+    IMPORT_RE.replace_all(content, "").to_string()
 }
 
 /// Strip the SeggWatIsPageHelpful component (we have our own).
 fn strip_helpful_widget(content: &str) -> String {
-    let re = Regex::new(r"<SeggWatIsPageHelpful\s*/?>").unwrap();
-    re.replace_all(content, "").to_string()
+    HELPFUL_WIDGET_RE.replace_all(content, "").to_string()
 }
 
 /// Parse content into a sequence of DocNodes.
@@ -125,17 +138,10 @@ pub(super) fn parse_content(content: &str) -> Vec<DocNode> {
 /// Returns a list of nodes interleaving Markdown and CodeBlock.
 fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
     let mut nodes = Vec::new();
-    // Match fenced code blocks with optional language and filename
-    // Handle both Unix (\n) and Windows (\r\n) line endings
-    // The closing ``` must be on its own line (with optional leading whitespace)
-    // IMPORTANT: Use [ \t]+ (not \s+) for filename separator to avoid matching across lines
-    let code_re =
-        Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*(?:\r?\n|$)")
-            .unwrap();
 
     let mut last_end = 0;
 
-    for caps in code_re.captures_iter(content) {
+    for caps in CODE_RE.captures_iter(content) {
         let full_match = caps.get(0).expect("regex group 0");
 
         // Add any markdown before this code block

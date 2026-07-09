@@ -5,25 +5,46 @@ members = [
     "crates/dioxus-mdx",
 ]
 
-[package]
-name = "dioxus-docs-kit-example"
+[workspace.package]
 version = "0.5.0"
 authors = ["Hauke Jung <hauke.jung@outlook.de>"]
 edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+repository = "https://github.com/hauju/dioxus-docs-kit"
+homepage = "https://github.com/hauju/dioxus-docs-kit"
+
+[workspace.dependencies]
+dioxus = "0.7.9"
+dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
+dioxus-code = { version = "0.1.2", default-features = false, features = ["runtime"] }
+dioxus-mdx = { version = "0.5.0", path = "crates/dioxus-mdx", default-features = false }
+dioxus-docs-kit = { path = "crates/dioxus-docs-kit", default-features = false }
+dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+tracing = "0.1"
+gloo-timers = { version = "0.3", features = ["futures"] }
+
+[package]
+name = "dioxus-docs-kit-example"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
-dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
-dioxus-docs-kit = { path = "crates/dioxus-docs-kit", default-features = false }
+dioxus = { workspace = true, features = ["router", "fullstack"] }
+dioxus-free-icons = { workspace = true }
+dioxus-docs-kit = { workspace = true }
 
 [build-dependencies]
-dioxus-docs-kit-build = { path = "crates/dioxus-docs-kit-build" }
+dioxus-docs-kit-build = { workspace = true }
 
 [features]
 default = ["web", "mermaid"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
-server = ["dioxus/server"]
+server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]

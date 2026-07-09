@@ -1,5 +1,7 @@
 //! Main documentation renderer component.
 
+use std::sync::LazyLock;
+
 use dioxus::prelude::*;
 
 use super::slugify;
@@ -10,20 +12,23 @@ use crate::components::{
 };
 use crate::parser::{CardGroupNode, DocNode, parse_mdx};
 
+static HEADING_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"<(h[2-4])>(.*?)</h[2-4]>").unwrap());
+static HTML_TAG_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"<[^>]+>").unwrap());
+
 /// Inject `id` attributes into heading tags so TOC anchor links work.
 fn inject_heading_ids(html: &str) -> String {
-    let re = regex::Regex::new(r"<(h[2-4])>(.*?)</h[2-4]>").unwrap();
-    re.replace_all(html, |caps: &regex::Captures| {
-        let tag = &caps[1];
-        let inner = &caps[2];
-        // Strip any inner HTML tags to get plain text for the slug
-        let plain = regex::Regex::new(r"<[^>]+>")
-            .unwrap()
-            .replace_all(inner, "");
-        let id = slugify(&plain);
-        format!("<{tag} id=\"{id}\">{inner}</{tag}>")
-    })
-    .into_owned()
+    HEADING_RE
+        .replace_all(html, |caps: &regex::Captures| {
+            let tag = &caps[1];
+            let inner = &caps[2];
+            // Strip any inner HTML tags to get plain text for the slug
+            let plain = HTML_TAG_RE.replace_all(inner, "");
+            let id = slugify(&plain);
+            format!("<{tag} id=\"{id}\">{inner}</{tag}>")
+        })
+        .into_owned()
 }
 
 /// Props for DocNodeRenderer component.

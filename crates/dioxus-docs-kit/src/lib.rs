@@ -65,8 +65,12 @@ mod wasm_sysroot_stderr {
 pub mod blog;
 pub mod components;
 pub mod config;
+pub mod error;
 pub mod hooks;
 pub mod registry;
+pub(crate) mod search;
+#[cfg(feature = "server")]
+pub mod server;
 
 use dioxus::prelude::*;
 
@@ -102,10 +106,52 @@ pub struct DocsContext {
     /// `<link rel="alternate" type="text/markdown">` pointing at the page's raw
     /// Markdown source (`<base_path>/<path>.md`), a discoverability hint for AI
     /// crawlers and "view as Markdown" tooling. Enable this only if your server
-    /// actually serves those `.md` URLs — the kit does not register them for
-    /// you. Emitted only for MDX pages (OpenAPI endpoint pages have no Markdown
-    /// source), and only when [`auto_meta`](Self::auto_meta) is also on.
+    /// actually serves those `.md` URLs (see `server::SeoRouter` behind the
+    /// `server` feature). Emitted only for MDX pages (OpenAPI endpoint pages
+    /// have no Markdown source), and only when [`auto_meta`](Self::auto_meta)
+    /// is also on.
     pub markdown_alternate: bool,
+}
+
+impl DocsContext {
+    /// Create a context from the three required fields.
+    ///
+    /// The meta fields default to `site_url: None`, `auto_meta: true`,
+    /// `markdown_alternate: false`; override them with the `with_*` setters.
+    /// Prefer this over a struct literal — new fields get sensible defaults
+    /// here instead of breaking your build.
+    pub fn new(
+        current_path: impl Into<ReadSignal<String>>,
+        base_path: impl Into<String>,
+        navigate: Callback<String>,
+    ) -> Self {
+        Self {
+            current_path: current_path.into(),
+            base_path: base_path.into(),
+            navigate,
+            site_url: None,
+            auto_meta: true,
+            markdown_alternate: false,
+        }
+    }
+
+    /// Set the public site origin (e.g. `"https://example.com"`).
+    pub fn with_site_url(mut self, site_url: impl Into<String>) -> Self {
+        self.site_url = Some(site_url.into());
+        self
+    }
+
+    /// Enable or disable automatic per-page meta emission (default: on).
+    pub fn with_auto_meta(mut self, auto_meta: bool) -> Self {
+        self.auto_meta = auto_meta;
+        self
+    }
+
+    /// Emit `<link rel="alternate" type="text/markdown">` tags (default: off).
+    pub fn with_markdown_alternate(mut self, markdown_alternate: bool) -> Self {
+        self.markdown_alternate = markdown_alternate;
+        self
+    }
 }
 
 // ============================================================================
@@ -140,9 +186,51 @@ pub struct BlogContext {
     /// `<link rel="alternate" type="text/markdown">` pointing at the post's raw
     /// Markdown source (`<base_path>/<slug>.md`), a discoverability hint for AI
     /// crawlers and "view as Markdown" tooling. Enable this only if your server
-    /// actually serves those `.md` URLs — the kit does not register them for
-    /// you. Emitted only when [`auto_meta`](Self::auto_meta) is also on.
+    /// actually serves those `.md` URLs (see `server::SeoRouter` behind the
+    /// `server` feature). Emitted only when [`auto_meta`](Self::auto_meta) is
+    /// also on.
     pub markdown_alternate: bool,
+}
+
+impl BlogContext {
+    /// Create a context from the three required fields.
+    ///
+    /// The meta fields default to `site_url: None`, `auto_meta: true`,
+    /// `markdown_alternate: false`; override them with the `with_*` setters.
+    /// Prefer this over a struct literal — new fields get sensible defaults
+    /// here instead of breaking your build.
+    pub fn new(
+        current_slug: impl Into<ReadSignal<String>>,
+        base_path: impl Into<String>,
+        navigate: Callback<String>,
+    ) -> Self {
+        Self {
+            current_slug: current_slug.into(),
+            base_path: base_path.into(),
+            navigate,
+            site_url: None,
+            auto_meta: true,
+            markdown_alternate: false,
+        }
+    }
+
+    /// Set the public site origin (e.g. `"https://example.com"`).
+    pub fn with_site_url(mut self, site_url: impl Into<String>) -> Self {
+        self.site_url = Some(site_url.into());
+        self
+    }
+
+    /// Enable or disable automatic per-page meta emission (default: on).
+    pub fn with_auto_meta(mut self, auto_meta: bool) -> Self {
+        self.auto_meta = auto_meta;
+        self
+    }
+
+    /// Emit `<link rel="alternate" type="text/markdown">` tags (default: off).
+    pub fn with_markdown_alternate(mut self, markdown_alternate: bool) -> Self {
+        self.markdown_alternate = markdown_alternate;
+        self
+    }
 }
 
 // ============================================================================
@@ -150,12 +238,14 @@ pub struct BlogContext {
 // ============================================================================
 
 pub use config::{CodeThemeConfig, DocsConfig, ThemeConfig};
+pub use error::DocsKitError;
 pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
 pub use components::{
-    CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta, DocsPageNav, DocsSidebar, DocsVariant,
-    DrawerOpen, LayoutOffsets, MobileDrawer, SearchButton, SearchModal, ThemeToggle,
+    ActiveTab, CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta, DocsPageNav, DocsSidebar,
+    DocsVariant, DrawerOpen, LayoutOffsets, MobileDrawer, SearchButton, SearchModal, SearchOpen,
+    ThemeToggle, use_theme_provider,
 };
 
 pub use hooks::{DocsProviders, use_docs_providers};
@@ -174,6 +264,7 @@ pub use dioxus_mdx::MermaidDiagram;
 // Blog re-exports
 // ============================================================================
 
+pub use blog::hooks::{ActiveTag, CurrentPage};
 pub use blog::types::{Author, BlogFrontmatter, BlogPost, BlogSearchEntry};
 pub use blog::{BlogConfig, BlogProviders, BlogRegistry, use_blog_providers};
 

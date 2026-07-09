@@ -72,25 +72,78 @@ pub struct BlogSearchEntry {
 
 /// Extract blog frontmatter from MDX content.
 ///
-/// Returns the parsed frontmatter and the remaining content after the frontmatter block.
-pub fn extract_blog_frontmatter(content: &str) -> Option<(BlogFrontmatter, &str)> {
+/// Returns the parsed frontmatter and the remaining content after the frontmatter block,
+/// or a description of why the frontmatter is invalid.
+pub fn extract_blog_frontmatter(content: &str) -> Result<(BlogFrontmatter, &str), String> {
     let content = content.trim();
 
     if !content.starts_with("---") {
-        return None;
+        return Err("missing frontmatter block (expected leading ---)".to_string());
     }
 
     let after_first_delim = &content[3..];
-    let end_idx = after_first_delim.find("\n---")?;
+    let end_idx = after_first_delim
+        .find("\n---")
+        .ok_or_else(|| "unclosed frontmatter block (missing closing ---)".to_string())?;
     let yaml_content = after_first_delim[..end_idx].trim();
     let remaining = after_first_delim[end_idx + 4..].trim_start();
 
-    let fm: BlogFrontmatter = serde_yaml::from_str(yaml_content).ok()?;
-    Some((fm, remaining))
+    let fm: BlogFrontmatter =
+        serde_yaml::from_str(yaml_content).map_err(|e| format!("invalid frontmatter: {e}"))?;
+    Ok((fm, remaining))
 }
 
 /// Calculate reading time from raw text (words / 200 WPM, minimum 1 minute).
 pub fn calculate_reading_time(text: &str) -> u32 {
     let word_count = text.split_whitespace().count();
     ((word_count as f64 / 200.0).ceil() as u32).max(1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_valid_frontmatter() {
+        let content =
+            "---\ntitle: Hello\ndate: \"2026-03-15\"\nauthor: jane\ntags: [rust]\n---\n\nBody text";
+        let (fm, body) = extract_blog_frontmatter(content).unwrap();
+        assert_eq!(fm.title, "Hello");
+        assert_eq!(fm.date, "2026-03-15");
+        assert_eq!(fm.author, "jane");
+        assert_eq!(fm.tags, vec!["rust".to_string()]);
+        assert!(!fm.draft);
+        assert!(body.starts_with("Body text"));
+    }
+
+    #[test]
+    fn missing_frontmatter_block_errors() {
+        let err = extract_blog_frontmatter("Just body text").unwrap_err();
+        assert!(err.contains("missing frontmatter"), "got: {err}");
+    }
+
+    #[test]
+    fn unclosed_frontmatter_errors() {
+        let err = extract_blog_frontmatter("---\ntitle: Hello\nno closing").unwrap_err();
+        assert!(err.contains("unclosed"), "got: {err}");
+    }
+
+    #[test]
+    fn missing_required_field_errors_with_detail() {
+        // No `date` field.
+        let err =
+            extract_blog_frontmatter("---\ntitle: Hello\nauthor: jane\n---\nBody").unwrap_err();
+        assert!(err.contains("invalid frontmatter"), "got: {err}");
+        assert!(
+            err.contains("date"),
+            "expected serde detail naming the missing field, got: {err}"
+        );
+    }
+
+    #[test]
+    fn reading_time_rounds_up_with_minimum() {
+        assert_eq!(calculate_reading_time("a few words"), 1);
+        let long = "word ".repeat(400);
+        assert_eq!(calculate_reading_time(&long), 2);
+    }
 }

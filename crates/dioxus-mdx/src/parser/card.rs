@@ -1,16 +1,28 @@
 //! Card and CardGroup parser.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use super::utils::{extract_attr, find_closing_tag};
 use crate::parser::types::*;
 
+static CARD_GROUP_OPEN_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^<CardGroup(?:\s+cols=\{?(\d+)\}?)?\s*>").unwrap());
+static COLUMNS_OPEN_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^<Columns(?:\s+cols=\{?(\d+)\}?)?\s*>").unwrap());
+// Pattern for self-closing cards: <Card ... />
+static SELF_CLOSING_CARD_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?s)^<Card\s+(?:title="([^"]*)")?\s*(?:icon="([^"]*)")?\s*(?:href="([^"]*)")?\s*/>"#,
+    )
+    .unwrap()
+});
+
 /// Try to parse a CardGroup.
 pub(super) fn try_parse_card_group(content: &str) -> Option<(DocNode, &str)> {
     // Match opening tag with optional cols attribute
-    let open_re = Regex::new(r"^<CardGroup(?:\s+cols=\{?(\d+)\}?)?\s*>").unwrap();
-
-    let open_caps = open_re.captures(content)?;
+    let open_caps = CARD_GROUP_OPEN_RE.captures(content)?;
     let open_match = open_caps.get(0).expect("regex group 0");
     let cols: u8 = open_caps
         .get(1)
@@ -32,9 +44,7 @@ pub(super) fn try_parse_card_group(content: &str) -> Option<(DocNode, &str)> {
 
 /// Try to parse a Columns element (treated same as CardGroup).
 pub(super) fn try_parse_columns(content: &str) -> Option<(DocNode, &str)> {
-    let open_re = Regex::new(r"^<Columns(?:\s+cols=\{?(\d+)\}?)?\s*>").unwrap();
-
-    let open_caps = open_re.captures(content)?;
+    let open_caps = COLUMNS_OPEN_RE.captures(content)?;
     let open_match = open_caps.get(0).expect("regex group 0");
     let cols: u8 = open_caps
         .get(1)
@@ -74,17 +84,11 @@ fn parse_cards(content: &str) -> Vec<CardNode> {
     let mut cards = Vec::new();
     let mut remaining = content.trim();
 
-    // Pattern for self-closing cards: <Card ... />
-    let self_closing_re = Regex::new(
-        r#"(?s)^<Card\s+(?:title="([^"]*)")?\s*(?:icon="([^"]*)")?\s*(?:href="([^"]*)")?\s*/>"#,
-    )
-    .unwrap();
-
     while !remaining.is_empty() {
         remaining = remaining.trim();
 
         // Try self-closing first
-        if let Some(caps) = self_closing_re.captures(remaining) {
+        if let Some(caps) = SELF_CLOSING_CARD_RE.captures(remaining) {
             let full_match = caps.get(0).expect("regex group 0");
             cards.push(CardNode {
                 title: caps

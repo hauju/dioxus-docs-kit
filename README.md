@@ -18,16 +18,18 @@ A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MD
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = { version = "0.4", default-features = false }
+dioxus-docs-kit = "0.5"
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.4"
+dioxus-docs-kit-build = "0.5"
 
 [features]
 default = ["web"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
-server = ["dioxus/server"]
+server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
+
+The kit's default features are `web` + `mermaid`; if you disable default features, re-enable `mermaid` too or ` ```mermaid ` fences stop rendering as diagrams.
 
 ### 2. Set up `build.rs`
 
@@ -102,18 +104,17 @@ fn MyDocsLayout() -> Element {
         _ => String::new(),
     });
 
-    let docs_ctx = DocsContext {
-        current_path: current_path.into(),
-        base_path: "/docs".into(),
-        navigate: Callback::new(move |path: String| {
+    let docs_ctx = DocsContext::new(
+        current_path,
+        "/docs",
+        Callback::new(move |path: String| {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-    };
+    );
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
     let search_open = providers.search_open;
-    let mut drawer_open = providers.drawer_open;
 
     rsx! {
         DocsLayout {

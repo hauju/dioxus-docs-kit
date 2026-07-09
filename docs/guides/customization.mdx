@@ -45,7 +45,7 @@ Visual identity lives in a flat set of `--dk-*` custom properties on `dk-root`. 
 ```css
 .dk-root {
   --dk-article-width: 68ch;
-  --dk-heading-font: "Inter Tight", system-ui, sans-serif;
+  --dk-font-heading: "Inter Tight", system-ui, sans-serif;
   --dk-accent: oklch(0.65 0.20 250);
   --dk-radius: 0.25rem;
 }
@@ -64,45 +64,36 @@ Copy any of them into your `assets/` and import via `document::Stylesheet`. See 
 
 ## SEO Meta
 
-Set `auto_meta: true` on your `DocsContext` (the default in fresh integrations) and the kit emits `<title>`, `<meta name="description">`, OpenGraph, and Twitter Card tags from each page's frontmatter:
+Auto meta is on by default. The kit emits `<title>`, `<meta name="description">`, OpenGraph, and Twitter Card tags from each page's frontmatter:
 
 ```rust
-let docs_ctx = DocsContext {
-    current_path: current_path.into(),
-    base_path: "/docs".into(),
-    navigate: /* ... */,
-    site_url: Some("https://your-site.com".into()),
-    auto_meta: true,
-};
+let docs_ctx = DocsContext::new(current_path, "/docs", navigate)
+    .with_site_url("https://your-site.com");
 ```
 
-- `auto_meta = true` emits title and description unconditionally.
-- Canonical URLs (`<link rel="canonical">`) and `og:url` only emit when `site_url` is also set.
-- Set `auto_meta = false` if your app already manages `<head>` (custom OG images, JSON-LD, etc.) and you want to avoid duplicate tags.
+- Title and description tags emit unconditionally while auto meta is on.
+- Canonical URLs (`<link rel="canonical">`) and `og:url` only emit when a site URL is set via `.with_site_url()`.
+- Call `.with_auto_meta(false)` if your app already manages `<head>` (custom OG images, JSON-LD, etc.) and you want to avoid duplicate tags.
 
-## Sitemap Generation
+## Sitemaps, robots.txt & llms.txt
 
-`DocsRegistry::generate_sitemap(site_url, docs_path)` returns a fully-formed XML sitemap for every doc page. Wire it up as a server function so crawlers can fetch it:
+Enable the `server` feature and mount `SeoRouter` — it generates all crawler-facing routes: per-page raw Markdown (`<page>.md`), `llms.txt` / `llms-full.txt`, per-surface sitemaps plus a `sitemap.xml` index, blog RSS, and a robots.txt with explicit AI-crawler entries.
+
+Do **not** serve these as `#[get(...)]` server functions — a server function JSON-encodes its `String` return value (quoted body, `application/json` content type), which crawlers can't parse. `SeoRouter` registers plain Axum routes with the correct content types:
 
 ```rust
-const SITE_URL: &str = "https://your-site.com";
+use dioxus_docs_kit::server::SeoRouter;
 
-#[get("/sitemap-docs.xml")]
-async fn sitemap_docs() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_sitemap(SITE_URL, "/docs"))
-}
-
-#[get("/robots.txt")]
-async fn robots_txt() -> Result<String, ServerFnError> {
-    Ok(format!(
-        "User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap-docs.xml\n"
-    ))
-}
+dioxus::server::serve(|| async {
+    let seo = SeoRouter::new("https://your-site.com", "My Docs", "Documentation for My Product")
+        .with_docs(&DOCS, "/docs")
+        .with_blog(&BLOG, "/blog") // optional
+        .into_router();
+    Ok(dioxus::server::router(App).merge(seo))
+});
 ```
 
-<Note>
-If you also use the blog engine, `BlogRegistry` exposes the same `generate_sitemap()` method — combine both behind a `sitemap.xml` index. See `src/main.rs` in the example for the full pattern.
-</Note>
+In your app's `Cargo.toml`, forward the feature: `server = ["dioxus/server", "dioxus-docs-kit/server"]`. See `src/main.rs` in the example for the full pattern.
 
 ## Configuring Navigation
 

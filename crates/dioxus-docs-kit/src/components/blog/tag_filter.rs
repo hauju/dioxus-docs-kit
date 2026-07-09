@@ -1,13 +1,14 @@
 use dioxus::prelude::*;
 
+use crate::blog::hooks::{ActiveTag, CurrentPage};
 use crate::blog::registry::BlogRegistry;
 
 /// Horizontal tag filter bar.
 #[component]
 pub fn TagFilter() -> Element {
     let registry = use_context::<&'static BlogRegistry>();
-    let mut active_tag = use_context::<Signal<Option<String>>>();
-    let mut current_page = use_context::<Signal<usize>>();
+    let ActiveTag(mut active_tag) = use_context::<ActiveTag>();
+    let CurrentPage(mut current_page) = use_context::<CurrentPage>();
 
     rsx! {
         div { class: "flex flex-wrap gap-2",

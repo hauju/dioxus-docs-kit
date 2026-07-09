@@ -8,7 +8,7 @@ Add it as a build dependency:
 
 ```toml
 [build-dependencies]
-dioxus-docs-kit-build = "0.2"
+dioxus-docs-kit-build = "0.5"
 ```
 
 Create a `build.rs`:
@@ -16,15 +16,20 @@ Create a `build.rs`:
 ```rust
 fn main() {
     dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+
+    // Optional: blog content map from a `_blog.json` manifest
+    dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json");
 }
 ```
 
-Then use the `doc_content_map!()` macro from `dioxus-docs-kit` to consume the generated file:
+Then use the `doc_content_map!()` / `blog_content_map!()` macros from `dioxus-docs-kit` to consume the generated files:
 
 ```rust
 dioxus_docs_kit::doc_content_map!();
+dioxus_docs_kit::blog_content_map!();
 
-// Now `doc_content_map()` returns HashMap<&'static str, &'static str>
+// Now `doc_content_map()` / `blog_content_map()` return
+// HashMap<&'static str, &'static str>
 ```
 
 ## What it does

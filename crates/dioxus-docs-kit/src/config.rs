@@ -7,7 +7,7 @@ use std::collections::HashMap;
 /// Theme configuration for the documentation site.
 ///
 /// Controls which DaisyUI theme(s) are applied and whether a toggle button is shown.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ThemeConfig {
     /// The default theme name (must match a DaisyUI theme defined in `tailwind.css`).
     pub default_theme: String,
@@ -164,8 +164,20 @@ impl DocsConfig {
     /// Build the [`DocsRegistry`].
     ///
     /// Parses all documents, builds the search index, and parses OpenAPI specs.
+    ///
+    /// # Panics
+    ///
+    /// Panics with a descriptive message if `_nav.json` or an OpenAPI spec fails
+    /// to parse. Use [`Self::try_build`] to handle these errors yourself.
     pub fn build(self) -> DocsRegistry {
-        DocsRegistry::from_config(self)
+        self.try_build()
+            .unwrap_or_else(|e| panic!("dioxus-docs-kit: {e}"))
+    }
+
+    /// Build the [`DocsRegistry`], returning an error instead of panicking when
+    /// `_nav.json` or an OpenAPI spec fails to parse.
+    pub fn try_build(self) -> Result<DocsRegistry, crate::error::DocsKitError> {
+        DocsRegistry::try_from_config(self)
     }
 
     // Accessors for DocsRegistry::from_config

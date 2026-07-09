@@ -50,13 +50,26 @@ impl DocsVariant {
     }
 }
 
-/// Newtype wrapper for the drawer-open signal, so it can coexist with
-/// `Signal<bool>` (used for `search_open`) in the context system.
+/// Newtype wrapper for the drawer-open signal, so it can't collide with other
+/// `Signal<bool>` values in the context system.
 ///
 /// Consumers can provide this before rendering `DocsLayout` to control
 /// the mobile drawer from a custom header.
 #[derive(Clone, Copy)]
 pub struct DrawerOpen(pub Signal<bool>);
+
+/// Newtype wrapper for the search-modal open signal, so it can't collide with
+/// other `Signal<bool>` values in the context system.
+///
+/// Provided by `DocsLayout`/`BlogLayout` (or [`use_docs_providers`](crate::use_docs_providers) /
+/// [`use_blog_providers`](crate::use_blog_providers)); consumers can provide it
+/// beforehand to control search from a custom header.
+#[derive(Clone, Copy)]
+pub struct SearchOpen(pub Signal<bool>);
+
+/// Newtype wrapper for the active tab-bar tab, provided by `DocsLayout`.
+#[derive(Clone, Copy)]
+pub struct ActiveTab(pub Signal<String>);
 
 use super::mobile_drawer::MobileDrawer;
 use super::search_modal::SearchModal;
@@ -109,7 +122,7 @@ pub fn DocsLayout(
     let nav = &registry.nav;
 
     // Check if consumer already provided context (lookups, not hooks)
-    let parent_search: Option<Signal<bool>> = try_use_context();
+    let parent_search: Option<SearchOpen> = try_use_context();
     let parent_drawer: Option<DrawerOpen> = try_use_context();
 
     // Always create local fallback signals unconditionally
@@ -117,28 +130,15 @@ pub fn DocsLayout(
     let local_drawer = use_signal(|| false);
 
     // Use consumer-provided context if available, otherwise local
-    let mut search_open = parent_search.unwrap_or(local_search);
+    let search_open = parent_search.map(|s| s.0).unwrap_or(local_search);
     let mut drawer_open = parent_drawer.map(|d| d.0).unwrap_or(local_drawer);
 
     // Always provide context for children (SearchModal, MobileDrawer, etc.)
-    use_context_provider(|| search_open);
+    use_context_provider(|| SearchOpen(search_open));
     use_context_provider(|| DrawerOpen(drawer_open));
 
     // Theme state: hooks must be called unconditionally
-    let theme_default = registry
-        .theme
-        .as_ref()
-        .map(|t| t.default_theme.clone())
-        .unwrap_or_default();
-    let theme_storage_key = registry
-        .theme
-        .as_ref()
-        .map(|t| t.storage_key.clone())
-        .unwrap_or_default();
-    let has_theme = registry.theme.is_some();
-
-    let mut current_theme = use_signal(|| theme_default.clone());
-    use_context_provider(|| CurrentTheme(current_theme));
+    let current_theme = super::shared::use_theme_provider(registry.theme.clone());
 
     // Resolve the code-block syntax theme. When a light/dark toggle is configured, the
     // choice tracks the active `data-theme` so code backgrounds match the site toggle
@@ -160,32 +160,9 @@ pub fn DocsLayout(
     });
     use_context_provider(|| CodeThemeOverride(code_theme.into()));
 
-    // On mount: read stored preference and apply data-theme
-    use_effect(move || {
-        if !has_theme {
-            return;
-        }
-        let key = theme_storage_key.clone();
-        let fallback = theme_default.clone();
-        spawn(async move {
-            let mut eval = document::eval(&format!(
-                r#"
-                let theme = null;
-                try {{ theme = localStorage.getItem('{key}'); }} catch(e) {{}}
-                theme = theme || '{fallback}';
-                document.documentElement.setAttribute('data-theme', theme);
-                dioxus.send(theme);
-                "#
-            ));
-            if let Ok(stored) = eval.recv::<String>().await {
-                current_theme.set(stored);
-            }
-        });
-    });
-
     // Active tab state
     let mut active_tab = use_signal(|| nav.tabs.first().cloned().unwrap_or_default());
-    use_context_provider(|| active_tab);
+    use_context_provider(|| ActiveTab(active_tab));
 
     // Sync active tab from current path
     let current_path = ctx.current_path;
@@ -198,26 +175,7 @@ pub fn DocsLayout(
     });
 
     // Keyboard shortcut: Cmd/Ctrl+K to toggle search
-    use_effect(move || {
-        spawn(async move {
-            let mut eval = document::eval(
-                r#"
-                document.addEventListener('keydown', (e) => {
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                        e.preventDefault();
-                        dioxus.send(true);
-                    }
-                });
-                while (true) { await new Promise(r => setTimeout(r, 1000000)); }
-                "#,
-            );
-            loop {
-                if (eval.recv::<bool>().await).is_ok() {
-                    search_open.toggle();
-                }
-            }
-        });
-    });
+    super::shared::use_search_hotkey(search_open);
 
     let has_tabs = nav.has_tabs();
     let offsets = if !show_header {

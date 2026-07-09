@@ -48,3 +48,60 @@ pub(super) fn try_parse_openapi(content: &str) -> Option<(DocNode, &str)> {
         rest,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SPEC: &str = r#"openapi: "3.0.0"
+info:
+  title: Test API
+  version: "1.0.0"
+paths:
+  /pets:
+    get:
+      summary: List pets
+      responses:
+        "200":
+          description: OK
+"#;
+
+    #[test]
+    fn parses_inline_openapi_block() {
+        let content = format!("<OpenAPI>\n{SPEC}\n</OpenAPI>after");
+        let (node, rest) = try_parse_openapi(&content).unwrap();
+        match node {
+            DocNode::OpenApi(openapi) => {
+                assert_eq!(openapi.spec.info.title, "Test API");
+                assert!(openapi.tags.is_none());
+                assert!(openapi.show_schemas);
+            }
+            other => panic!("expected OpenApi node, got {other:?}"),
+        }
+        assert_eq!(rest, "after");
+    }
+
+    #[test]
+    fn parses_tags_filter_and_hide_schemas() {
+        let content = format!("<OpenAPI tags=\"pets, store\" hideSchemas>\n{SPEC}\n</OpenAPI>");
+        let (node, _) = try_parse_openapi(&content).unwrap();
+        match node {
+            DocNode::OpenApi(openapi) => {
+                assert_eq!(
+                    openapi.tags,
+                    Some(vec!["pets".to_string(), "store".to_string()])
+                );
+                assert!(!openapi.show_schemas);
+            }
+            other => panic!("expected OpenApi node, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn invalid_spec_or_non_openapi_returns_none() {
+        assert!(try_parse_openapi("plain text").is_none());
+        assert!(try_parse_openapi("<OpenAPI>not a spec</OpenAPI>").is_none());
+        // Self-closing src form is not supported at parse time.
+        assert!(try_parse_openapi("<OpenAPI src=\"/spec.yaml\" />").is_none());
+    }
+}

@@ -2,26 +2,7 @@ use dioxus::prelude::*;
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
-
-fn join_site_url(site_url: &str, base_path: &str, slug: Option<&str>) -> String {
-    let mut url = site_url.trim_end_matches('/').to_string();
-
-    if !base_path.is_empty() {
-        if !base_path.starts_with('/') {
-            url.push('/');
-        }
-        url.push_str(base_path.trim_end_matches('/'));
-    }
-
-    if let Some(slug) = slug
-        && !slug.is_empty()
-    {
-        url.push('/');
-        url.push_str(slug.trim_start_matches('/'));
-    }
-
-    url
-}
+use crate::components::seo::{join_site_url, jsonld_to_string};
 
 /// Build a schema.org Article JSON-LD string, with `</` escaped to `<\/` so the
 /// payload cannot break out of its `<script>` container.
@@ -57,9 +38,7 @@ fn build_article_jsonld(
         payload["image"] = serde_json::Value::String(image.to_string());
     }
 
-    serde_json::to_string(&payload)
-        .unwrap_or_default()
-        .replace("</", "<\\/")
+    jsonld_to_string(&payload)
 }
 
 /// Injects Open Graph / SEO meta tags and document title for a single blog post.
@@ -88,12 +67,12 @@ pub fn BlogPostMeta(slug: String) -> Element {
     let canonical = ctx
         .site_url
         .as_deref()
-        .map(|origin| join_site_url(origin, &ctx.base_path, Some(&slug)));
+        .map(|origin| join_site_url(origin, &ctx.base_path, &slug));
     // Root-relative `<base_path>/<slug>.md`; `join_site_url` with an empty origin
     // yields the path portion only.
     let markdown_href = ctx
         .markdown_alternate
-        .then(|| format!("{}.md", join_site_url("", &ctx.base_path, Some(&slug))));
+        .then(|| format!("{}.md", join_site_url("", &ctx.base_path, &slug)));
     let date = &post.frontmatter.date;
     let author_name = registry
         .get_author(&post.frontmatter.author)
@@ -167,7 +146,7 @@ pub fn BlogIndexMeta(title: String, description: String) -> Element {
     let canonical = ctx
         .site_url
         .as_deref()
-        .map(|origin| join_site_url(origin, &ctx.base_path, None));
+        .map(|origin| join_site_url(origin, &ctx.base_path, ""));
 
     rsx! {
         document::Title { "{title}" }
@@ -189,7 +168,7 @@ pub fn BlogIndexMeta(title: String, description: String) -> Element {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_article_jsonld, join_site_url};
+    use super::build_article_jsonld;
 
     #[test]
     fn jsonld_includes_required_fields() {
@@ -241,21 +220,5 @@ mod tests {
             "expected </ sequences to be escaped, got: {out}"
         );
         assert!(out.contains("<\\/script"));
-    }
-
-    #[test]
-    fn joins_site_url_without_duplicate_slashes() {
-        assert_eq!(
-            join_site_url("https://example.com/", "/blog/", Some("hello-world")),
-            "https://example.com/blog/hello-world"
-        );
-        assert_eq!(
-            join_site_url("https://example.com", "blog", Some("/hello-world")),
-            "https://example.com/blog/hello-world"
-        );
-        assert_eq!(
-            join_site_url("https://example.com/", "/blog/", None),
-            "https://example.com/blog"
-        );
     }
 }

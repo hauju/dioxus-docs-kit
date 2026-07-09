@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.2"
+dioxus-docs-kit = "0.5"
 ```
 
 ### 1. Build a Registry
@@ -33,11 +33,11 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 
 ### 2. Wire Into Your Router
 
-Create a thin layout wrapper that provides the `DocsContext` and registry to the library components:
+Create a thin layout wrapper that provides the `DocsContext` and registry to the library components. The `use_docs_providers` hook bundles all the context setup into one call:
 
 ```rust
 use dioxus::prelude::*;
-use dioxus_docs_kit::{DocsContext, DocsLayout, DocsRegistry};
+use dioxus_docs_kit::{DocsContext, DocsLayout, use_docs_providers};
 
 #[component]
 fn MyDocsLayout() -> Element {
@@ -45,21 +45,27 @@ fn MyDocsLayout() -> Element {
     let route = use_route::<Route>();
 
     let current_path = use_memo(move || {
-        // extract the slug from your route
+        // extract the slug from your route, e.g. slug.join("/")
     });
 
-    let docs_ctx = DocsContext {
-        current_path: current_path.into(),
-        base_path: "/docs".into(),
-        navigate: Callback::new(move |path: String| {
+    let docs_ctx = DocsContext::new(
+        current_path,
+        "/docs",
+        Callback::new(move |path: String| {
             nav.push(/* build route from path */);
         }),
-    };
+    )
+    .with_site_url("https://your-site.com"); // optional: canonical/OG URLs
 
-    use_context_provider(|| &*DOCS as &'static DocsRegistry);
-    use_context_provider(|| docs_ctx);
+    let providers = use_docs_providers(&DOCS, docs_ctx);
+    // providers.search_open / providers.drawer_open are available for
+    // wiring a custom header.
 
-    rsx! { DocsLayout {} }
+    rsx! {
+        DocsLayout {
+            Outlet::<Route> {}
+        }
+    }
 }
 ```
 
@@ -93,21 +99,18 @@ That's it. The library handles sidebar rendering, search, page content, previous
 
 ## Navigation Config
 
-Define your docs structure in `_nav.json`:
+Define your docs structure in `_nav.json`. `tabs` is a flat list of tab names, and each group optionally names the tab it belongs to:
 
 ```json
 {
-  "tabs": [
+  "tabs": ["Docs", "Guides"],
+  "groups": [
     {
-      "tab": "Documentation",
-      "groups": [
-        {
-          "group": "Getting Started",
-          "pages": [
-            "getting-started/introduction",
-            "getting-started/quickstart"
-          ]
-        }
+      "group": "Getting Started",
+      "tab": "Docs",
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/quickstart"
       ]
     }
   ]
@@ -266,6 +269,21 @@ community contribution.
 ## Features
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
+- `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
+- `server` — Axum route builders for crawler-facing endpoints
+
+With the `server` feature, `SeoRouter` generates per-page raw-Markdown routes, `llms.txt` / `llms-full.txt`, sitemaps, blog RSS, and robots.txt as plain Axum routes (server functions would JSON-encode the bodies):
+
+```rust
+use dioxus_docs_kit::server::SeoRouter;
+
+dioxus::server::serve(|| async {
+    let seo = SeoRouter::new("https://your-site.com", "My Docs", "Documentation")
+        .with_docs(&DOCS, "/docs")
+        .into_router();
+    Ok(dioxus::server::router(App).merge(seo))
+});
+```
 
 ## Syntax Highlighting
 

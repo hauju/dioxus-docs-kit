@@ -6,6 +6,7 @@ use crate::blog::types::{
     extract_blog_frontmatter,
 };
 use crate::config::ThemeConfig;
+use crate::error::DocsKitError;
 use dioxus_mdx::{get_raw_markdown, parse_mdx, strip_leading_h1};
 use std::collections::HashMap;
 
@@ -32,16 +33,22 @@ pub struct BlogRegistry {
 }
 
 impl BlogRegistry {
-    pub(crate) fn from_config(config: BlogConfig) -> Self {
-        let manifest: BlogManifest =
-            serde_json::from_str(config.manifest_json()).expect("Failed to parse _blog.json");
+    pub(crate) fn try_from_config(config: BlogConfig) -> Result<Self, DocsKitError> {
+        let manifest: BlogManifest = serde_json::from_str(config.manifest_json())
+            .map_err(DocsKitError::BlogManifestParse)?;
 
         let mut posts: Vec<BlogPost> = config
             .content_map()
             .iter()
             .filter(|(key, _)| **key != "__manifest__")
             .filter_map(|(&slug, &content)| {
-                let (frontmatter, remaining) = extract_blog_frontmatter(content)?;
+                let (frontmatter, remaining) = match extract_blog_frontmatter(content) {
+                    Ok(parsed) => parsed,
+                    Err(e) => {
+                        tracing::warn!("dioxus-docs-kit: skipping blog post \"{slug}\": {e}");
+                        return None;
+                    }
+                };
 
                 if frontmatter.draft {
                     return None;
@@ -86,7 +93,7 @@ impl BlogRegistry {
         let date_format = config.date_format().to_string();
         let theme = config.theme_config().cloned();
 
-        Self {
+        Ok(Self {
             posts,
             authors: manifest.authors,
             all_tags: tag_set,
@@ -95,7 +102,7 @@ impl BlogRegistry {
             posts_per_page,
             date_format,
             theme,
-        }
+        })
     }
 
     // ── Post access ──────────────────────────────────────────────────────
@@ -278,29 +285,13 @@ impl BlogRegistry {
     // ── Search ───────────────────────────────────────────────────────────
 
     pub fn search_posts(&self, query: &str) -> Vec<&BlogSearchEntry> {
-        let query = query.trim();
-        if query.is_empty() {
-            return Vec::new();
-        }
-        let q = query.to_lowercase();
-
-        let mut title_matches: Vec<&BlogSearchEntry> = Vec::new();
-        let mut desc_matches: Vec<&BlogSearchEntry> = Vec::new();
-        let mut content_matches: Vec<&BlogSearchEntry> = Vec::new();
-
-        for entry in &self.search_index {
-            if entry.title.to_lowercase().contains(&q) {
-                title_matches.push(entry);
-            } else if entry.description.to_lowercase().contains(&q) {
-                desc_matches.push(entry);
-            } else if entry.content_preview.to_lowercase().contains(&q) {
-                content_matches.push(entry);
-            }
-        }
-
-        title_matches.extend(desc_matches);
-        title_matches.extend(content_matches);
-        title_matches
+        crate::search::rank_by_fields(&self.search_index, query, |e| {
+            (
+                e.title.as_str(),
+                e.description.as_str(),
+                e.content_preview.as_str(),
+            )
+        })
     }
 
     fn build_search_index(posts: &[BlogPost]) -> Vec<BlogSearchEntry> {

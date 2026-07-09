@@ -1,10 +1,16 @@
 //! Steps component parser.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use super::content::parse_content;
 use super::utils::find_closing_tag;
 use crate::parser::types::*;
+
+static STEP_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?s)<Step\s+title="([^"]*)">(.*?)</Step>"#).unwrap());
+static HEADING_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^###\s+(.+)$").unwrap());
 
 /// Try to parse a Steps component.
 pub(super) fn try_parse_steps(content: &str) -> Option<(DocNode, &str)> {
@@ -28,8 +34,7 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
     let mut steps = Vec::new();
 
     // First try <Step title="..."> format
-    let step_re = Regex::new(r#"(?s)<Step\s+title="([^"]*)">(.*?)</Step>"#).unwrap();
-    for caps in step_re.captures_iter(content) {
+    for caps in STEP_RE.captures_iter(content) {
         let inner = caps.get(2).map(|m| m.as_str()).unwrap_or_default().trim();
         // Parse inner content recursively
         let parsed_content = parse_content(inner);
@@ -48,8 +53,7 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
     }
 
     // Fall back to ### heading format
-    let heading_re = Regex::new(r"(?m)^###\s+(.+)$").unwrap();
-    let headings: Vec<_> = heading_re.captures_iter(content).collect();
+    let headings: Vec<_> = HEADING_RE.captures_iter(content).collect();
 
     for (i, caps) in headings.iter().enumerate() {
         let title = caps

@@ -34,14 +34,21 @@ impl std::error::Error for OpenApiError {}
 /// Parse an OpenAPI specification from YAML or JSON content.
 pub fn parse_openapi(content: &str) -> Result<OpenApiSpec, OpenApiError> {
     // Try YAML first, then JSON
-    let spec: OpenAPI = if let Ok(s) = serde_yaml::from_str(content) {
-        s
-    } else if let Ok(s) = serde_json::from_str(content) {
-        s
-    } else {
-        return Err(OpenApiError::ParseError(
-            "Failed to parse as YAML or JSON".to_string(),
-        ));
+    let spec: OpenAPI = match serde_yaml::from_str(content) {
+        Ok(s) => s,
+        Err(yaml_err) => match serde_json::from_str(content) {
+            Ok(s) => s,
+            Err(json_err) => {
+                // Report the error for the format the content most likely is,
+                // so line/column info points at the real mistake.
+                let msg = if content.trim_start().starts_with(['{', '[']) {
+                    format!("JSON: {json_err}")
+                } else {
+                    format!("YAML: {yaml_err}")
+                };
+                return Err(OpenApiError::ParseError(msg));
+            }
+        },
     };
 
     Ok(transform_spec(&spec))

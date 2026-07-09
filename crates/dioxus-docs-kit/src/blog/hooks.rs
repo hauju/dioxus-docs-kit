@@ -2,7 +2,15 @@ use dioxus::prelude::*;
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
-use crate::components::DrawerOpen;
+use crate::components::{DrawerOpen, SearchOpen};
+
+/// Newtype wrapper for the active tag filter on the blog list page.
+#[derive(Clone, Copy)]
+pub struct ActiveTag(pub Signal<Option<String>>);
+
+/// Newtype wrapper for the current blog list pagination page (0-based).
+#[derive(Clone, Copy)]
+pub struct CurrentPage(pub Signal<usize>);
 
 /// Signals returned by [`use_blog_providers`].
 pub struct BlogProviders {
@@ -22,10 +30,10 @@ pub fn use_blog_providers(registry: &'static BlogRegistry, blog_ctx: BlogContext
     let active_tag: Signal<Option<String>> = use_signal(|| None);
     let current_page = use_signal(|| 0usize);
 
-    use_context_provider(|| search_open);
+    use_context_provider(|| SearchOpen(search_open));
     use_context_provider(|| DrawerOpen(drawer_open));
-    use_context_provider(|| active_tag);
-    use_context_provider(|| current_page);
+    use_context_provider(|| ActiveTag(active_tag));
+    use_context_provider(|| CurrentPage(current_page));
 
     BlogProviders {
         search_open,
