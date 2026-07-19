@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -91,6 +92,15 @@ pub fn generate_content_map(nav_json_path: &str) {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = Path::new(&out_dir).join("doc_content_generated.rs");
     fs::write(&dest, code).expect("Failed to write generated file");
+
+    // Fail the build on malformed docs frontmatter, and warn about broken
+    // internal links (warnings only — never fail the build for links).
+    let pages: Vec<String> = nav
+        .groups
+        .iter()
+        .flat_map(|g| g.pages.iter().cloned())
+        .collect();
+    validate_docs(&manifest_dir, docs_dir, &pages);
 }
 
 // ============================================================================
@@ -148,6 +158,13 @@ pub fn generate_blog_content_map(manifest_path: &str) {
     for slug in &manifest.posts {
         let mdx_path = format!("{blog_dir}/{slug}.mdx");
         emit_entry(&mut code, &manifest_dir, slug, &mdx_path);
+
+        // Fail the build on malformed frontmatter instead of letting the post
+        // silently vanish from the site at runtime.
+        let full_path = include_path(&manifest_dir, &mdx_path);
+        if let Ok(content) = fs::read_to_string(&full_path) {
+            validate_blog_frontmatter(&mdx_path, &content);
+        }
     }
 
     code.push_str("    map\n}\n");
@@ -155,6 +172,402 @@ pub fn generate_blog_content_map(manifest_path: &str) {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = Path::new(&out_dir).join("blog_content_generated.rs");
     fs::write(&dest, code).expect("Failed to write generated file");
+}
+
+// ============================================================================
+// Build-time validation: internal links + frontmatter
+// ============================================================================
+
+/// Convert a heading title to a URL anchor slug.
+///
+/// Mirrors `dioxus_mdx`'s `slugify` (in `components/toc.rs`) exactly, so
+/// build-time anchor checks resolve to the same ids the renderer injects. The
+/// build crate cannot depend on `dioxus-mdx` (that would pull `dioxus` into
+/// every consumer's build-dependencies), so this small function is duplicated.
+fn slugify(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .filter_map(|c| {
+            if c.is_alphanumeric() {
+                Some(c)
+            } else if c.is_whitespace() || c == '-' || c == '_' || c == '.' {
+                Some('-')
+            } else {
+                None
+            }
+        })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// Remove fenced code blocks (``` or ~~~) so markdown-looking text inside code
+/// samples is not mistaken for links or headings.
+fn strip_code_fences(content: &str) -> String {
+    let mut out = String::new();
+    let mut fence: Option<char> = None;
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+        let marker = if trimmed.starts_with("```") {
+            Some('`')
+        } else if trimmed.starts_with("~~~") {
+            Some('~')
+        } else {
+            None
+        };
+        match (fence, marker) {
+            (None, Some(m)) => fence = Some(m), // opening fence
+            (Some(open), Some(m)) if open == m => fence = None, // closing fence
+            (None, None) => {
+                out.push_str(line);
+                out.push('\n');
+            }
+            _ => {} // inside a fence (or a mismatched fence marker within one)
+        }
+    }
+    out
+}
+
+/// Extract anchor slugs for level 2-4 ATX headings, matching the ids the
+/// renderer injects (`dioxus_mdx`'s `extract_headers` + `slugify`). H1 is
+/// excluded (it is not linkable and is stripped as the duplicate page title).
+fn extract_heading_slugs(content: &str) -> Vec<String> {
+    let mut slugs = Vec::new();
+    for line in content.lines() {
+        let hashes = line.bytes().take_while(|&b| b == b'#').count();
+        if (2..=4).contains(&hashes) && matches!(line.as_bytes().get(hashes), Some(b' ' | b'\t')) {
+            let title = line[hashes..].trim();
+            if !title.is_empty() {
+                slugs.push(slugify(title));
+            }
+        }
+    }
+    slugs
+}
+
+/// Extract non-image markdown link targets (`[text](target)`), stripping any
+/// `"title"` suffix and `<>` wrappers. Image links (`![...](...)`) are skipped.
+fn extract_links(content: &str) -> Vec<String> {
+    let bytes = content.as_bytes();
+    let mut links = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'[' {
+            let is_image = i > 0 && bytes[i - 1] == b'!';
+            if let Some(close) = (i + 1..bytes.len()).find(|&j| bytes[j] == b']') {
+                if bytes.get(close + 1) == Some(&b'(') {
+                    if let Some(pclose) = (close + 2..bytes.len()).find(|&j| bytes[j] == b')') {
+                        if !is_image {
+                            if let Some(tok) = content[close + 2..pclose].split_whitespace().next()
+                            {
+                                let tok = tok.trim_start_matches('<').trim_end_matches('>');
+                                if !tok.is_empty() {
+                                    links.push(tok.to_string());
+                                }
+                            }
+                        }
+                        i = pclose + 1;
+                        continue;
+                    }
+                }
+                i = close + 1;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    links
+}
+
+/// Returns true if `target` begins with a URL scheme (`https:`, `mailto:`, …).
+fn has_scheme(target: &str) -> bool {
+    let mut chars = target.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphabetic() => {}
+        _ => return false,
+    }
+    for c in chars {
+        if c == ':' {
+            return true;
+        }
+        if !(c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.') {
+            return false;
+        }
+    }
+    false
+}
+
+/// Strip a trailing slash and any `.mdx`/`.md` extension so a link target lines
+/// up with the extension-less nav page keys.
+fn normalize_page_key(s: &str) -> String {
+    let s = s.trim_end_matches('/');
+    let s = s
+        .strip_suffix(".mdx")
+        .or_else(|| s.strip_suffix(".md"))
+        .unwrap_or(s);
+    s.to_string()
+}
+
+/// Resolve a relative link target against the directory of `current_page`.
+/// Returns `None` if the path escapes the docs root.
+fn resolve_relative(current_page: &str, path: &str) -> Option<String> {
+    let mut base: Vec<&str> = current_page.split('/').collect();
+    base.pop(); // drop the current file component, keeping its directory
+    for seg in path.split('/') {
+        match seg {
+            "" | "." => {}
+            ".." => {
+                base.pop()?;
+            }
+            s => base.push(s),
+        }
+    }
+    Some(base.join("/"))
+}
+
+/// Outcome of resolving an internal link target to a docs page.
+enum LinkResolution {
+    /// Resolved to a known page (carries its key for anchor validation).
+    Valid(String),
+    /// Clearly targets a docs page, but no page matches.
+    Broken,
+    /// Not validatable (external route, runtime-generated section, …).
+    Skip,
+}
+
+/// A group directory is "validatable" only if it holds at least two static nav
+/// pages. Single-page groups (e.g. an `api-reference` group whose remaining
+/// pages are generated at runtime from an OpenAPI spec) are skipped, since the
+/// build crate cannot know those slugs and would false-positive on them.
+fn group_is_validatable(page: &str, group_counts: &HashMap<&str, usize>) -> bool {
+    page.split_once('/')
+        .map(|(g, _)| group_counts.get(g).copied().unwrap_or(0) >= 2)
+        .unwrap_or(false)
+}
+
+/// Classify a root-absolute link (e.g. `/docs/guides/foo`). The consumer's base
+/// path (e.g. `/docs`) is unknown, so both the full path and the path with its
+/// first segment stripped are tried against the known pages.
+fn classify_root_absolute(
+    rest: &str,
+    page_set: &HashSet<&str>,
+    group_counts: &HashMap<&str, usize>,
+) -> LinkResolution {
+    let full = normalize_page_key(rest);
+    let stripped = rest.split_once('/').map(|(_, s)| normalize_page_key(s));
+
+    if page_set.contains(full.as_str()) {
+        return LinkResolution::Valid(full);
+    }
+    if let Some(s) = &stripped {
+        if page_set.contains(s.as_str()) {
+            return LinkResolution::Valid(s.clone());
+        }
+    }
+
+    let clearly_docs = group_is_validatable(&full, group_counts)
+        || stripped
+            .as_ref()
+            .is_some_and(|s| group_is_validatable(s, group_counts));
+    if clearly_docs {
+        LinkResolution::Broken
+    } else {
+        LinkResolution::Skip
+    }
+}
+
+/// Classify a relative link (e.g. `../guides/foo`) resolved against the current
+/// file's directory.
+fn classify_relative(
+    current_page: &str,
+    path: &str,
+    page_set: &HashSet<&str>,
+    group_counts: &HashMap<&str, usize>,
+) -> LinkResolution {
+    let Some(resolved) = resolve_relative(current_page, path) else {
+        return LinkResolution::Skip;
+    };
+    let resolved = normalize_page_key(&resolved);
+    if resolved.is_empty() {
+        return LinkResolution::Skip;
+    }
+    if page_set.contains(resolved.as_str()) {
+        return LinkResolution::Valid(resolved);
+    }
+    if group_is_validatable(&resolved, group_counts) {
+        LinkResolution::Broken
+    } else {
+        LinkResolution::Skip
+    }
+}
+
+/// Validate a single link target found in `src`. Emits `cargo:warning` for
+/// broken page targets and missing anchors.
+fn check_link(
+    src: &str,
+    current_page: &str,
+    target: &str,
+    page_set: &HashSet<&str>,
+    group_counts: &HashMap<&str, usize>,
+    headings: &HashMap<&str, HashSet<String>>,
+) {
+    let (path_part, fragment) = match target.split_once('#') {
+        Some((p, f)) => (p, Some(f)),
+        None => (target, None),
+    };
+
+    // Same-page anchor (`#heading`).
+    if path_part.is_empty() {
+        if let Some(frag) = fragment {
+            check_anchor(src, current_page, target, frag, headings);
+        }
+        return;
+    }
+
+    // Skip external links (`https:`, `mailto:`, protocol-relative `//host`).
+    if path_part.starts_with("//") || has_scheme(path_part) {
+        return;
+    }
+
+    let resolution = if let Some(rest) = path_part.strip_prefix('/') {
+        classify_root_absolute(rest, page_set, group_counts)
+    } else {
+        classify_relative(current_page, path_part, page_set, group_counts)
+    };
+
+    match resolution {
+        LinkResolution::Valid(page) => {
+            if let Some(frag) = fragment {
+                check_anchor(src, &page, target, frag, headings);
+            }
+        }
+        LinkResolution::Broken => {
+            println!(
+                "cargo:warning={src}: internal link target \"{target}\" does not match any known docs page"
+            );
+        }
+        LinkResolution::Skip => {}
+    }
+}
+
+/// Validate that `fragment` matches a heading anchor in `page`. Skipped when the
+/// target page's headings are unknown (its file was not read).
+fn check_anchor(
+    src: &str,
+    page: &str,
+    target: &str,
+    fragment: &str,
+    headings: &HashMap<&str, HashSet<String>>,
+) {
+    if fragment.is_empty() {
+        return;
+    }
+    if let Some(anchors) = headings.get(page) {
+        if !anchors.contains(&slugify(fragment)) {
+            println!(
+                "cargo:warning={src}: link \"{target}\" points to \"#{fragment}\" but no heading with that anchor exists in {page}"
+            );
+        }
+    }
+}
+
+/// Validate docs frontmatter (build error on malformed) and internal markdown
+/// links (warnings only) for every existing nav page.
+fn validate_docs(manifest_dir: &str, docs_dir: &str, pages: &[String]) {
+    // Read each existing page once.
+    let mut contents: Vec<(String, String)> = Vec::new();
+    for page in pages {
+        let mdx_path = format!("{docs_dir}/{page}.mdx");
+        let full_path = include_path(manifest_dir, &mdx_path);
+        if let Ok(raw) = fs::read_to_string(&full_path) {
+            validate_docs_frontmatter(&mdx_path, &raw);
+            contents.push((page.clone(), raw));
+        }
+    }
+
+    let page_set: HashSet<&str> = pages.iter().map(String::as_str).collect();
+
+    let mut group_counts: HashMap<&str, usize> = HashMap::new();
+    for page in pages {
+        if let Some((group, _)) = page.split_once('/') {
+            *group_counts.entry(group).or_insert(0) += 1;
+        }
+    }
+
+    // Strip fenced code once and reuse for both headings and link scanning.
+    let stripped: Vec<(String, String)> = contents
+        .iter()
+        .map(|(page, raw)| (page.clone(), strip_code_fences(raw)))
+        .collect();
+
+    let mut headings: HashMap<&str, HashSet<String>> = HashMap::new();
+    for (page, body) in &stripped {
+        headings.insert(
+            page.as_str(),
+            extract_heading_slugs(body).into_iter().collect(),
+        );
+    }
+
+    for (page, body) in &stripped {
+        let src = format!("{docs_dir}/{page}.mdx");
+        for target in extract_links(body) {
+            check_link(&src, page, &target, &page_set, &group_counts, &headings);
+        }
+    }
+}
+
+/// A docs page's frontmatter block (if present) must parse as a YAML mapping.
+/// No particular fields are required for docs pages.
+fn validate_docs_frontmatter(path: &str, content: &str) {
+    let content = content.trim();
+    if !content.starts_with("---") {
+        return;
+    }
+    let after = &content[3..];
+    // No closing delimiter → not a frontmatter block (matches runtime behavior).
+    let Some(end) = after.find("\n---") else {
+        return;
+    };
+    let yaml = after[..end].trim();
+    if yaml.is_empty() {
+        return; // an empty frontmatter block is valid
+    }
+    match serde_yaml::from_str::<serde_yaml::Value>(yaml) {
+        Ok(serde_yaml::Value::Mapping(_)) => {}
+        Ok(_) => panic!("{path}: frontmatter must be a YAML mapping"),
+        Err(e) => panic!("{path}: malformed frontmatter: {e}"),
+    }
+}
+
+/// Required blog frontmatter fields, mirroring
+/// `dioxus_docs_kit::blog::types::BlogFrontmatter` (which a build crate cannot
+/// depend on). Optional fields are omitted — serde ignores unknown keys.
+#[derive(Deserialize)]
+#[allow(dead_code)]
+struct BlogFrontmatterCheck {
+    title: String,
+    date: String,
+    author: String,
+}
+
+/// A blog post must have a valid frontmatter block carrying the required
+/// fields, or the build fails (the post would otherwise silently vanish from
+/// the site at runtime). The extraction mirrors `extract_blog_frontmatter`.
+fn validate_blog_frontmatter(path: &str, content: &str) {
+    let content = content.trim();
+    if !content.starts_with("---") {
+        panic!("{path}: missing frontmatter block (expected leading ---)");
+    }
+    let after = &content[3..];
+    let Some(end) = after.find("\n---") else {
+        panic!("{path}: unclosed frontmatter block (missing closing ---)");
+    };
+    let yaml = after[..end].trim();
+    if let Err(e) = serde_yaml::from_str::<BlogFrontmatterCheck>(yaml) {
+        panic!("{path}: malformed frontmatter: {e}");
+    }
 }
 
 #[cfg(test)]
@@ -175,5 +588,211 @@ mod tests {
             include_path("C:\\Users\\me\\project", "docs\\intro.mdx"),
             "C:/Users/me/project/docs/intro.mdx"
         );
+    }
+
+    // ---- link validation ---------------------------------------------------
+
+    // Mirrors `dioxus_mdx`'s own `slugify` test cases.
+    #[test]
+    fn slugify_matches_mdx() {
+        assert_eq!(slugify("Hello World"), "hello-world");
+        assert_eq!(slugify("Getting Started!"), "getting-started");
+        assert_eq!(slugify("API v1.0"), "api-v1-0");
+    }
+
+    #[test]
+    fn extract_links_skips_images() {
+        let md = "see ![alt](/img/logo.png) and [Quickstart](/docs/getting-started/quickstart)";
+        assert_eq!(
+            extract_links(md),
+            vec!["/docs/getting-started/quickstart".to_string()]
+        );
+    }
+
+    #[test]
+    fn extract_links_strips_title_and_angle_brackets() {
+        let md = "[a](/docs/x \"the title\") and [b](</docs/y>)";
+        assert_eq!(
+            extract_links(md),
+            vec!["/docs/x".to_string(), "/docs/y".to_string()]
+        );
+    }
+
+    #[test]
+    fn strip_code_fences_removes_fenced_links() {
+        let md = "before\n```\n[not a link](/docs/nope)\n```\nafter [real](/docs/real)";
+        let body = strip_code_fences(md);
+        assert!(!body.contains("nope"));
+        assert_eq!(extract_links(&body), vec!["/docs/real".to_string()]);
+    }
+
+    #[test]
+    fn has_scheme_detects_external() {
+        assert!(has_scheme("https://example.com"));
+        assert!(has_scheme("mailto:me@example.com"));
+        assert!(!has_scheme("/docs/guides/x"));
+        assert!(!has_scheme("guides/x"));
+        assert!(!has_scheme("../guides/x"));
+    }
+
+    #[test]
+    fn resolve_relative_resolves_against_dir() {
+        assert_eq!(
+            resolve_relative("guides/blog", "customization").as_deref(),
+            Some("guides/customization")
+        );
+        assert_eq!(
+            resolve_relative("guides/blog", "../guides/customization").as_deref(),
+            Some("guides/customization")
+        );
+        assert_eq!(
+            resolve_relative("getting-started/introduction", "../guides/basic-usage").as_deref(),
+            Some("guides/basic-usage")
+        );
+        // Escapes the docs root.
+        assert_eq!(resolve_relative("changelog", "../../x"), None);
+    }
+
+    #[test]
+    fn extract_heading_slugs_covers_h2_to_h4_only() {
+        let md = "# Title\n## Section One\n### Sub Section\n##### Too Deep\ntext\n";
+        assert_eq!(
+            extract_heading_slugs(md),
+            vec!["section-one".to_string(), "sub-section".to_string()]
+        );
+    }
+
+    fn sample_page_data() -> (Vec<&'static str>, HashMap<&'static str, usize>) {
+        let pages = vec![
+            "getting-started/introduction",
+            "getting-started/quickstart",
+            "guides/basic-usage",
+            "guides/customization",
+            "guides/integration",
+            "guides/blog",
+            "api-reference/overview",
+            "changelog",
+        ];
+        let mut group_counts: HashMap<&str, usize> = HashMap::new();
+        for p in &pages {
+            if let Some((g, _)) = p.split_once('/') {
+                *group_counts.entry(g).or_insert(0) += 1;
+            }
+        }
+        (pages, group_counts)
+    }
+
+    #[test]
+    fn root_absolute_heuristic() {
+        let (pages, group_counts) = sample_page_data();
+        let page_set: HashSet<&str> = pages.iter().copied().collect();
+
+        // Valid under a `/docs` base path.
+        assert!(matches!(
+            classify_root_absolute("docs/guides/basic-usage", &page_set, &group_counts),
+            LinkResolution::Valid(_)
+        ));
+        // Valid under an empty (`/`) base path.
+        assert!(matches!(
+            classify_root_absolute("getting-started/introduction", &page_set, &group_counts),
+            LinkResolution::Valid(_)
+        ));
+        // Broken: a dense group, but no such page.
+        assert!(matches!(
+            classify_root_absolute("docs/guides/nope", &page_set, &group_counts),
+            LinkResolution::Broken
+        ));
+        // Skip: api-reference has a single static page; the rest are runtime
+        // OpenAPI operations the build crate cannot see.
+        assert!(matches!(
+            classify_root_absolute("docs/api-reference/getUser", &page_set, &group_counts),
+            LinkResolution::Skip
+        ));
+        // Skip: non-docs routes.
+        assert!(matches!(
+            classify_root_absolute("blog/hello", &page_set, &group_counts),
+            LinkResolution::Skip
+        ));
+    }
+
+    #[test]
+    fn relative_heuristic() {
+        let (pages, group_counts) = sample_page_data();
+        let page_set: HashSet<&str> = pages.iter().copied().collect();
+
+        assert!(matches!(
+            classify_relative(
+                "guides/basic-usage",
+                "customization",
+                &page_set,
+                &group_counts
+            ),
+            LinkResolution::Valid(_)
+        ));
+        assert!(matches!(
+            classify_relative("guides/basic-usage", "nope", &page_set, &group_counts),
+            LinkResolution::Broken
+        ));
+        // Relative link into the single-page (OpenAPI) group is skipped.
+        assert!(matches!(
+            classify_relative(
+                "api-reference/overview",
+                "get-user",
+                &page_set,
+                &group_counts
+            ),
+            LinkResolution::Skip
+        ));
+    }
+
+    // ---- frontmatter validation --------------------------------------------
+
+    #[test]
+    fn docs_frontmatter_valid_and_empty_ok() {
+        validate_docs_frontmatter("x.mdx", "---\ntitle: Hi\n---\nbody");
+        validate_docs_frontmatter("x.mdx", "---\n---\nbody");
+        validate_docs_frontmatter("x.mdx", "no frontmatter here");
+    }
+
+    #[test]
+    #[should_panic(expected = "malformed frontmatter")]
+    fn docs_frontmatter_malformed_panics() {
+        validate_docs_frontmatter("x.mdx", "---\ntitle: [unclosed\n---\nbody");
+    }
+
+    #[test]
+    #[should_panic(expected = "must be a YAML mapping")]
+    fn docs_frontmatter_non_mapping_panics() {
+        validate_docs_frontmatter("x.mdx", "---\n- a\n- b\n---\nbody");
+    }
+
+    #[test]
+    fn blog_frontmatter_valid_ok() {
+        validate_blog_frontmatter(
+            "p.mdx",
+            "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\n---\nbody",
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "malformed frontmatter")]
+    fn blog_frontmatter_bad_yaml_panics() {
+        validate_blog_frontmatter(
+            "p.mdx",
+            "---\ntitle: [x\ndate: \"2026\"\nauthor: jane\n---\nbody",
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "missing field")]
+    fn blog_frontmatter_missing_field_panics() {
+        // No `date` field.
+        validate_blog_frontmatter("p.mdx", "---\ntitle: Hi\nauthor: jane\n---\nbody");
+    }
+
+    #[test]
+    #[should_panic(expected = "missing frontmatter")]
+    fn blog_frontmatter_no_block_panics() {
+        validate_blog_frontmatter("p.mdx", "just body, no frontmatter");
     }
 }

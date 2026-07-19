@@ -30,6 +30,17 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   contexts).
 - `rust-version = "1.85"` declared; per-crate LICENSE files included in
   published packages.
+- **Build-time internal link validation** (`dioxus-docs-kit-build`):
+  `generate_content_map` now scans every `.mdx` for markdown links and emits
+  `cargo:warning` for broken internal targets and missing heading anchors
+  (anchors use the same slug algorithm as the renderer). External links,
+  images, and fenced code blocks are ignored; runtime OpenAPI reference pages
+  are not flagged. Warnings only — link problems never fail the build.
+- **Fail-fast frontmatter validation** (`dioxus-docs-kit-build`): malformed
+  blog frontmatter (bad YAML or a missing `title`/`date`/`author`) now fails
+  the build with the file path and serde line/column instead of silently
+  dropping the post at runtime; docs pages whose leading `---` block is not a
+  YAML mapping fail the build too.
 
 ### Fixed
 
