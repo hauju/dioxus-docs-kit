@@ -5,7 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
-## [0.5.0] — Unreleased
+## [0.5.0] — 2026-07-19
 
 ### Added
 
