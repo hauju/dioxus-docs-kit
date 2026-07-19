@@ -22,10 +22,8 @@ pub(super) fn try_parse_param_field(content: &str) -> Option<(DocNode, &str)> {
         (name, ParamLocation::Path)
     } else if let Some(name) = extract_attr(tag_content, "query") {
         (name, ParamLocation::Query)
-    } else if let Some(name) = extract_attr(tag_content, "body") {
-        (name, ParamLocation::Body)
     } else {
-        return None;
+        (extract_attr(tag_content, "body")?, ParamLocation::Body)
     };
 
     let param_type = extract_attr(tag_content, "type").unwrap_or_else(|| "string".to_string());
