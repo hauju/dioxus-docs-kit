@@ -44,7 +44,8 @@ dioxus-docs-kit = { workspace = true }
 dioxus-docs-kit-build = { workspace = true }
 
 [features]
-default = ["web", "mermaid"]
+default = ["web", "mermaid", "highlight"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
+highlight = ["dioxus-docs-kit/highlight"]
