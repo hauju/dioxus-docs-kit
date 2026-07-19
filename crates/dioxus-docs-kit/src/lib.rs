@@ -82,6 +82,7 @@ use dioxus::prelude::*;
 ///
 /// The consumer creates this in their docs layout wrapper and provides it via `use_context_provider`.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct DocsContext {
     /// Current docs page path (e.g. "getting-started/introduction").
     pub current_path: ReadSignal<String>,
@@ -162,6 +163,7 @@ impl DocsContext {
 ///
 /// The consumer creates this in their blog layout wrapper and provides it via `use_context_provider`.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct BlogContext {
     /// Current blog post slug (empty on the list/index page).
     pub current_slug: ReadSignal<String>,

@@ -745,7 +745,7 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 
 #[component]
 fn MyDocsLayout() -> Element {
-    let docs_ctx = DocsContext { /* ... */ };
+    let docs_ctx = DocsContext::new(current_path, "/docs", navigate);
     let providers = use_docs_providers(&DOCS, docs_ctx);
 
     rsx! {

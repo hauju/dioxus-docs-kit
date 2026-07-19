@@ -230,16 +230,15 @@ fn MyDocsLayout() -> Element {
         _ => String::new(),
     }));
 
-    let docs_ctx = DocsContext {
-        current_path: current_path.into(),
-        base_path: "/docs".into(),
-        navigate: Callback::new(move |path: String| {
+    let docs_ctx = DocsContext::new(
+        current_path,
+        "/docs",
+        Callback::new(move |path: String| {
             let slug: Vec<String> = path.split('/').map(String::from).collect();
             nav.push(Route::DocsPage { slug });
         }),
-        site_url: Some("https://example.com".into()), // or None
-        auto_meta: true,
-    };
+    )
+    .with_site_url("https://example.com"); // optional; omit for no canonical/OG host
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
     let search_open = providers.search_open;
@@ -279,8 +278,11 @@ fn DocsPage(slug: Vec<String>) -> Element {
 }
 ```
 
-**`DocsContext` requires all five fields.** `site_url` and `auto_meta` are not
-optional struct-wise; pass `None` / `false` if you don't want SEO meta.
+**`DocsContext` is `#[non_exhaustive]`** — construct it with
+`DocsContext::new(current_path, base_path, navigate)` and layer optional SEO
+settings via `.with_site_url(...)`, `.with_auto_meta(false)`, and
+`.with_markdown_alternate(true)`. Struct literals won't compile outside the
+kit's own crate.
 
 If you added the blog, add the parallel wrapper:
 
@@ -300,16 +302,15 @@ fn MyBlogLayout() -> Element {
         _ => String::new(),
     }));
 
-    let blog_ctx = BlogContext {
-        current_slug: current_slug.into(),
-        base_path: "/blog".into(),
-        navigate: Callback::new(move |slug: String| {
+    let blog_ctx = BlogContext::new(
+        current_slug,
+        "/blog",
+        Callback::new(move |slug: String| {
             if slug.is_empty() { nav.push(Route::BlogIndex {}); }
             else { nav.push(Route::BlogPage { slug }); }
         }),
-        site_url: Some("https://example.com".into()),
-        auto_meta: true,
-    };
+    )
+    .with_site_url("https://example.com");
 
     let providers = use_blog_providers(&BLOG, blog_ctx);
     let search_open = providers.search_open;
