@@ -6,8 +6,10 @@
 use crate::config::CodeThemeConfig;
 use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
+use crate::search::{Field, clean_markdown, search_lower};
 use dioxus_mdx::{
     ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, parse_openapi,
+    slugify,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -58,14 +60,143 @@ pub struct ApiEndpointEntry {
 }
 
 /// A searchable entry in the documentation.
+///
+/// One entry per document *section* (split on h2–h4 headings): content before
+/// the first heading is a page-level "intro" entry with an empty `heading` /
+/// `anchor`, and each heading starts a new entry whose `anchor` deep-links to
+/// the rendered heading id. OpenAPI operations are indexed as single page-level
+/// entries. The `*_lower` fields are lowercased once at build time so search
+/// never re-lowercases per keystroke.
 #[derive(PartialEq)]
 pub struct SearchEntry {
+    /// Content path of the owning page (e.g. "getting-started/introduction").
     pub path: String,
+    /// Anchor id of the section heading, empty for page-level / intro entries.
+    /// Matches the rendered heading `id` (`dioxus_mdx::slugify`).
+    pub anchor: String,
+    /// Page title (frontmatter title or humanised slug / API summary).
     pub title: String,
+    /// Section heading text, empty for page-level / intro entries.
+    pub heading: String,
+    /// Page/operation description.
     pub description: String,
-    pub content_preview: String,
+    /// Cleaned section body text used for matching and snippet extraction.
+    pub body: String,
+    /// Sidebar breadcrumb (nav group, or API group + tag).
     pub breadcrumb: String,
+    /// HTTP method for API operation entries (drives the result badge).
     pub api_method: Option<HttpMethod>,
+    pub(crate) title_lower: String,
+    pub(crate) heading_lower: String,
+    pub(crate) description_lower: String,
+    pub(crate) body_lower: String,
+}
+
+impl SearchEntry {
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        path: String,
+        anchor: String,
+        title: String,
+        heading: String,
+        description: String,
+        body: String,
+        breadcrumb: String,
+        api_method: Option<HttpMethod>,
+    ) -> Self {
+        let title_lower = search_lower(&title);
+        let heading_lower = search_lower(&heading);
+        let description_lower = search_lower(&description);
+        let body_lower = search_lower(&body);
+        Self {
+            path,
+            anchor,
+            title,
+            heading,
+            description,
+            body,
+            breadcrumb,
+            api_method,
+            title_lower,
+            heading_lower,
+            description_lower,
+            body_lower,
+        }
+    }
+}
+
+/// A single documentation section produced by [`split_into_sections`].
+struct Section {
+    /// Heading text, empty for the leading intro section.
+    heading: String,
+    /// Anchor id (`slugify(heading)`), empty for the intro section.
+    anchor: String,
+    /// Raw markdown body for this section (before [`clean_markdown`]).
+    body: String,
+}
+
+/// Split reconstructed markdown into sections on its h2–h4 ATX headings.
+///
+/// The slice before the first heading is always returned first as the intro
+/// section (empty `heading`/`anchor`). Fenced code blocks are skipped so a `##`
+/// inside code is not mistaken for a heading. Anchors use the same
+/// `dioxus_mdx::slugify` the renderer applies to heading ids.
+fn split_into_sections(raw: &str) -> Vec<Section> {
+    let mut sections = Vec::new();
+    let mut heading = String::new();
+    let mut anchor = String::new();
+    let mut body = String::new();
+    let mut in_fence = false;
+
+    for line in raw.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            body.push_str(line);
+            body.push('\n');
+            continue;
+        }
+        if !in_fence {
+            if let Some(text) = parse_atx_heading(trimmed) {
+                sections.push(Section {
+                    heading: std::mem::take(&mut heading),
+                    anchor: std::mem::take(&mut anchor),
+                    body: std::mem::take(&mut body),
+                });
+                anchor = slugify(text);
+                heading = text.to_string();
+                continue;
+            }
+        }
+        body.push_str(line);
+        body.push('\n');
+    }
+    sections.push(Section {
+        heading,
+        anchor,
+        body,
+    });
+    sections
+}
+
+/// Return the heading text of an h2–h4 ATX heading line, or `None`.
+///
+/// Mirrors the TOC heading regex (`^#{2,4}\s+\S`): 2–4 leading `#`, at least one
+/// space/tab, then non-empty text (h1/h5/h6 are ignored).
+fn parse_atx_heading(line: &str) -> Option<&str> {
+    let hashes = line.bytes().take_while(|&b| b == b'#').count();
+    if !(2..=4).contains(&hashes) {
+        return None;
+    }
+    let rest = &line[hashes..];
+    if !rest.starts_with([' ', '\t']) {
+        return None;
+    }
+    let text = rest.trim();
+    if text.is_empty() {
+        return None;
+    }
+    Some(text)
 }
 
 /// Central documentation registry holding all parsed content.
@@ -518,18 +649,28 @@ impl DocsRegistry {
 
     /// Search documentation by query string.
     ///
-    /// Returns matching entries with title matches first, then description, then content.
+    /// Splits the query on whitespace and returns section-level entries whose
+    /// fields all match every term (multi-term AND), ranked title > heading >
+    /// description > body with a word-boundary bonus. See [`crate::search`].
     pub fn search_docs(&self, query: &str) -> Vec<&SearchEntry> {
-        crate::search::rank_by_fields(&self.search_index, query, |e| {
-            (
-                e.title.as_str(),
-                e.description.as_str(),
-                e.content_preview.as_str(),
-            )
+        crate::search::rank(&self.search_index, query, |e, buf| {
+            buf.push(Field::title(&e.title_lower));
+            if !e.heading_lower.is_empty() {
+                buf.push(Field::heading(&e.heading_lower));
+            }
+            if !e.description_lower.is_empty() {
+                buf.push(Field::description(&e.description_lower));
+            }
+            if !e.body_lower.is_empty() {
+                buf.push(Field::body(&e.body_lower));
+            }
         })
     }
 
     /// Build the search index from parsed docs and OpenAPI specs.
+    ///
+    /// Docs are indexed per section (split on h2–h4 headings); OpenAPI
+    /// operations stay page-level.
     fn build_search_index(
         nav: &NavConfig,
         parsed_docs: &HashMap<&'static str, ParsedDoc>,
@@ -538,7 +679,7 @@ impl DocsRegistry {
     ) -> Vec<SearchEntry> {
         let mut entries = Vec::new();
 
-        // Index documentation pages from nav config
+        // Index documentation pages from nav config, one entry per section.
         for group in &nav.groups {
             for page in &group.pages {
                 if let Some(doc) = parsed_docs.get(page.as_str()) {
@@ -551,21 +692,32 @@ impl DocsRegistry {
                         doc.frontmatter.title.clone()
                     };
                     let description = doc.frontmatter.description.clone().unwrap_or_default();
-                    let preview: String = doc.raw_markdown.chars().take(200).collect();
 
-                    entries.push(SearchEntry {
-                        path: page.clone(),
-                        title,
-                        description,
-                        content_preview: preview,
-                        breadcrumb: group.group.clone(),
-                        api_method: None,
-                    });
+                    let sections = split_into_sections(&doc.raw_markdown);
+                    let has_headings = sections.iter().any(|s| !s.heading.is_empty());
+                    for section in sections {
+                        let body = clean_markdown(&section.body);
+                        // Drop an empty intro once real sections exist; keep it
+                        // for a heading-less page so it stays findable by title.
+                        if section.heading.is_empty() && body.is_empty() && has_headings {
+                            continue;
+                        }
+                        entries.push(SearchEntry::new(
+                            page.clone(),
+                            section.anchor,
+                            title.clone(),
+                            section.heading,
+                            description.clone(),
+                            body,
+                            group.group.clone(),
+                            None,
+                        ));
+                    }
                 }
             }
         }
 
-        // Index API operations
+        // Index API operations (page-level).
         for (prefix, spec) in openapi_specs {
             for op in &spec.operations {
                 let title = op
@@ -579,14 +731,16 @@ impl DocsRegistry {
                     .cloned()
                     .unwrap_or_else(|| "Other".to_string());
 
-                entries.push(SearchEntry {
-                    path: format!("{prefix}/{}", op.slug()),
+                entries.push(SearchEntry::new(
+                    format!("{prefix}/{}", op.slug()),
+                    String::new(),
                     title,
-                    description: description.clone(),
-                    content_preview: description,
-                    breadcrumb: format!("{api_group_name} > {tag}"),
-                    api_method: Some(op.method),
-                });
+                    String::new(),
+                    description.clone(),
+                    clean_markdown(&description),
+                    format!("{api_group_name} > {tag}"),
+                    Some(op.method),
+                ));
             }
         }
 
@@ -602,7 +756,7 @@ mod tests {
     const NAV: &str = r#"{
         "tabs": ["Docs", "API Reference"],
         "groups": [
-            { "group": "Search Fixtures", "tab": "Docs", "pages": ["g/body-doc", "g/desc-doc", "g/title-doc"] },
+            { "group": "Search Fixtures", "tab": "Docs", "pages": ["g/body-doc", "g/desc-doc", "g/title-doc", "g/sections"] },
             { "group": "Getting Started", "tab": "Docs", "pages": ["getting-started/intro"] },
             { "group": "API Reference", "tab": "API Reference", "pages": ["api-reference/overview"] }
         ]
@@ -614,6 +768,8 @@ mod tests {
     const INTRO: &str =
         "---\ntitle: Introduction\ndescription: Getting started guide\n---\n\nWelcome.\n";
     const OVERVIEW: &str = "---\ntitle: API Overview\n---\n\nEndpoints below.\n";
+    // Multi-section fixture: intro text, then an h2 with a nested h3.
+    const SECTIONS_DOC: &str = "---\ntitle: Widget Guide\ndescription: All about widgets\n---\n\nIntro paragraph about widgets.\n\n## Installation Steps\n\nRun the installer to set up widgets.\n\n### Advanced Setup\n\nConfigure the widget cache carefully.\n";
 
     const PETS_SPEC: &str = r#"
 openapi: "3.0.0"
@@ -668,6 +824,7 @@ paths:
             ("g/body-doc", BODY_DOC),
             ("g/desc-doc", DESC_DOC),
             ("g/title-doc", TITLE_DOC),
+            ("g/sections", SECTIONS_DOC),
             ("getting-started/intro", INTRO),
             ("api-reference/overview", OVERVIEW),
         ])
@@ -715,6 +872,89 @@ paths:
     #[test]
     fn search_empty_query_returns_nothing() {
         assert!(registry().search_docs("  ").is_empty());
+    }
+
+    #[test]
+    fn sections_split_on_headings_with_intro_and_slugified_anchors() {
+        let sections = split_into_sections(
+            "Intro text.\n\n## Installation Steps\n\nRun it.\n\n### Advanced Setup\n\nTweak it.\n",
+        );
+        assert_eq!(sections.len(), 3);
+
+        // Intro section carries no heading/anchor.
+        assert_eq!(sections[0].heading, "");
+        assert_eq!(sections[0].anchor, "");
+        assert!(sections[0].body.contains("Intro text."));
+
+        // Heading sections carry slugify anchors that match the renderer's ids.
+        assert_eq!(sections[1].heading, "Installation Steps");
+        assert_eq!(sections[1].anchor, slugify("Installation Steps"));
+        assert_eq!(sections[1].anchor, "installation-steps");
+        assert!(sections[1].body.contains("Run it."));
+
+        assert_eq!(sections[2].heading, "Advanced Setup");
+        assert_eq!(sections[2].anchor, "advanced-setup");
+    }
+
+    #[test]
+    fn sections_skip_headings_inside_code_fences() {
+        let sections = split_into_sections(
+            "Intro.\n\n```md\n## Not A Heading\n```\n\n## Real Heading\n\nBody.\n",
+        );
+        let headings: Vec<&str> = sections.iter().map(|s| s.heading.as_str()).collect();
+        assert_eq!(headings, vec!["", "Real Heading"]);
+    }
+
+    #[test]
+    fn empty_leading_section_kept_only_when_page_has_no_headings() {
+        // A page whose body starts straight with a heading has no intro text.
+        let sections = split_into_sections("## First\n\nbody\n");
+        assert_eq!(sections[0].heading, "");
+        assert!(sections[0].body.trim().is_empty());
+    }
+
+    #[test]
+    fn search_returns_section_anchor_for_heading_match() {
+        let reg = registry();
+        let hit = reg
+            .search_docs("installation")
+            .into_iter()
+            .find(|e| e.path == "g/sections")
+            .expect("installation heading section");
+        assert_eq!(hit.heading, "Installation Steps");
+        assert_eq!(hit.anchor, "installation-steps");
+        assert!(hit.api_method.is_none());
+    }
+
+    #[test]
+    fn search_multi_term_requires_all_terms_across_the_page() {
+        let reg = registry();
+        // "cache" only appears in the "Advanced Setup" section body; "widget"
+        // is everywhere on the page. AND matching narrows to that section.
+        let results = reg.search_docs("widget cache");
+        assert!(
+            results.iter().all(|e| e.heading == "Advanced Setup"),
+            "expected only the Advanced Setup section, got: {:?}",
+            results
+                .iter()
+                .map(|e| e.heading.as_str())
+                .collect::<Vec<_>>()
+        );
+        assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn search_index_precomputes_lowercase_fields() {
+        let reg = registry();
+        let entry = reg
+            .search_index
+            .iter()
+            .find(|e| e.title == "Widget Guide")
+            .expect("sectioned doc entry");
+        assert_eq!(entry.title_lower, "widget guide");
+        assert_eq!(entry.description_lower, "all about widgets");
+        assert!(entry.heading_lower == entry.heading.to_lowercase());
+        assert!(entry.body_lower.chars().all(|c| !c.is_uppercase()));
     }
 
     #[test]
