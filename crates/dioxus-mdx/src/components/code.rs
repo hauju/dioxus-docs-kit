@@ -3,6 +3,7 @@
 //! Features syntax highlighting for common programming languages.
 
 use dioxus::prelude::*;
+#[cfg(feature = "highlight")]
 use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
@@ -19,6 +20,9 @@ use crate::parser::{CodeBlockNode, CodeGroupNode};
 /// When no override is provided, code blocks fall back to
 /// `CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT)`, which switches on the
 /// reader's OS `prefers-color-scheme`.
+///
+/// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
+#[cfg(feature = "highlight")]
 #[derive(Clone, Copy)]
 pub struct CodeThemeOverride(pub ReadSignal<CodeTheme>);
 
@@ -172,6 +176,7 @@ struct HighlightedCodeProps {
     filename: Option<String>,
 }
 
+#[cfg(feature = "highlight")]
 #[component]
 fn HighlightedCode(props: HighlightedCodeProps) -> Element {
     let language = code_language(props.language.as_deref(), props.filename.as_deref());
@@ -188,6 +193,42 @@ fn HighlightedCode(props: HighlightedCodeProps) -> Element {
     }
 }
 
+/// Fallback for [`HighlightedCode`] when the `highlight` feature is disabled.
+///
+/// Renders the code as an escaped plain-text node inside the same
+/// `<pre class="dxc"><code>` markup the highlighted path emits, so the outer
+/// wrappers, copy buttons, and CodeGroup tabs keep working — only token coloring
+/// is lost. See [`plain_code_block`] for why the base layout is inlined.
+#[cfg(not(feature = "highlight"))]
+#[component]
+fn HighlightedCode(props: HighlightedCodeProps) -> Element {
+    plain_code_block(&props.code)
+}
+
+/// Render a `<pre class="dxc"><code>` block containing the code as an escaped
+/// plain-text node, used when syntax highlighting is disabled.
+///
+/// Without the `highlight` feature `dioxus-code`'s stylesheet is not linked, so its
+/// base `.dxc` layout (padding, `overflow: auto`, monospace font) is inlined here to
+/// keep scrolling and spacing intact.
+#[cfg(not(feature = "highlight"))]
+pub(crate) fn plain_code_block(code: &str) -> Element {
+    rsx! {
+        pre {
+            class: "dxc",
+            margin: "0",
+            padding: "1rem",
+            overflow: "auto",
+            tab_size: "4",
+            font_family: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace",
+            font_size: "0.9rem",
+            line_height: "1.55",
+            code { "{code}" }
+        }
+    }
+}
+
+#[cfg(feature = "highlight")]
 pub(crate) fn code_language(language: Option<&str>, filename: Option<&str>) -> Language {
     language
         .and_then(language_from_alias)
@@ -196,6 +237,7 @@ pub(crate) fn code_language(language: Option<&str>, filename: Option<&str>) -> L
         .unwrap_or(Language::Markdown)
 }
 
+#[cfg(feature = "highlight")]
 fn language_from_alias(language: &str) -> Option<Language> {
     let normalized = language.trim().to_ascii_lowercase();
     match normalized.as_str() {

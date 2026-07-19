@@ -270,6 +270,7 @@ community contribution.
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 - `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
+- `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain (or wasm `stderr` shim) is needed and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `dioxus-code` re-exports and `DocsConfig::with_code_theme[s]`.
 - `server` — Axum route builders for crawler-facing endpoints
 
 With the `server` feature, `SeoRouter` generates per-page raw-Markdown routes, `llms.txt` / `llms-full.txt`, sitemaps, blog RSS, and robots.txt as plain Axum routes (server functions would JSON-encode the bodies):

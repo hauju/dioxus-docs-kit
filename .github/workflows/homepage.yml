@@ -51,6 +51,8 @@ jobs:
           bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Run Clippy (highlight feature off)
+        run: cargo clippy -p dioxus-mdx -p dioxus-docs-kit --no-default-features --features web --all-targets -- -D warnings
 
   unused-dependencies:
     runs-on: ubuntu-latest

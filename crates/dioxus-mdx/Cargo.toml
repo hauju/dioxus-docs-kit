@@ -16,7 +16,7 @@ readme = "README.md"
 [dependencies]
 dioxus = { workspace = true, features = ["lib"] }
 dioxus-free-icons = { workspace = true }
-dioxus-code = { workspace = true, features = [
+dioxus-code = { workspace = true, optional = true, features = [
     "lang-bash",
     "lang-c-sharp",
     "lang-cpp",
@@ -45,6 +45,7 @@ openapiv3 = "2.0"
 gloo-timers = { workspace = true }
 
 [features]
-default = ["web", "mermaid"]
+default = ["web", "mermaid", "highlight"]
 web = ["dioxus/web"]
 mermaid = []
+highlight = ["dep:dioxus-code"]
