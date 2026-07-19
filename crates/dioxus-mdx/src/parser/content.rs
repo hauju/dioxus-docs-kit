@@ -438,7 +438,7 @@ After the diagram."#;
             assert!(cb.code.contains("graph TD"));
             assert!(cb.code.contains("A[Start]"));
         } else {
-            panic!("Expected CodeBlock node, got {:?}", &nodes[1]);
+            panic!("Expected CodeBlock node, got {:?}", nodes[1]);
         }
         assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("After")));
     }
@@ -467,7 +467,7 @@ After the diagram."#;
             assert!(cb.code.contains("data-button-color"));
             assert!(cb.code.contains("</script>"));
         } else {
-            panic!("Expected CodeBlock node, got {:?}", &nodes[1]);
+            panic!("Expected CodeBlock node, got {:?}", nodes[1]);
         }
         assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("Next Section")));
     }
