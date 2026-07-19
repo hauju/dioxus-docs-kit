@@ -1,10 +1,10 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 use dioxus_mdx::{DocContent, DocTableOfContents, EndpointPage, extract_headers};
 
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
 
+use super::copy_page::CopyPageButton;
 use super::docs_layout::LayoutOffsets;
 use super::docs_meta::DocsPageMeta;
 use super::page_nav::DocsPageNav;
@@ -88,7 +88,9 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
                             h1 { class: "dk-article-title text-4xl font-bold tracking-tight mb-3",
                                 "{doc.frontmatter.title}"
                             }
-                            CopyMdxButton { content: doc.raw_markdown.clone() }
+                            if !doc.raw_markdown.is_empty() {
+                                CopyPageButton { content: doc.raw_markdown.clone() }
+                            }
                         }
                         if let Some(desc) = &doc.frontmatter.description {
                             p { class: "dk-article-description text-lg text-base-content/70",
@@ -125,44 +127,6 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
                         DocTableOfContents { headers }
                     }
                 }
-            }
-        }
-    }
-}
-
-/// Copy MDX source button for doc pages.
-#[component]
-fn CopyMdxButton(content: String) -> Element {
-    #[allow(unused_mut)]
-    let mut copied = use_signal(|| false);
-
-    rsx! {
-        button {
-            class: "btn btn-ghost btn-sm gap-1.5 opacity-60 hover:opacity-100 transition-all duration-150 hover:bg-base-content/10 shrink-0",
-            title: "Copy MDX source",
-            onclick: move |_| {
-                #[cfg(target_arch = "wasm32")]
-                {
-                    use dioxus::prelude::*;
-                    let content = content.clone();
-                    spawn(async move {
-                        let js = format!(
-                            "navigator.clipboard.writeText({}).catch(console.error)",
-                            serde_json::to_string(&content).unwrap_or_default()
-                        );
-                        let _ = document::eval(&js);
-                        copied.set(true);
-                        gloo_timers::future::TimeoutFuture::new(2000).await;
-                        copied.set(false);
-                    });
-                }
-            },
-            if copied() {
-                Icon { class: "size-4 text-success", icon: LdCheck }
-                span { class: "text-xs", "Copied!" }
-            } else {
-                Icon { class: "size-4", icon: LdCopy }
-                span { class: "text-xs", "Copy page" }
             }
         }
     }

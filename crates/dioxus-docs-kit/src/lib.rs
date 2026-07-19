@@ -243,9 +243,9 @@ pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
 
 pub use components::{
-    ActiveTab, CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta, DocsPageNav, DocsSidebar,
-    DocsVariant, DrawerOpen, LayoutOffsets, MobileDrawer, SearchButton, SearchModal, SearchOpen,
-    ThemeToggle, use_theme_provider,
+    ActiveTab, CopyPageButton, CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta,
+    DocsPageNav, DocsSidebar, DocsVariant, DrawerOpen, LayoutOffsets, MobileDrawer, SearchButton,
+    SearchModal, SearchOpen, ThemeToggle, use_theme_provider,
 };
 
 pub use hooks::{DocsProviders, use_docs_providers};

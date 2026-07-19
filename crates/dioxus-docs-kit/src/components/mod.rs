@@ -1,4 +1,5 @@
 pub mod blog;
+mod copy_page;
 mod docs_layout;
 mod docs_meta;
 mod docs_page;
@@ -11,6 +12,7 @@ pub(crate) mod shared;
 mod sidebar;
 mod theme_toggle;
 
+pub use copy_page::CopyPageButton;
 pub use docs_layout::{
     ActiveTab, CurrentTheme, DocsLayout, DocsVariant, DrawerOpen, LayoutOffsets, SearchButton,
     SearchOpen,

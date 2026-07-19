@@ -9,6 +9,10 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Added
 
+- **`CopyPageButton`**: a "Copy page" button rendered in the header of every
+  MDX doc page that copies the page's raw Markdown to the clipboard (the "copy
+  page for LLMs" pattern), showing a "Copied" state for ~2s. Not rendered on
+  OpenAPI endpoint pages. Carries the stable `dk-copy-page` class for theming.
 - **`server` feature with `SeoRouter`** (`dioxus_docs_kit::server`): one
   builder generates all crawler-facing Axum routes — per-page raw Markdown
   (`<page>.md`), `/llms.txt`, `/llms-full.txt`, per-surface sitemaps plus a
