@@ -38,6 +38,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.96.0
         with:
           components: clippy
+          targets: wasm32-unknown-unknown
       - uses: rui314/setup-mold@v1
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -53,6 +54,10 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Run Clippy (highlight feature off)
         run: cargo clippy -p dioxus-mdx -p dioxus-docs-kit --no-default-features --features web --all-targets -- -D warnings
+      # Proves the highlight-off wasm build needs no C toolchain (no
+      # arborium/dioxus-code crates are pulled in at all).
+      - name: Check wasm build (highlight feature off)
+        run: cargo check -p dioxus-docs-kit --target wasm32-unknown-unknown --no-default-features --features web
 
   unused-dependencies:
     runs-on: ubuntu-latest
