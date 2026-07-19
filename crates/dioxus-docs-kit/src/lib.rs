@@ -53,7 +53,10 @@
 // the shim's headers, so `stderr` is referenced but never dereferenced at
 // runtime. `#[used]` keeps the symbol from being dropped from the rlib before
 // it can satisfy the cross-crate reference at final link.
-#[cfg(target_arch = "wasm32")]
+//
+// This is only needed when the `highlight` feature is enabled, since that is what
+// links the tree-sitter C code (via `dioxus-code`) that references `stderr`.
+#[cfg(all(target_arch = "wasm32", feature = "highlight"))]
 mod wasm_sysroot_stderr {
     use core::ffi::c_void;
     static mut DUMMY_FILE: u8 = 0;
@@ -239,7 +242,9 @@ impl BlogContext {
 // Docs re-exports
 // ============================================================================
 
-pub use config::{CodeThemeConfig, DocsConfig, ThemeConfig};
+#[cfg(feature = "highlight")]
+pub use config::CodeThemeConfig;
+pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
 pub use registry::DocsRegistry;
 pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
@@ -253,10 +258,14 @@ pub use components::{
 pub use hooks::{DocsProviders, use_docs_providers};
 
 pub use dioxus_mdx::{
-    ApiOperation, ApiTag, CodeThemeOverride, DocContent, DocTableOfContents, EndpointPage,
-    HttpMethod, OpenApiSpec, ParsedDoc, extract_headers,
+    ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
+    ParsedDoc, extract_headers,
 };
 
+#[cfg(feature = "highlight")]
+pub use dioxus_mdx::CodeThemeOverride;
+
+#[cfg(feature = "highlight")]
 pub use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 
 #[cfg(feature = "mermaid")]

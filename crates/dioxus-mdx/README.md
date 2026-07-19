@@ -112,6 +112,7 @@ and adapt to any DaisyUI theme.
 ## Features
 
 - `web` (default) — enables web-specific features like clipboard copy buttons on code blocks
+- `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain is needed for wasm and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `CodeTheme`, `Theme`, and `CodeThemeOverride` re-exports.
 
 ## License
 

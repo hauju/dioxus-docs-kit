@@ -1,10 +1,13 @@
 use dioxus::prelude::*;
+#[cfg(feature = "highlight")]
 use dioxus_code::CodeTheme;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdMenu;
+#[cfg(feature = "highlight")]
 use dioxus_mdx::CodeThemeOverride;
 
 use crate::DocsContext;
+#[cfg(feature = "highlight")]
 use crate::config::CodeThemeConfig;
 use crate::registry::DocsRegistry;
 
@@ -138,27 +141,33 @@ pub fn DocsLayout(
     use_context_provider(|| DrawerOpen(drawer_open));
 
     // Theme state: hooks must be called unconditionally
+    // `current_theme` only feeds the code-theme override below, which is gated on the
+    // `highlight` feature; the hook itself must still run to provide `CurrentTheme`.
+    #[cfg_attr(not(feature = "highlight"), allow(unused_variables))]
     let current_theme = super::shared::use_theme_provider(registry.theme.clone());
 
     // Resolve the code-block syntax theme. When a light/dark toggle is configured, the
     // choice tracks the active `data-theme` so code backgrounds match the site toggle
     // rather than the reader's OS `prefers-color-scheme`. Provided reactively so blocks
     // restyle when the theme switches. (See `CodeThemeOverride` in dioxus-mdx.)
-    let code_theme_config = registry.code_theme;
-    let toggle_dark = registry
-        .theme
-        .as_ref()
-        .and_then(|t| t.toggle_themes.as_ref())
-        .map(|(_, dark)| dark.clone());
-    let code_theme = use_memo(move || match code_theme_config {
-        CodeThemeConfig::Fixed(theme) => CodeTheme::fixed(theme),
-        CodeThemeConfig::Adaptive { light, dark } => match &toggle_dark {
-            Some(dark_name) if current_theme() == *dark_name => CodeTheme::fixed(dark),
-            Some(_) => CodeTheme::fixed(light),
-            None => CodeTheme::system(light, dark),
-        },
-    });
-    use_context_provider(|| CodeThemeOverride(code_theme.into()));
+    #[cfg(feature = "highlight")]
+    {
+        let code_theme_config = registry.code_theme;
+        let toggle_dark = registry
+            .theme
+            .as_ref()
+            .and_then(|t| t.toggle_themes.as_ref())
+            .map(|(_, dark)| dark.clone());
+        let code_theme = use_memo(move || match code_theme_config {
+            CodeThemeConfig::Fixed(theme) => CodeTheme::fixed(theme),
+            CodeThemeConfig::Adaptive { light, dark } => match &toggle_dark {
+                Some(dark_name) if current_theme() == *dark_name => CodeTheme::fixed(dark),
+                Some(_) => CodeTheme::fixed(light),
+                None => CodeTheme::system(light, dark),
+            },
+        });
+        use_context_provider(|| CodeThemeOverride(code_theme.into()));
+    }
 
     // Active tab state
     let mut active_tab = use_signal(|| nav.tabs.first().cloned().unwrap_or_default());

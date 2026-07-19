@@ -1,6 +1,7 @@
 //! Builder for constructing a `DocsRegistry`.
 
 use crate::registry::DocsRegistry;
+#[cfg(feature = "highlight")]
 use dioxus_code::Theme;
 use std::collections::HashMap;
 
@@ -20,6 +21,9 @@ pub struct ThemeConfig {
 /// How rendered code blocks pick their syntax-highlighting theme.
 ///
 /// Defaults to [`CodeThemeConfig::Adaptive`] with GitHub Light / Tokyo Night.
+///
+/// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
+#[cfg(feature = "highlight")]
 #[derive(Clone, Copy, Debug)]
 pub enum CodeThemeConfig {
     /// Always use this one theme, regardless of the site's light/dark state.
@@ -38,6 +42,7 @@ pub enum CodeThemeConfig {
     },
 }
 
+#[cfg(feature = "highlight")]
 impl Default for CodeThemeConfig {
     fn default() -> Self {
         Self::Adaptive {
@@ -64,6 +69,7 @@ pub struct DocsConfig {
     default_path: Option<String>,
     api_group_name: Option<String>,
     theme: Option<ThemeConfig>,
+    #[cfg(feature = "highlight")]
     code_theme: CodeThemeConfig,
 }
 
@@ -79,6 +85,7 @@ impl DocsConfig {
             default_path: None,
             api_group_name: None,
             theme: None,
+            #[cfg(feature = "highlight")]
             code_theme: CodeThemeConfig::default(),
         }
     }
@@ -146,6 +153,9 @@ impl DocsConfig {
     ///
     /// Use this for single-theme sites (e.g. a dark-only app) so the code block
     /// background matches the site instead of following the reader's OS setting.
+    ///
+    /// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
+    #[cfg(feature = "highlight")]
     pub fn with_code_theme(mut self, theme: Theme) -> Self {
         self.code_theme = CodeThemeConfig::Fixed(theme);
         self
@@ -156,6 +166,9 @@ impl DocsConfig {
     /// When a theme toggle is configured (see [`Self::with_theme_toggle`]), the active
     /// choice tracks the toggle's `data-theme`; otherwise it follows the reader's OS
     /// `prefers-color-scheme`. Defaults to GitHub Light / Tokyo Night when not set.
+    ///
+    /// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
+    #[cfg(feature = "highlight")]
     pub fn with_code_themes(mut self, light: Theme, dark: Theme) -> Self {
         self.code_theme = CodeThemeConfig::Adaptive { light, dark };
         self
@@ -205,6 +218,7 @@ impl DocsConfig {
         self.theme.as_ref()
     }
 
+    #[cfg(feature = "highlight")]
     pub(crate) fn code_theme_value(&self) -> CodeThemeConfig {
         self.code_theme
     }

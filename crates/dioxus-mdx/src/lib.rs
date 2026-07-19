@@ -111,19 +111,26 @@ pub use parser::{
 };
 
 // Re-export the syntax-highlighting theme types so consumers can build a
-// `CodeThemeOverride` without depending on `dioxus-code` directly.
+// `CodeThemeOverride` without depending on `dioxus-code` directly. Only available
+// with the `highlight` feature (default), which pulls in `dioxus-code`.
+#[cfg(feature = "highlight")]
 pub use dioxus_code::{CodeTheme, Theme};
 
 // Re-export components
 pub use components::{
-    ApiInfoHeader, CodeThemeOverride, DocAccordionGroup, DocAccordionItem, DocCallout, DocCard,
-    DocCardGroup, DocCodeBlock, DocCodeGroup, DocContent, DocExpandable, DocNodeRenderer,
-    DocParamField, DocRequestExample, DocResponseExample, DocResponseField, DocSteps,
-    DocTableOfContents, DocTabs, DocUpdate, EndpointCard, EndpointPage, MdxContent, MdxIcon,
-    MdxRenderer, MethodBadge, OpenApiViewer, ParameterItem, ParametersList, RequestBodySection,
-    ResponseItem, ResponsesList, SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup,
-    UngroupedEndpoints, extract_headers, slugify,
+    ApiInfoHeader, DocAccordionGroup, DocAccordionItem, DocCallout, DocCard, DocCardGroup,
+    DocCodeBlock, DocCodeGroup, DocContent, DocExpandable, DocNodeRenderer, DocParamField,
+    DocRequestExample, DocResponseExample, DocResponseField, DocSteps, DocTableOfContents, DocTabs,
+    DocUpdate, EndpointCard, EndpointPage, MdxContent, MdxIcon, MdxRenderer, MethodBadge,
+    OpenApiViewer, ParameterItem, ParametersList, RequestBodySection, ResponseItem, ResponsesList,
+    SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup, UngroupedEndpoints,
+    extract_headers, slugify,
 };
+
+// `CodeThemeOverride` wraps a `dioxus-code` type, so it's only available with the
+// `highlight` feature (default).
+#[cfg(feature = "highlight")]
+pub use components::CodeThemeOverride;
 
 #[cfg(feature = "mermaid")]
 pub use components::MermaidDiagram;

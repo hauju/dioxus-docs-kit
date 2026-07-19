@@ -45,6 +45,15 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   the build with the file path and serde line/column instead of silently
   dropping the post at runtime; docs pages whose leading `---` block is not a
   YAML mapping fail the build too.
+- **`highlight` feature** (default, both `dioxus-docs-kit` and `dioxus-mdx`):
+  gates the `dioxus-code` syntax-highlighting dependency. Leaving it enabled
+  keeps colored code blocks exactly as before. Disabling it
+  (`default-features = false`) drops `dioxus-code` and its `arborium-*`
+  tree-sitter grammar crates entirely — no C toolchain (or wasm `stderr`
+  linker shim) required for wasm builds and a smaller binary. Code blocks
+  still render, as escaped plain text inside the same markup, so layout,
+  scrolling, copy buttons, and CodeGroup tabs keep working; only token
+  coloring is lost.
 
 ### Fixed
 
@@ -99,6 +108,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 - If you called `generate_llms_txt`/`generate_llms_full_txt` directly, pass
   the docs base URL (`{site_url}/docs`) — or use `SeoRouter`, which wires all
   crawler endpoints for you.
+- If you build with `default-features = false`, add the `highlight` feature to
+  keep colored code blocks and the `dioxus-code` re-exports (`Code`,
+  `CodeTheme`, `Language`, `SourceCode`, `Theme`, `CodeThemeOverride`,
+  `CodeThemeConfig`, and `DocsConfig::with_code_theme[s]`); omit it to drop the
+  `dioxus-code` dependency and render plain (uncolored) code blocks.
 
 ## [0.4.x] — 2026-03/04
 

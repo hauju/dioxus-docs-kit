@@ -17,7 +17,7 @@ readme = "README.md"
 dioxus = { workspace = true, features = ["lib", "router"] }
 dioxus-free-icons = { workspace = true }
 dioxus-mdx = { workspace = true }
-dioxus-code = { workspace = true }
+dioxus-code = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -27,7 +27,8 @@ tracing = { workspace = true }
 gloo-timers = { workspace = true }
 
 [features]
-default = ["web", "mermaid"]
+default = ["web", "mermaid", "highlight"]
 web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server"]
 mermaid = ["dioxus-mdx/mermaid"]
+highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]

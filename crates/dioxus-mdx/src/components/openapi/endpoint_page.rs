@@ -1,6 +1,7 @@
 //! Two-column Mintlify-style endpoint page component.
 
 use dioxus::prelude::*;
+#[cfg(feature = "highlight")]
 use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
 
 use crate::parser::{ApiOperation, OpenApiSpec};
@@ -9,6 +10,37 @@ use super::method_badge::MethodBadge;
 use super::parameters_list::ParametersList;
 use super::request_body::RequestBodySection;
 use super::responses_list::ResponsesList;
+
+/// Language selector for the endpoint page's code samples, kept independent of
+/// `dioxus-code` so the markup compiles with the `highlight` feature disabled.
+enum SampleLang {
+    Bash,
+    Json,
+}
+
+/// Render a syntax-highlighted code sample using the fixed GitHub Light / Tokyo Night
+/// system theme (endpoint pages don't follow the site theme toggle).
+#[cfg(feature = "highlight")]
+fn code_sample(code: String, lang: SampleLang) -> Element {
+    let language = match lang {
+        SampleLang::Bash => Language::Bash,
+        SampleLang::Json => Language::Json,
+    };
+    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
+    rsx! {
+        Code {
+            src: SourceCode::new(language, code),
+            theme,
+        }
+    }
+}
+
+/// Fallback code sample when the `highlight` feature is disabled: escaped plain text
+/// in the same `<pre class="dxc">` markup, without token coloring.
+#[cfg(not(feature = "highlight"))]
+fn code_sample(code: String, _lang: SampleLang) -> Element {
+    crate::components::code::plain_code_block(&code)
+}
 
 /// Props for EndpointPage component.
 #[derive(Props, Clone, PartialEq)]
@@ -36,7 +68,6 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
 
     let curl = op.generate_curl(base_url);
     let response_example = op.generate_response_example();
-    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
 
     let method_bg = op.method.bg_class();
 
@@ -131,10 +162,7 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                 }
                             }
                             div { class: "dk-code-block-body bg-base-200",
-                                Code {
-                                    src: SourceCode::new(Language::Bash, curl.clone()),
-                                    theme,
-                                }
+                                {code_sample(curl.clone(), SampleLang::Bash)}
                             }
                         }
                     }
@@ -164,13 +192,7 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                                             }
                                         }
                                         div { class: "dk-code-block-body bg-base-200 max-h-[60vh] overflow-y-auto",
-                                            Code {
-                                                src: SourceCode::new(
-                                                    Language::Json,
-                                                    response_json.clone(),
-                                                ),
-                                                theme,
-                                            }
+                                            {code_sample(response_json.clone(), SampleLang::Json)}
                                         }
                                     }
                                 }
