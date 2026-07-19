@@ -272,13 +272,19 @@ pub(crate) fn clean_markdown(md: &str) -> String {
     // Drop fenced code blocks wholesale (noise, and their `##` lines are not
     // real headings).
     let mut no_code = String::with_capacity(md.len());
-    let mut in_fence = false;
+    let mut fence: Option<char> = None;
     for line in md.lines() {
-        if line.trim_start().starts_with("```") {
-            in_fence = !in_fence;
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            let marker = if trimmed.starts_with("```") { '`' } else { '~' };
+            match fence {
+                None => fence = Some(marker),
+                Some(open) if open == marker => fence = None,
+                Some(_) => {} // the other marker inside a fence is literal content
+            }
             continue;
         }
-        if in_fence {
+        if fence.is_some() {
             continue;
         }
         no_code.push_str(line);

@@ -52,10 +52,12 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   images, and fenced code blocks are ignored; runtime OpenAPI reference pages
   are not flagged. Warnings only — link problems never fail the build.
 - **Fail-fast frontmatter validation** (`dioxus-docs-kit-build`): malformed
-  blog frontmatter (bad YAML or a missing `title`/`date`/`author`) now fails
-  the build with the file path and serde line/column instead of silently
-  dropping the post at runtime; docs pages whose leading `---` block is not a
-  YAML mapping fail the build too.
+  blog frontmatter — bad YAML, a missing `title`/`date`/`author`, or a
+  wrong-typed optional field (e.g. `tags: rust` instead of a sequence) — now
+  fails the build with the file path and serde line/column instead of
+  silently dropping the post at runtime. Docs pages whose leading `---` block
+  is not parseable frontmatter get a `cargo:warning` (the runtime renders
+  such blocks as page content, so they never fail the build).
 - **`highlight` feature** (default, both `dioxus-docs-kit` and `dioxus-mdx`):
   gates the `dioxus-code` syntax-highlighting dependency. Leaving it enabled
   keeps colored code blocks exactly as before. Disabling it
@@ -77,8 +79,20 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   normalized. Missing `.mdx` files also emit `rerun-if-changed` so creating
   the file triggers a rebuild, and the warning names the full expected path.
 - Malformed MDX frontmatter no longer renders the raw `---` block as page
-  text; blog posts with invalid frontmatter now log a `tracing` warning
-  instead of silently disappearing from the site.
+  text. (Blog posts with invalid frontmatter now fail the build outright —
+  see the fail-fast frontmatter bullet under Added; the runtime `tracing`
+  warning remains only as a fallback for content maps built without
+  `dioxus-docs-kit-build`.)
+- Heading anchor ids now agree everywhere for headings containing `&`, `<`,
+  `>`, or markdown links: `slugify` decodes standard HTML entities and
+  reduces link syntax to its text, so the renderer's injected ids, TOC links,
+  search deep-links, and build-time anchor checks all produce the same slug
+  (previously a `## Tips & Tricks` heading got the DOM id `tips-amp-tricks`
+  while the TOC linked to `#tips-tricks` — TOC anchors for such headings were
+  broken).
+- `~~~`-fenced code blocks are now skipped by the search section splitter and
+  snippet cleaner, matching the ``` handling (a `##` line inside a tilde
+  fence no longer produces a phantom search section).
 - TOC scroll listeners and the Cmd/Ctrl-K keydown listener no longer
   accumulate across navigations/layout remounts.
 - The blog search modal now shares the docs modal shell and carries the

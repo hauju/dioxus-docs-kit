@@ -244,7 +244,19 @@ pub fn extract_headers(content: &str) -> Vec<(String, String, u8)> {
 }
 
 /// Convert a title to a URL-friendly slug.
+///
+/// Standard HTML entities are decoded and markdown link syntax is reduced to
+/// its text first, so the slug is identical whether the input is raw markdown
+/// heading text (TOC, search index, build-time anchor checks) or the
+/// HTML-escaped, tag-stripped heading the renderer injects ids from.
 pub fn slugify(text: &str) -> String {
+    let text = text
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&amp;", "&");
+    let text = strip_markdown_links(&text);
     text.to_lowercase()
         .chars()
         .filter_map(|c| {
@@ -263,9 +275,45 @@ pub fn slugify(text: &str) -> String {
         .join("-")
 }
 
+/// Reduce markdown links/images `[text](url)` to their text. The renderer
+/// slugs from HTML where the `<a>` tag is already stripped, so raw heading
+/// text must shed the link syntax to produce the same slug.
+fn strip_markdown_links(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(open) = rest.find('[') {
+        if let Some(mid) = rest[open..].find("](") {
+            let mid = open + mid;
+            if let Some(close) = rest[mid..].find(')') {
+                out.push_str(&rest[..open]);
+                out.push_str(&rest[open + 1..mid]);
+                rest = &rest[mid + close + 1..];
+                continue;
+            }
+        }
+        out.push_str(&rest[..=open]);
+        rest = &rest[open + 1..];
+    }
+    out.push_str(rest);
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn slugify_normalizes_entities_and_links() {
+        assert_eq!(slugify("Tips & Tricks"), "tips-tricks");
+        assert_eq!(slugify("Tips &amp; Tricks"), "tips-tricks");
+        assert_eq!(slugify("Q&A"), "qa");
+        assert_eq!(slugify("Q&amp;A"), "qa");
+        assert_eq!(slugify("a < b"), "a-b");
+        assert_eq!(slugify("a &lt; b"), "a-b");
+        assert_eq!(slugify("See [the docs](https://x.y/z)"), "see-the-docs");
+        assert_eq!(slugify("See the docs"), "see-the-docs");
+        assert_eq!(slugify("Use `cargo build`"), "use-cargo-build");
+    }
 
     #[test]
     fn test_extract_headers() {
