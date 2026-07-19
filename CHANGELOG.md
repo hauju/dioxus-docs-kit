@@ -76,6 +76,9 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 - `get_api_sidebar_entries()` returns a slice of precomputed entries;
   `ApiEndpointEntry` gained a `prefix` field.
 - `extract_blog_frontmatter` returns `Result<_, String>` (was `Option`).
+- `DocsContext` / `BlogContext` are now `#[non_exhaustive]`: external crates
+  can no longer build them with struct literals and must use the `::new()`
+  constructors plus `with_*` setters, so future fields stay non-breaking.
 - Workspace-level dependency and package metadata management
   (`[workspace.package]` / `[workspace.dependencies]`).
 
@@ -85,9 +88,12 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   the library. Downstream binaries that added their own
   `#[no_mangle] static mut stderr` workaround must **delete it** — keeping
   both causes a duplicate-symbol link error.
-- Construct `DocsContext` / `BlogContext` via the new constructors; struct
-  literals still compile today but require every field and will break when
-  fields are added.
+- Construct `DocsContext` / `BlogContext` via the `::new()` constructors and
+  `with_*` setters. The structs are now `#[non_exhaustive]`, so struct literals
+  no longer compile from outside the kit — replace any
+  `DocsContext { .. }` / `BlogContext { .. }` with
+  `DocsContext::new(current_path, base_path, navigate).with_site_url(..)`
+  (and `.with_auto_meta(..)` / `.with_markdown_alternate(..)` as needed).
 - If you provided the search-open signal as a bare `Signal<bool>` context,
   provide `SearchOpen(signal)` instead.
 - If you called `generate_llms_txt`/`generate_llms_full_txt` directly, pass
