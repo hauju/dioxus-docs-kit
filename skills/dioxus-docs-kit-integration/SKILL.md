@@ -47,9 +47,12 @@ Wire features so `web` propagates to the kit:
 
 ```toml
 [features]
-default = ["web"]
+default = ["web", "highlight"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
-server = ["dioxus/server"]
+server = ["dioxus/server", "dioxus-docs-kit/server"]
+# Syntax highlighting (dioxus-code); omit to drop the C-compiling
+# tree-sitter grammars — code blocks then render as plain text
+highlight = ["dioxus-docs-kit/highlight"]
 # Optional: keep mermaid rendering
 mermaid = ["dioxus-docs-kit/mermaid"]
 ```
@@ -362,45 +365,29 @@ The `auto_meta: true` field on `DocsContext` already emits per-page `<title>`,
 description, OpenGraph, and Twitter Card tags from MDX frontmatter. Canonical
 URL + `og:url` emit only when `site_url` is also set.
 
-For crawlers, add server functions:
+Do **not** use `#[get(...)]` server functions for these endpoints — server
+functions JSON-encode their `String` return (quoted body, `application/json`
+content type), which robots.txt / sitemap / llms.txt consumers can't parse.
+Use `SeoRouter` (behind the kit's `server` feature) instead; it wires all
+crawler-facing routes as plain Axum routes with correct content types:
+per-page raw Markdown (`<page>.md`), `/llms.txt`, `/llms-full.txt`,
+per-surface sitemaps plus a `/sitemap.xml` index, blog RSS, and robots.txt.
 
 ```rust
-const SITE_URL: &str = "https://example.com"; // no trailing slash
+use dioxus_docs_kit::server::SeoRouter;
 
-#[get("/sitemap.xml")]
-async fn sitemap_index() -> Result<String, ServerFnError> {
-    Ok(format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-         <sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
-         <sitemap><loc>{SITE_URL}/sitemap-docs.xml</loc></sitemap>\n\
-         </sitemapindex>\n"
-    ))
-}
-
-#[get("/sitemap-docs.xml")]
-async fn sitemap_docs() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_sitemap(SITE_URL, "/docs"))
-}
-
-#[get("/robots.txt")]
-async fn robots_txt() -> Result<String, ServerFnError> {
-    Ok(format!("User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n"))
-}
-
-#[get("/llms.txt")]
-async fn llms_txt() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_llms_txt(
-        "Project Name",
-        "One-line project description.",
-        "https://github.com/owner/repo",
-    ))
-}
-
-#[get("/llms-full.txt")]
-async fn llms_full_txt() -> Result<String, ServerFnError> {
-    Ok(DOCS.generate_llms_full_txt("Project Name", "...", "https://github.com/owner/repo"))
-}
+dioxus::server::serve(|| async {
+    let seo = SeoRouter::new("https://example.com", "My Docs", "Documentation for My Product")
+        .with_docs(&DOCS, "/docs")
+        .with_blog(&BLOG, "/blog") // omit if you have no blog
+        .into_router();
+    Ok(dioxus::server::router(App).merge(seo))
+});
 ```
+
+If you call `DOCS.generate_llms_txt(...)` / `generate_llms_full_txt(...)`
+directly instead, note the third argument is the **docs base URL** (e.g.
+`"https://example.com/docs"`), not a repository link.
 
 If using the blog, add a `/sitemap-blog.xml` entry that calls
 `BLOG.generate_sitemap(SITE_URL, "/blog")` and include it in the sitemap

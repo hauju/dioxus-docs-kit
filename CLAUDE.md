@@ -101,8 +101,8 @@ Route enum (main.rs):
 
 - Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
 - `use_signal()` for local state, `use_context_provider()` for shared state
-- Syntax highlighting: `highlight_code(code, Some("lang"))` returns HTML for `dangerous_inner_html`
-- Cargo features: `default = ["web"]`, `server = ["dioxus/server"]`
+- Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
+- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight"]`, plus `server` (SeoRouter/Axum routes)
 - CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.3, Bun for Tailwind
 
 ---

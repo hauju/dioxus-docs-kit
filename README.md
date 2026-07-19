@@ -29,7 +29,7 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
 
-The kit's default features are `web` + `mermaid`; if you disable default features, re-enable `mermaid` too or ` ```mermaid ` fences stop rendering as diagrams.
+The kit's default features are `web` + `mermaid` + `highlight`; if you disable default features, re-enable `mermaid` and `highlight` too, or ` ```mermaid ` fences stop rendering as diagrams and code blocks lose syntax coloring.
 
 ### 2. Set up `build.rs`
 
