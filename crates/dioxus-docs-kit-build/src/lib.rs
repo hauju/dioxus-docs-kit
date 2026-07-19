@@ -185,6 +185,13 @@ pub fn generate_blog_content_map(manifest_path: &str) {
 /// build crate cannot depend on `dioxus-mdx` (that would pull `dioxus` into
 /// every consumer's build-dependencies), so this small function is duplicated.
 fn slugify(text: &str) -> String {
+    let text = text
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&amp;", "&");
+    let text = strip_markdown_links(&text);
     text.to_lowercase()
         .chars()
         .filter_map(|c| {
@@ -201,6 +208,28 @@ fn slugify(text: &str) -> String {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join("-")
+}
+
+/// Reduce markdown links/images `[text](url)` to their text (mirrors
+/// `dioxus_mdx`'s `strip_markdown_links`, for the same slug-agreement reason).
+fn strip_markdown_links(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(open) = rest.find('[') {
+        if let Some(mid) = rest[open..].find("](") {
+            let mid = open + mid;
+            if let Some(close) = rest[mid..].find(')') {
+                out.push_str(&rest[..open]);
+                out.push_str(&rest[open + 1..mid]);
+                rest = &rest[mid + close + 1..];
+                continue;
+            }
+        }
+        out.push_str(&rest[..=open]);
+        rest = &rest[open + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Remove fenced code blocks (``` or ~~~) so markdown-looking text inside code
@@ -536,20 +565,40 @@ fn validate_docs_frontmatter(path: &str, content: &str) {
     }
     match serde_yaml::from_str::<serde_yaml::Value>(yaml) {
         Ok(serde_yaml::Value::Mapping(_)) => {}
-        Ok(_) => panic!("{path}: frontmatter must be a YAML mapping"),
-        Err(e) => panic!("{path}: malformed frontmatter: {e}"),
+        // The runtime treats an unparseable leading block as page content and
+        // still renders the page (a `---`-fenced paragraph is legal markdown),
+        // so a hard build failure here would reject pages that work. Warn only.
+        Ok(_) => println!(
+            "cargo:warning={path}: leading --- block is not a YAML mapping and will render as page content, not frontmatter"
+        ),
+        Err(e) => println!(
+            "cargo:warning={path}: leading --- block is not valid YAML ({e}) and will render as page content, not frontmatter"
+        ),
     }
 }
 
-/// Required blog frontmatter fields, mirroring
+/// Blog frontmatter fields, mirroring
 /// `dioxus_docs_kit::blog::types::BlogFrontmatter` (which a build crate cannot
-/// depend on). Optional fields are omitted — serde ignores unknown keys.
+/// depend on). ALL fields are mirrored, including optional ones: a
+/// present-but-wrong-typed optional field (e.g. `tags: rust` instead of a
+/// sequence) is a hard deserialize error at runtime that silently drops the
+/// post, so it must fail the build here too.
 #[derive(Deserialize)]
 #[allow(dead_code)]
 struct BlogFrontmatterCheck {
     title: String,
+    #[serde(default)]
+    description: Option<String>,
     date: String,
     author: String,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default, rename = "coverImage")]
+    cover_image: Option<String>,
+    #[serde(default)]
+    draft: bool,
+    #[serde(default)]
+    featured: bool,
 }
 
 /// A blog post must have a valid frontmatter block carrying the required
@@ -598,6 +647,11 @@ mod tests {
         assert_eq!(slugify("Hello World"), "hello-world");
         assert_eq!(slugify("Getting Started!"), "getting-started");
         assert_eq!(slugify("API v1.0"), "api-v1-0");
+        assert_eq!(slugify("Tips & Tricks"), "tips-tricks");
+        assert_eq!(slugify("Tips &amp; Tricks"), "tips-tricks");
+        assert_eq!(slugify("Q&A"), "qa");
+        assert_eq!(slugify("a &lt; b"), "a-b");
+        assert_eq!(slugify("See [the docs](https://x.y/z)"), "see-the-docs");
     }
 
     #[test]
@@ -755,15 +809,12 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "malformed frontmatter")]
-    fn docs_frontmatter_malformed_panics() {
+    fn docs_frontmatter_unparseable_block_warns_but_does_not_panic() {
+        // The runtime renders these pages (the block is treated as content),
+        // so the build must not reject them — it only emits cargo:warning.
         validate_docs_frontmatter("x.mdx", "---\ntitle: [unclosed\n---\nbody");
-    }
-
-    #[test]
-    #[should_panic(expected = "must be a YAML mapping")]
-    fn docs_frontmatter_non_mapping_panics() {
         validate_docs_frontmatter("x.mdx", "---\n- a\n- b\n---\nbody");
+        validate_docs_frontmatter("x.mdx", "---\nJust a fenced paragraph.\n---\nbody");
     }
 
     #[test]
@@ -794,5 +845,24 @@ mod tests {
     #[should_panic(expected = "missing frontmatter")]
     fn blog_frontmatter_no_block_panics() {
         validate_blog_frontmatter("p.mdx", "just body, no frontmatter");
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid type")]
+    fn blog_frontmatter_wrong_typed_optional_field_panics() {
+        // `tags` must be a sequence; a scalar fails deserialization at runtime
+        // and would silently drop the post, so it must fail the build.
+        validate_blog_frontmatter(
+            "p.mdx",
+            "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\ntags: rust\n---\nbody",
+        );
+    }
+
+    #[test]
+    fn blog_frontmatter_optional_fields_ok() {
+        validate_blog_frontmatter(
+            "p.mdx",
+            "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\ntags: [rust, web]\ndraft: true\ncoverImage: cover.png\n---\nbody",
+        );
     }
 }

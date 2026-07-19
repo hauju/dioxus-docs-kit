@@ -146,17 +146,22 @@ fn split_into_sections(raw: &str) -> Vec<Section> {
     let mut heading = String::new();
     let mut anchor = String::new();
     let mut body = String::new();
-    let mut in_fence = false;
+    let mut fence: Option<char> = None;
 
     for line in raw.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            let marker = if trimmed.starts_with("```") { '`' } else { '~' };
+            match fence {
+                None => fence = Some(marker),
+                Some(open) if open == marker => fence = None,
+                Some(_) => {} // the other marker inside a fence is literal content
+            }
             body.push_str(line);
             body.push('\n');
             continue;
         }
-        if !in_fence {
+        if fence.is_none() {
             if let Some(text) = parse_atx_heading(trimmed) {
                 sections.push(Section {
                     heading: std::mem::take(&mut heading),
