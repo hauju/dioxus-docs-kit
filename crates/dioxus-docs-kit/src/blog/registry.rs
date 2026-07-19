@@ -284,13 +284,19 @@ impl BlogRegistry {
 
     // ── Search ───────────────────────────────────────────────────────────
 
+    /// Search posts by query string.
+    ///
+    /// Same multi-term AND / tier scoring as docs search (title > description >
+    /// body); posts are indexed whole (no sections). See [`crate::search`].
     pub fn search_posts(&self, query: &str) -> Vec<&BlogSearchEntry> {
-        crate::search::rank_by_fields(&self.search_index, query, |e| {
-            (
-                e.title.as_str(),
-                e.description.as_str(),
-                e.content_preview.as_str(),
-            )
+        crate::search::rank(&self.search_index, query, |e, buf| {
+            buf.push(crate::search::Field::title(&e.title_lower));
+            if !e.description_lower.is_empty() {
+                buf.push(crate::search::Field::description(&e.description_lower));
+            }
+            if !e.body_lower.is_empty() {
+                buf.push(crate::search::Field::body(&e.body_lower));
+            }
         })
     }
 
@@ -298,12 +304,17 @@ impl BlogRegistry {
         posts
             .iter()
             .map(|post| {
-                let preview: String = post.raw_markdown.chars().take(200).collect();
+                let title = post.frontmatter.title.clone();
+                let description = post.frontmatter.description.clone().unwrap_or_default();
+                let body = crate::search::clean_markdown(&post.raw_markdown);
                 BlogSearchEntry {
                     slug: post.slug.clone(),
-                    title: post.frontmatter.title.clone(),
-                    description: post.frontmatter.description.clone().unwrap_or_default(),
-                    content_preview: preview,
+                    title_lower: crate::search::search_lower(&title),
+                    description_lower: crate::search::search_lower(&description),
+                    body_lower: crate::search::search_lower(&body),
+                    title,
+                    description,
+                    body,
                     date: post.frontmatter.date.clone(),
                     tags: post.frontmatter.tags.clone(),
                 }
@@ -568,6 +579,29 @@ Misc
 
         assert_eq!(page, vec!["featured", "regular-1"]);
         assert_eq!(registry.total_pages_for_tag("announcement"), 2);
+    }
+
+    #[test]
+    fn blog_search_matches_title_and_requires_all_terms() {
+        let registry = build_registry(10);
+
+        // Single term: both Rust posts match on title, newest first.
+        let single: Vec<&str> = registry
+            .search_posts("rust")
+            .iter()
+            .map(|e| e.slug.as_str())
+            .collect();
+        assert_eq!(single, vec!["rust-new", "rust-old"]);
+
+        // Multi-term AND: only "Rust New" contains both words.
+        let multi: Vec<&str> = registry
+            .search_posts("rust new")
+            .iter()
+            .map(|e| e.slug.as_str())
+            .collect();
+        assert_eq!(multi, vec!["rust-new"]);
+
+        assert!(registry.search_posts("   ").is_empty());
     }
 
     #[test]

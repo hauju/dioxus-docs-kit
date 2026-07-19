@@ -59,15 +59,22 @@ pub struct BlogPost {
     pub reading_time_minutes: u32,
 }
 
-/// A searchable entry in the blog.
+/// A searchable entry in the blog (one per post — blog search has no sections).
+///
+/// The `*_lower` fields are lowercased once at build time so search never
+/// re-lowercases per keystroke.
 #[derive(PartialEq)]
 pub struct BlogSearchEntry {
     pub slug: String,
     pub title: String,
     pub description: String,
-    pub content_preview: String,
+    /// Cleaned post body used for matching and snippet extraction.
+    pub body: String,
     pub date: String,
     pub tags: Vec<String>,
+    pub(crate) title_lower: String,
+    pub(crate) description_lower: String,
+    pub(crate) body_lower: String,
 }
 
 /// Extract blog frontmatter from MDX content.

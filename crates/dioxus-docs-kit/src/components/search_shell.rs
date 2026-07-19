@@ -4,18 +4,26 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdSearch, LdX};
 
+use crate::search::SnippetSegment;
+
 /// A single result row in the search modal.
 #[derive(Clone, PartialEq)]
 pub(crate) struct SearchHit {
-    /// Value passed to `on_select` when this row (or Enter on the first row) is chosen.
+    /// Value passed to `on_select` when this row (or Enter on the first row) is
+    /// chosen. Docs section hits encode the anchor as `path#anchor`.
     pub target: String,
+    /// Prominent text: the section heading for section hits, else the page/post title.
     pub title: String,
+    /// Small context shown before the title (e.g. page title for a section hit).
+    pub context: Option<String>,
     /// Optional `(label, badge classes)` rendered before the title (e.g. HTTP method).
     pub badge: Option<(&'static str, &'static str)>,
     /// Meta line rendered under the title (e.g. breadcrumb or date).
     pub meta: String,
     /// Optional tag badges rendered after the meta text.
     pub tags: Vec<String>,
+    /// Highlighted snippet segments rendered under the meta (empty = none).
+    pub snippet: Vec<SnippetSegment>,
 }
 
 /// Modal shell: backdrop, input row, result list, and footer.
@@ -140,12 +148,33 @@ fn SearchResultRow(
                     if let Some((label, badge_class)) = hit.badge {
                         span { class: "badge badge-xs font-mono {badge_class}", "{label}" }
                     }
+                    if let Some(context) = hit.context.as_ref() {
+                        span { class: "dk-search-context text-xs text-base-content/50 truncate shrink-0",
+                            "{context}"
+                        }
+                        span { class: "text-xs text-base-content/30 shrink-0", "›" }
+                    }
                     span { class: "font-medium text-sm truncate", "{hit.title}" }
                 }
                 div { class: "flex items-center gap-2 mt-0.5",
                     span { class: "text-xs text-base-content/50 truncate", "{hit.meta}" }
                     for tag in hit.tags.iter() {
                         span { class: "badge badge-xs badge-outline badge-primary", "{tag}" }
+                    }
+                }
+                if !hit.snippet.is_empty() {
+                    div { class: "dk-search-snippet text-xs text-base-content/60 mt-1 line-clamp-2",
+                        for (i, seg) in hit.snippet.iter().enumerate() {
+                            if seg.highlight {
+                                mark {
+                                    key: "{i}",
+                                    class: "dk-search-mark bg-primary/20 text-primary rounded-sm px-0.5",
+                                    "{seg.text}"
+                                }
+                            } else {
+                                span { key: "{i}", "{seg.text}" }
+                            }
+                        }
                     }
                 }
             }

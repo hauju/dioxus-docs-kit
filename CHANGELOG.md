@@ -13,6 +13,17 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   MDX doc page that copies the page's raw Markdown to the clipboard (the "copy
   page for LLMs" pattern), showing a "Copied" state for ~2s. Not rendered on
   OpenAPI endpoint pages. Carries the stable `dk-copy-page` class for theming.
+- **Ranked, section-level docs search**: the index now splits each MDX page
+  into sections on its h2–h4 headings, so results deep-link to the matching
+  section (scroll-to-anchor over a few animation frames after navigation) and
+  show the section heading beneath its page title. Matching is multi-term AND
+  (every whitespace-separated term must hit a field), scored
+  title > heading > description > body with a word-boundary/prefix bonus and an
+  earlier-position tiebreak (equal scores keep nav order). Each result row
+  renders a snippet with the matched terms highlighted via `<mark>` (no
+  `dangerous_inner_html`). Blog search shares the same ranking (post-level,
+  with snippets). New `dk-search-context` / `dk-search-snippet` /
+  `dk-search-mark` hooks added to `safelist.html`.
 - **`server` feature with `SeoRouter`** (`dioxus_docs_kit::server`): one
   builder generates all crawler-facing Axum routes — per-page raw Markdown
   (`<page>.md`), `/llms.txt`, `/llms-full.txt`, per-surface sitemaps plus a
@@ -75,6 +86,13 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Changed
 
+- Search fields are lowercased once at build time (never re-lowercased per
+  keystroke), and indexed body text is lightly stripped of markdown noise
+  (fenced code dropped, links reduced to their text, markers removed).
+- `SearchEntry` reshaped for section-level results: `content_preview` → `body`,
+  with new `anchor` (rendered heading id) and `heading` fields.
+  `BlogSearchEntry`: `content_preview` → `body`, now the full cleaned post text
+  rather than a 200-char preview. Both gained precomputed `*_lower` fields.
 - Performance: all parser/renderer regexes are compiled once
   (`LazyLock`), API sidebar entries are precomputed, and operation lookup is
   O(1) via a path index (previously per-render rebuilds and linear scans with
@@ -113,6 +131,9 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `CodeTheme`, `Language`, `SourceCode`, `Theme`, `CodeThemeOverride`,
   `CodeThemeConfig`, and `DocsConfig::with_code_theme[s]`); omit it to drop the
   `dioxus-code` dependency and render plain (uncolored) code blocks.
+- If you read `search_docs()` / `search_posts()` results directly, rename the
+  `content_preview` field to `body`; `SearchEntry` also gained `anchor` and
+  `heading` (empty for page-level / intro / API entries).
 
 ## [0.4.x] — 2026-03/04
 
