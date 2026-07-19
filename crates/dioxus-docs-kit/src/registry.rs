@@ -765,6 +765,20 @@ paths:
     }
 
     #[test]
+    fn raw_doc_content_present_for_mdx_absent_for_api() {
+        let reg = registry();
+        // MDX pages expose their raw Markdown source (drives the copy-page button).
+        assert!(
+            reg.get_doc_content("getting-started/intro")
+                .unwrap()
+                .contains("Welcome.")
+        );
+        // OpenAPI endpoint paths have no Markdown source, so no button renders.
+        assert!(reg.get_doc_content("api-reference/list-pets").is_none());
+        assert!(reg.get_doc_content("admin-api/list-admin-users").is_none());
+    }
+
+    #[test]
     fn tab_for_path_covers_static_and_api_pages() {
         let reg = registry();
         assert_eq!(

@@ -78,7 +78,7 @@ to any styling classes:
 |------|--------------|
 | Root wrappers | `dk-root`, `dk-docs-root` |
 | Layout | `dk-shell`, `dk-header`, `dk-sidebar`, `dk-main`, `dk-toc` |
-| Article | `dk-article`, `dk-article-title`, `dk-article-body` |
+| Article | `dk-article`, `dk-article-title`, `dk-article-body`, `dk-copy-page` |
 | Sidebar | `dk-nav-group`, `dk-nav-group-title`, `dk-nav-item`, `dk-nav-item-active` |
 | Search | `dk-search-trigger`, `dk-search-dialog`, `dk-search-input` |
 | Page nav | `dk-pagination`, `dk-page-prev`, `dk-page-next` |
