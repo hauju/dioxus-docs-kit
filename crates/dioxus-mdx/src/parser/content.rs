@@ -15,6 +15,7 @@ use super::openapi_tag::try_parse_openapi;
 use super::steps::try_parse_steps;
 use super::tabs::try_parse_tabs;
 use super::update::try_parse_update;
+use super::utils::find_fenced_blocks;
 use crate::parser::frontmatter::extract_frontmatter;
 use crate::parser::types::*;
 
@@ -22,14 +23,6 @@ static IMPORT_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^import\s+.*?;\s*\n?").unwrap());
 static HELPFUL_WIDGET_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"<SeggWatIsPageHelpful\s*/?>").unwrap());
-// Match fenced code blocks with optional language and filename
-// Handle both Unix (\n) and Windows (\r\n) line endings
-// The closing ``` must be on its own line (with optional leading whitespace)
-// IMPORTANT: Use [ \t]+ (not \s+) for filename separator to avoid matching across lines
-static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*(?:\r?\n|$)")
-        .unwrap()
-});
 
 /// Parse MDX content into a tree of DocNodes.
 /// Automatically strips frontmatter and import statements.
@@ -58,10 +51,10 @@ fn strip_imports(content: &str) -> String {
     let mut out = String::with_capacity(content.len());
     let mut last_end = 0;
 
-    for fence in CODE_RE.find_iter(content) {
-        out.push_str(&IMPORT_RE.replace_all(&content[last_end..fence.start()], ""));
-        out.push_str(fence.as_str());
-        last_end = fence.end();
+    for fence in find_fenced_blocks(content) {
+        out.push_str(&IMPORT_RE.replace_all(&content[last_end..fence.start], ""));
+        out.push_str(&content[fence.start..fence.end]);
+        last_end = fence.end;
     }
     out.push_str(&IMPORT_RE.replace_all(&content[last_end..], ""));
 
@@ -163,32 +156,23 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
 
     let mut last_end = 0;
 
-    for caps in CODE_RE.captures_iter(content) {
-        let full_match = caps.get(0).expect("regex group 0");
-
+    for block in find_fenced_blocks(content) {
         // Add any markdown before this code block
-        if full_match.start() > last_end {
-            let before = &content[last_end..full_match.start()];
+        if block.start > last_end {
+            let before = &content[last_end..block.start];
             if !before.trim().is_empty() {
                 nodes.push(DocNode::Markdown(before.trim().to_string()));
             }
         }
 
         // Add the code block
-        let language = caps.get(1).map(|m| m.as_str().to_string());
-        let filename = caps.get(2).map(|m| m.as_str().to_string());
-        let code = caps
-            .get(3)
-            .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_default();
-
         nodes.push(DocNode::CodeBlock(CodeBlockNode {
-            language,
-            filename,
-            code,
+            language: block.language.map(str::to_string),
+            filename: block.filename.map(str::to_string),
+            code: block.code.trim().to_string(),
         }));
 
-        last_end = full_match.end();
+        last_end = block.end;
     }
 
     // Add any remaining markdown after the last code block
@@ -234,9 +218,9 @@ fn find_next_component(content: &str) -> Option<usize> {
         "<OpenAPI",
     ];
 
-    let fences: Vec<(usize, usize)> = CODE_RE
-        .find_iter(content)
-        .map(|m| (m.start(), m.end()))
+    let fences: Vec<(usize, usize)> = find_fenced_blocks(content)
+        .iter()
+        .map(|b| (b.start, b.end))
         .collect();
     let in_fence = |idx: usize| fences.iter().any(|&(start, end)| idx >= start && idx < end);
 
@@ -549,6 +533,90 @@ After the diagram."#;
             "import line was stripped from the sample: {:?}",
             code.code
         );
+    }
+
+    #[test]
+    fn import_inside_tilde_fence_is_preserved() {
+        let content = "~~~js\nimport React from \"react\";\nconsole.log(1);\n~~~\n";
+        let nodes = parse_mdx(content);
+        let code = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::CodeBlock(c) => Some(c),
+                _ => None,
+            })
+            .expect("expected a CodeBlock");
+        assert!(
+            code.code.contains("import React from"),
+            "import line was stripped from the sample: {:?}",
+            code.code
+        );
+    }
+
+    #[test]
+    fn component_tag_inside_tilde_fence_stays_code() {
+        let content = "Example:\n\n~~~mdx\n<Card title=\"Demo\">Body</Card>\n~~~\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+
+        assert!(
+            !nodes
+                .iter()
+                .any(|n| matches!(n, DocNode::Card(_) | DocNode::CardGroup(_))),
+            "fenced sample must not become a Card, got: {nodes:?}"
+        );
+        let code = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::CodeBlock(c) => Some(c),
+                _ => None,
+            })
+            .expect("expected a CodeBlock");
+        assert_eq!(code.language.as_deref(), Some("mdx"));
+        assert!(code.code.contains("<Card title=\"Demo\">Body</Card>"));
+    }
+
+    #[test]
+    fn tilde_fence_becomes_code_block() {
+        let content = "Intro.\n\n~~~rust main.rs\nfn main() {}\n~~~\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+        assert_eq!(nodes.len(), 3, "got: {nodes:?}");
+        if let DocNode::CodeBlock(cb) = &nodes[1] {
+            assert_eq!(cb.language.as_deref(), Some("rust"));
+            assert_eq!(cb.filename.as_deref(), Some("main.rs"));
+            assert_eq!(cb.code, "fn main() {}");
+        } else {
+            panic!("Expected CodeBlock node, got {:?}", nodes[1]);
+        }
+    }
+
+    #[test]
+    fn backtick_fence_inside_tilde_fence_is_literal() {
+        // A ``` line inside a ~~~ block is content, not a toggle.
+        let content = "~~~md\nSample:\n```js\nlet x = 1;\n```\n~~~\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+        assert_eq!(nodes.len(), 2, "got: {nodes:?}");
+        if let DocNode::CodeBlock(cb) = &nodes[0] {
+            assert_eq!(cb.language.as_deref(), Some("md"));
+            assert_eq!(cb.code, "Sample:\n```js\nlet x = 1;\n```");
+        } else {
+            panic!("Expected CodeBlock node, got {:?}", nodes[0]);
+        }
+        assert!(matches!(&nodes[1], DocNode::Markdown(m) if m.contains("After")));
+    }
+
+    #[test]
+    fn tilde_fence_inside_backtick_fence_is_literal() {
+        // Already true of the old backtick-only regex (~~~ was invisible to
+        // it); guards the same-marker rule now that ~~~ toggles fences too.
+        let content = "```md\n~~~\nliteral\n~~~\n```\n";
+        let nodes = parse_mdx(content);
+        assert_eq!(nodes.len(), 1, "got: {nodes:?}");
+        if let DocNode::CodeBlock(cb) = &nodes[0] {
+            assert_eq!(cb.language.as_deref(), Some("md"));
+            assert_eq!(cb.code, "~~~\nliteral\n~~~");
+        } else {
+            panic!("Expected CodeBlock node, got {:?}", nodes[0]);
+        }
     }
 
     #[test]
