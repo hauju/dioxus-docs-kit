@@ -11,6 +11,20 @@ use crate::DocsContext;
 use crate::config::CodeThemeConfig;
 use crate::registry::DocsRegistry;
 
+/// Which tab a freshly mounted layout should show.
+///
+/// Derived from the path rather than defaulting to `tabs[0]`, because the
+/// effect that syncs the tab does not run during SSR: a server-rendered
+/// API-reference URL would otherwise ship the Docs sidebar to crawlers and
+/// visibly flip tabs after hydration. Falls back to the first tab for paths the
+/// registry doesn't recognise (e.g. the docs index).
+fn initial_tab(registry: &'static DocsRegistry, path: &str) -> String {
+    registry
+        .tab_for_path(path)
+        .or_else(|| registry.nav.tabs.first().cloned())
+        .unwrap_or_default()
+}
+
 /// Layout offset values computed by `DocsLayout` and consumed by child components
 /// (e.g. `DocsPageContent`) via context.
 ///
@@ -169,16 +183,7 @@ pub fn DocsLayout(
         use_context_provider(|| CodeThemeOverride(code_theme.into()));
     }
 
-    // Active tab state. Seed from the current path, not tabs[0]: the sync
-    // effect below does not run during SSR, so a server-rendered API-reference
-    // URL would otherwise ship the Docs sidebar to crawlers and visibly flip
-    // tabs after hydration.
-    let mut active_tab = use_signal(|| {
-        registry
-            .tab_for_path(&ctx.current_path.peek())
-            .or_else(|| nav.tabs.first().cloned())
-            .unwrap_or_default()
-    });
+    let mut active_tab = use_signal(|| initial_tab(registry, &ctx.current_path.peek()));
     use_context_provider(|| ActiveTab(active_tab));
 
     // Sync active tab from current path
@@ -326,5 +331,70 @@ pub fn SearchButton(search_open: Signal<bool>) -> Element {
             span { class: "hidden sm:inline text-base-content/60 text-sm", "Search" }
             kbd { class: "kbd kbd-xs hidden sm:inline-flex", "\u{2318}K" }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initial_tab;
+    use crate::config::DocsConfig;
+    use crate::registry::DocsRegistry;
+    use std::collections::HashMap;
+
+    const NAV: &str = r#"{
+        "tabs": ["Docs", "API Reference"],
+        "groups": [
+            { "group": "Getting Started", "tab": "Docs", "pages": ["getting-started/intro"] },
+            { "group": "API Reference", "tab": "API Reference", "pages": [] }
+        ]
+    }"#;
+
+    const INTRO: &str = "---\ntitle: Intro\n---\n\nWelcome.\n";
+
+    const SPEC: &str = r#"
+openapi: "3.0.0"
+info:
+  title: Pets API
+  version: "1.0.0"
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List pets
+      responses:
+        "200":
+          description: OK
+"#;
+
+    fn registry() -> &'static DocsRegistry {
+        let map = HashMap::from([("getting-started/intro", INTRO)]);
+        Box::leak(Box::new(
+            DocsConfig::new(NAV, map)
+                .with_openapi("api-reference", SPEC)
+                .build(),
+        ))
+    }
+
+    #[test]
+    fn initial_tab_seeds_api_pages_to_their_own_tab() {
+        // The regression: this used to seed tabs[0] ("Docs") and was only
+        // corrected by an effect, which never runs during SSR - so crawlers got
+        // the Docs sidebar on an API URL.
+        assert_eq!(
+            initial_tab(registry(), "api-reference/list-pets"),
+            "API Reference"
+        );
+    }
+
+    #[test]
+    fn initial_tab_seeds_doc_pages_to_the_docs_tab() {
+        assert_eq!(initial_tab(registry(), "getting-started/intro"), "Docs");
+    }
+
+    #[test]
+    fn initial_tab_falls_back_to_the_first_tab_for_unknown_paths() {
+        // e.g. the docs index, which has no owning group.
+        assert_eq!(initial_tab(registry(), ""), "Docs");
+        assert_eq!(initial_tab(registry(), "nope/nothing"), "Docs");
     }
 }
