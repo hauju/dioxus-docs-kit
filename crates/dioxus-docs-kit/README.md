@@ -37,18 +37,20 @@ Create a thin layout wrapper that provides the `DocsContext` and registry to the
 
 ```rust
 use dioxus::prelude::*;
-use dioxus_docs_kit::{DocsContext, DocsLayout, use_docs_providers};
+use dioxus_docs_kit::{DocsLayout, use_docs_context, use_docs_providers};
 
 #[component]
 fn MyDocsLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_path = use_memo(move || {
-        // extract the slug from your route, e.g. slug.join("/")
-    });
+    // A plain String — extract the slug from your route, e.g. slug.join("/").
+    let current_path = /* ... */;
 
-    let docs_ctx = DocsContext::new(
+    // `use_docs_context` rewraps the path reactively for you. Building the
+    // signal yourself with a plain `use_memo(move || ...)` captures the first
+    // route and never updates — the sidebar highlight would freeze.
+    let docs_ctx = use_docs_context(
         current_path,
         "/docs",
         Callback::new(move |path: String| {
