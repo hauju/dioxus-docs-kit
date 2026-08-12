@@ -13,7 +13,7 @@ pub(super) fn find_closing_tag(content: &str, tag_name: &str) -> Option<usize> {
     let mut pos = 0;
 
     while depth > 0 && pos < content.len() {
-        let next_open = content[pos..].find(&open_tag).map(|i| i + pos);
+        let next_open = find_open_tag(content, pos, &open_tag);
         let next_close = content[pos..].find(&close_tag).map(|i| i + pos);
 
         match (next_open, next_close) {
@@ -30,6 +30,31 @@ pub(super) fn find_closing_tag(content: &str, tag_name: &str) -> Option<usize> {
             }
             _ => return None,
         }
+    }
+
+    None
+}
+
+/// Find the next `<Tag` opening at or after `from`, requiring a name boundary.
+///
+/// A plain substring search counts `<Tabs` as an opening `<Tab` and `<CardGroup`
+/// as an opening `<Card`, inflating the nesting depth — while the closing tags
+/// (`</Tabs>`, `</CardGroup>`) never match `</Tab>` / `</Card>`, so the depth
+/// never balances again and the outer element is silently dropped.
+fn find_open_tag(content: &str, from: usize, open_tag: &str) -> Option<usize> {
+    let mut search = from;
+
+    while let Some(rel) = content[search..].find(open_tag) {
+        let idx = search + rel;
+        let after = idx + open_tag.len();
+        let ends_here = content[after..]
+            .chars()
+            .next()
+            .is_none_or(|ch| ch.is_whitespace() || ch == '>' || ch == '/');
+        if ends_here {
+            return Some(idx);
+        }
+        search = after;
     }
 
     None
@@ -109,5 +134,20 @@ mod tests {
         assert_eq!(extract_attr(tag, "title").as_deref(), Some("A Card"));
         assert_eq!(extract_attr(tag, "icon").as_deref(), Some("star"));
         assert_eq!(extract_attr(tag, "href").as_deref(), Some("/link"));
+    }
+
+    #[test]
+    fn find_closing_tag_ignores_longer_tag_names() {
+        // `<Tabs` must not count as an opening `<Tab`.
+        let inner = "outer<Tabs><Tab>x</Tab></Tabs></Tab>rest";
+        let close = find_closing_tag(inner, "Tab").expect("closing </Tab>");
+        assert_eq!(&inner[close..], "</Tab>rest");
+    }
+
+    #[test]
+    fn find_closing_tag_still_counts_real_nesting() {
+        let inner = "<Tab>inner</Tab></Tab>rest";
+        let close = find_closing_tag(inner, "Tab").expect("closing </Tab>");
+        assert_eq!(&inner[close..], "</Tab>rest");
     }
 }

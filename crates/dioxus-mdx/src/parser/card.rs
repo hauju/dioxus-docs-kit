@@ -221,4 +221,16 @@ mod tests {
         });
         assert_eq!(group.expect("CardGroup node").cards.len(), 1);
     }
+
+    #[test]
+    fn card_containing_a_card_group_is_not_torn_apart() {
+        // `<CardGroup` must not count as an opening `<Card`, or the outer
+        // Card's tags leak onto the page as literal text.
+        let content = "<Card title=\"Outer\">intro<CardGroup><Card title=\"Inner\">x</Card></CardGroup></Card>trailing";
+        let nodes = parse_mdx(content);
+        let leaked = nodes.iter().any(
+            |n| matches!(n, DocNode::Markdown(m) if m.contains("<Card") || m.contains("</Card>")),
+        );
+        assert!(!leaked, "raw Card tags leaked into markdown: {nodes:?}");
+    }
 }
