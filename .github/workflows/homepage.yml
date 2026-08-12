@@ -102,11 +102,27 @@ jobs:
           bun install --frozen-lockfile
           bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
       - name: Run unit tests
-        run: cargo test --workspace
+        run: cargo test --workspace --all-features
+
+  msrv:
+    name: MSRV (rust-version)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Keep in sync with workspace.package.rust-version in Cargo.toml.
+      # The published crates use let-chains, which need 1.88.
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: rui314/setup-mold@v1
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Check published crates on the declared MSRV
+        run: cargo check -p dioxus-mdx -p dioxus-docs-kit -p dioxus-docs-kit-build
 
   build:
     runs-on: ubuntu-latest
-    needs: [fmt, clippy, unused-dependencies, security-audit, unit-tests]
+    needs: [fmt, clippy, unused-dependencies, security-audit, unit-tests, msrv]
     steps:
       - uses: actions/checkout@v5
 

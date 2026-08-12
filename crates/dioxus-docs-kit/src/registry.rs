@@ -162,17 +162,17 @@ fn split_into_sections(raw: &str) -> Vec<Section> {
             body.push('\n');
             continue;
         }
-        if fence.is_none() {
-            if let Some(text) = parse_atx_heading(trimmed) {
-                sections.push(Section {
-                    heading: std::mem::take(&mut heading),
-                    anchor: std::mem::take(&mut anchor),
-                    body: std::mem::take(&mut body),
-                });
-                anchor = slugify(text);
-                heading = text.to_string();
-                continue;
-            }
+        if fence.is_none()
+            && let Some(text) = parse_atx_heading(trimmed)
+        {
+            sections.push(Section {
+                heading: std::mem::take(&mut heading),
+                anchor: std::mem::take(&mut anchor),
+                body: std::mem::take(&mut body),
+            });
+            anchor = slugify(text);
+            heading = text.to_string();
+            continue;
         }
         body.push_str(line);
         body.push('\n');

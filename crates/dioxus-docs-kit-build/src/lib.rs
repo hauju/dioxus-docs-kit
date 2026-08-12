@@ -286,20 +286,19 @@ fn extract_links(content: &str) -> Vec<String> {
         if bytes[i] == b'[' {
             let is_image = i > 0 && bytes[i - 1] == b'!';
             if let Some(close) = (i + 1..bytes.len()).find(|&j| bytes[j] == b']') {
-                if bytes.get(close + 1) == Some(&b'(') {
-                    if let Some(pclose) = (close + 2..bytes.len()).find(|&j| bytes[j] == b')') {
-                        if !is_image {
-                            if let Some(tok) = content[close + 2..pclose].split_whitespace().next()
-                            {
-                                let tok = tok.trim_start_matches('<').trim_end_matches('>');
-                                if !tok.is_empty() {
-                                    links.push(tok.to_string());
-                                }
-                            }
+                if bytes.get(close + 1) == Some(&b'(')
+                    && let Some(pclose) = (close + 2..bytes.len()).find(|&j| bytes[j] == b')')
+                {
+                    if !is_image
+                        && let Some(tok) = content[close + 2..pclose].split_whitespace().next()
+                    {
+                        let tok = tok.trim_start_matches('<').trim_end_matches('>');
+                        if !tok.is_empty() {
+                            links.push(tok.to_string());
                         }
-                        i = pclose + 1;
-                        continue;
                     }
+                    i = pclose + 1;
+                    continue;
                 }
                 i = close + 1;
                 continue;
@@ -390,10 +389,10 @@ fn classify_root_absolute(
     if page_set.contains(full.as_str()) {
         return LinkResolution::Valid(full);
     }
-    if let Some(s) = &stripped {
-        if page_set.contains(s.as_str()) {
-            return LinkResolution::Valid(s.clone());
-        }
+    if let Some(s) = &stripped
+        && page_set.contains(s.as_str())
+    {
+        return LinkResolution::Valid(s.clone());
     }
 
     let clearly_docs = group_is_validatable(&full, group_counts)
@@ -493,12 +492,12 @@ fn check_anchor(
     if fragment.is_empty() {
         return;
     }
-    if let Some(anchors) = headings.get(page) {
-        if !anchors.contains(&slugify(fragment)) {
-            println!(
-                "cargo:warning={src}: link \"{target}\" points to \"#{fragment}\" but no heading with that anchor exists in {page}"
-            );
-        }
+    if let Some(anchors) = headings.get(page)
+        && !anchors.contains(&slugify(fragment))
+    {
+        println!(
+            "cargo:warning={src}: link \"{target}\" points to \"#{fragment}\" but no heading with that anchor exists in {page}"
+        );
     }
 }
 

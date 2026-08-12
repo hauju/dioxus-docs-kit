@@ -32,3 +32,8 @@ web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
+
+[package.metadata.docs.rs]
+# Without this the `server` module (SeoRouter) is absent from docs.rs -
+# it 404'd on 0.5.0.
+all-features = true

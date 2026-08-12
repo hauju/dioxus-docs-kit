@@ -93,7 +93,7 @@ pub struct DocsContext {
     pub base_path: String,
     /// Callback to navigate to a docs page by content path.
     pub navigate: Callback<String>,
-    /// Optional full site URL (e.g. "https://example.com"). Used as the canonical
+    /// Optional full site URL (e.g. `https://example.com`). Used as the canonical
     /// host for emitted `<link rel="canonical">` and `og:url` tags. Independent
     /// of [`auto_meta`](Self::auto_meta) — set it whenever you want kit helpers
     /// (sitemap generation, canonical URLs) to know the public origin, even if
@@ -106,7 +106,7 @@ pub struct DocsContext {
     /// always emit when this is on; canonical and `og:url` only emit when
     /// [`site_url`](Self::site_url) is also set.
     pub auto_meta: bool,
-    /// When true, [`DocsPageMeta`](crate::DocsPageMeta) emits a
+    /// When true, [`DocsPageMeta`] emits a
     /// `<link rel="alternate" type="text/markdown">` pointing at the page's raw
     /// Markdown source (`<base_path>/<path>.md`), a discoverability hint for AI
     /// crawlers and "view as Markdown" tooling. Enable this only if your server
@@ -174,7 +174,7 @@ pub struct BlogContext {
     pub base_path: String,
     /// Callback to navigate to a blog post by slug (empty string = blog index).
     pub navigate: Callback<String>,
-    /// Optional full site URL (e.g. "https://example.com"). Used as the canonical
+    /// Optional full site URL (e.g. `https://example.com`). Used as the canonical
     /// host for emitted `<link rel="canonical">`, `og:url`, and JSON-LD URLs.
     /// Independent of [`auto_meta`](Self::auto_meta) — set it whenever you want
     /// kit helpers (sitemap/RSS, canonical URLs) to know the public origin, even
@@ -187,7 +187,7 @@ pub struct BlogContext {
     /// and description tags always emit when this is on; canonical, `og:url`,
     /// and JSON-LD `@id` only emit when [`site_url`](Self::site_url) is also set.
     pub auto_meta: bool,
-    /// When true, [`BlogPostMeta`](crate::BlogPostMeta) emits a
+    /// When true, [`BlogPostMeta`] emits a
     /// `<link rel="alternate" type="text/markdown">` pointing at the post's raw
     /// Markdown source (`<base_path>/<slug>.md`), a discoverability hint for AI
     /// crawlers and "view as Markdown" tooling. Enable this only if your server
