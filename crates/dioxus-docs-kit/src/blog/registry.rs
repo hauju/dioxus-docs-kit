@@ -5,6 +5,7 @@ use crate::blog::types::{
     Author, BlogManifest, BlogPost, BlogSearchEntry, calculate_reading_time,
     extract_blog_frontmatter,
 };
+use crate::components::seo::xml_escape;
 use crate::config::ThemeConfig;
 use crate::error::DocsKitError;
 use dioxus_mdx::{get_raw_markdown, parse_mdx, strip_leading_h1};
@@ -325,24 +326,26 @@ impl BlogRegistry {
     // ── RSS ──────────────────────────────────────────────────────────────
 
     pub fn generate_rss(&self, site_title: &str, site_url: &str, blog_path: &str) -> String {
+        let channel_title = xml_escape(site_title);
+        let self_link = xml_escape(&format!("{site_url}{blog_path}"));
         let mut rss = format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-<title>{site_title}</title>
-<link>{site_url}{blog_path}</link>
-<description>{site_title} RSS Feed</description>
-<atom:link href="{site_url}{blog_path}/rss.xml" rel="self" type="application/rss+xml"/>
+<title>{channel_title}</title>
+<link>{self_link}</link>
+<description>{channel_title} RSS Feed</description>
+<atom:link href="{self_link}/rss.xml" rel="self" type="application/rss+xml"/>
 "#
         );
 
         for post in &self.posts {
-            let title = &post.frontmatter.title;
-            let desc = post.frontmatter.description.as_deref().unwrap_or_default();
-            let link = format!("{site_url}{blog_path}/{}", post.slug);
+            let title = xml_escape(&post.frontmatter.title);
+            let desc = xml_escape(post.frontmatter.description.as_deref().unwrap_or_default());
+            let link = xml_escape(&format!("{site_url}{blog_path}/{}", post.slug));
             rss.push_str(&format!(
                 "<item>\n<title>{title}</title>\n<link>{link}</link>\n<description>{desc}</description>\n<pubDate>{}</pubDate>\n<guid>{link}</guid>\n</item>\n",
-                post.frontmatter.date
+                xml_escape(&post.frontmatter.date)
             ));
         }
 
@@ -383,14 +386,15 @@ impl BlogRegistry {
         );
 
         // Blog index page
+        let index_loc = xml_escape(&format!("{site_url}{blog_path}"));
         xml.push_str(&format!(
-            "<url>\n<loc>{site_url}{blog_path}</loc>\n<changefreq>weekly</changefreq>\n<priority>0.8</priority>\n</url>\n"
+            "<url>\n<loc>{index_loc}</loc>\n<changefreq>weekly</changefreq>\n<priority>0.8</priority>\n</url>\n"
         ));
 
         // Individual posts
         for post in &self.posts {
-            let loc = format!("{site_url}{blog_path}/{}", post.slug);
-            let lastmod = &post.frontmatter.date;
+            let loc = xml_escape(&format!("{site_url}{blog_path}/{}", post.slug));
+            let lastmod = xml_escape(&post.frontmatter.date);
             xml.push_str(&format!(
                 "<url>\n<loc>{loc}</loc>\n<lastmod>{lastmod}</lastmod>\n<changefreq>monthly</changefreq>\n<priority>0.6</priority>\n</url>\n"
             ));
@@ -615,5 +619,40 @@ Misc
             .collect();
 
         assert_eq!(related, vec!["rust-new", "rust-old"]);
+    }
+
+    #[test]
+    fn rss_escapes_xml_metacharacters() {
+        let manifest = r#"{
+            "authors": { "author": { "name": "Author" } },
+            "posts": ["ampersand"]
+        }"#;
+        let mut content_map = HashMap::new();
+        content_map.insert(
+            "ampersand",
+            "---\ntitle: \"Rust & WASM: <T> generics\"\ndate: \"2026-03-21\"\nauthor: \"author\"\ndescription: \"a \\\"quoted\\\" & thing\"\n---\nBody\n",
+        );
+        let registry = BlogConfig::new(manifest, content_map).build();
+
+        let rss = registry.generate_rss("Site & Co", "https://example.com", "/blog");
+
+        assert!(
+            rss.contains("Rust &amp; WASM: &lt;T&gt; generics"),
+            "got: {rss}"
+        );
+        assert!(rss.contains("Site &amp; Co"), "got: {rss}");
+        // No bare `&` survives: every one must start an entity.
+        for (idx, _) in rss.match_indices('&') {
+            let tail = &rss[idx..];
+            assert!(
+                tail.starts_with("&amp;")
+                    || tail.starts_with("&lt;")
+                    || tail.starts_with("&gt;")
+                    || tail.starts_with("&quot;")
+                    || tail.starts_with("&apos;"),
+                "unescaped `&` at {idx} makes the whole feed unparseable: {:?}",
+                &tail[..tail.len().min(40)]
+            );
+        }
     }
 }

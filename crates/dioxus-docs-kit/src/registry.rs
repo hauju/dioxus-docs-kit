@@ -2,6 +2,7 @@
 //!
 //! Holds parsed docs, nav config, search index, and OpenAPI specs.
 
+use crate::components::seo::xml_escape;
 #[cfg(feature = "highlight")]
 use crate::config::CodeThemeConfig;
 use crate::config::{DocsConfig, ThemeConfig};
@@ -620,14 +621,15 @@ impl DocsRegistry {
         );
 
         // Docs index
+        let index_loc = xml_escape(&format!("{site_url}{docs_path}"));
         xml.push_str(&format!(
-            "<url>\n<loc>{site_url}{docs_path}</loc>\n<changefreq>weekly</changefreq>\n<priority>1.0</priority>\n</url>\n"
+            "<url>\n<loc>{index_loc}</loc>\n<changefreq>weekly</changefreq>\n<priority>1.0</priority>\n</url>\n"
         ));
 
         // Individual doc pages
         for group in &self.nav.groups {
             for page in &group.pages {
-                let loc = format!("{site_url}{docs_path}/{page}");
+                let loc = xml_escape(&format!("{site_url}{docs_path}/{page}"));
                 xml.push_str(&format!(
                     "<url>\n<loc>{loc}</loc>\n<changefreq>weekly</changefreq>\n<priority>0.7</priority>\n</url>\n"
                 ));
@@ -637,7 +639,7 @@ impl DocsRegistry {
         // API endpoint pages
         for (prefix, spec) in &self.openapi_specs {
             for op in &spec.operations {
-                let loc = format!("{site_url}{docs_path}/{prefix}/{}", op.slug());
+                let loc = xml_escape(&format!("{site_url}{docs_path}/{prefix}/{}", op.slug()));
                 xml.push_str(&format!(
                     "<url>\n<loc>{loc}</loc>\n<changefreq>monthly</changefreq>\n<priority>0.5</priority>\n</url>\n"
                 ));
@@ -1079,6 +1081,29 @@ paths:
         assert_eq!(
             reg.get_sidebar_title("getting-started/intro").as_deref(),
             Some("Introduction")
+        );
+    }
+
+    #[test]
+    fn sitemap_escapes_ampersand_in_loc() {
+        let nav = r#"{
+            "groups": [
+                { "group": "G", "pages": ["guides/a&b"] }
+            ]
+        }"#;
+        let mut content_map = HashMap::new();
+        content_map.insert("guides/a&b", "---\ntitle: A and B\n---\n\nbody\n");
+        let registry = DocsConfig::new(nav, content_map).build();
+
+        let xml = registry.generate_sitemap("https://example.com", "/docs");
+
+        assert!(
+            xml.contains("<loc>https://example.com/docs/guides/a&amp;b</loc>"),
+            "got: {xml}"
+        );
+        assert!(
+            !xml.contains("a&b"),
+            "bare `&` in <loc> breaks XML parsing: {xml}"
         );
     }
 }
