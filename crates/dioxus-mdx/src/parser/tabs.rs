@@ -127,4 +127,19 @@ mod tests {
         });
         assert_eq!(tabs.expect("Tabs node").tabs.len(), 1);
     }
+
+    #[test]
+    fn nested_tabs_keep_the_outer_tab() {
+        let content = "<Tabs><Tab title=\"Outer\"><Tabs><Tab title=\"Inner\">inner body</Tab></Tabs></Tab></Tabs>";
+        let nodes = parse_mdx(content);
+        let tabs = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::Tabs(t) => Some(t),
+                _ => None,
+            })
+            .expect("Tabs node");
+        assert_eq!(tabs.tabs.len(), 1);
+        assert_eq!(tabs.tabs[0].title, "Outer");
+    }
 }
