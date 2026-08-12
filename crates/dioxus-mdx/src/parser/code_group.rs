@@ -7,10 +7,15 @@ use regex::Regex;
 use super::utils::find_closing_tag;
 use crate::parser::types::*;
 
-// Mirrors content.rs's CODE_RE.
 // IMPORTANT: Use [ \t]+ (not \s+) for the filename separator, or a fence with no
 // language matches across the newline and swallows the first code line as the
 // filename. \r? keeps CRLF files from leaving a stray CR in the tab label.
+//
+// Close to content.rs's CODE_RE but deliberately not identical: there is no
+// trailing `[ \t]*(?:\r?\n|$)`, since blocks here are always followed by more
+// tag content rather than ending the document. Like content.rs, this requires a
+// newline before the closing fence, so a zero-line block (``` immediately
+// followed by ```) is not matched.
 static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```")
         .unwrap()
