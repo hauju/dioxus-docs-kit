@@ -1,5 +1,7 @@
 //! Shared utility functions for MDX component parsing.
 
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 /// Find the closing tag, handling nested tags of the same type.
@@ -44,12 +46,20 @@ pub(super) fn skip_to_next_tag<'a>(content: &'a str, tag: &str) -> Option<&'a st
 }
 
 /// Extract an attribute value from tag content.
+///
+/// Tokenizes the whole tag once against a cached regex rather than building a
+/// per-attribute pattern. Besides avoiding a regex compile on every lookup,
+/// this matches attribute *names*: the old `format!("{attr}=\"...\"")` had no
+/// left boundary, so asking for `title` on `<Card subtitle="Sub" title="Real">`
+/// matched the tail of `subtitle` and returned "Sub".
 pub(super) fn extract_attr(tag_content: &str, attr_name: &str) -> Option<String> {
-    let pattern = format!(r#"{}="([^"]*)""#, attr_name);
-    let re = Regex::new(&pattern).ok()?;
-    re.captures(tag_content)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string())
+    static ATTR_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"([A-Za-z_:][-A-Za-z0-9_:.]*)="([^"]*)""#).unwrap());
+
+    ATTR_RE
+        .captures_iter(tag_content)
+        .find(|caps| &caps[1] == attr_name)
+        .map(|caps| caps[2].to_string())
 }
 
 #[cfg(test)]
@@ -76,5 +86,28 @@ mod tests {
     #[test]
     fn skip_to_next_tag_handles_empty_input() {
         assert_eq!(skip_to_next_tag("", "<Card"), None);
+    }
+
+    #[test]
+    fn extract_attr_matches_whole_attribute_names() {
+        // `title="..."` also occurs as the tail of `subtitle="..."`; the lookup
+        // must not match a suffix of a longer attribute name.
+        let tag = r#" subtitle="Sub" title="Real""#;
+        assert_eq!(extract_attr(tag, "title").as_deref(), Some("Real"));
+        assert_eq!(extract_attr(tag, "subtitle").as_deref(), Some("Sub"));
+    }
+
+    #[test]
+    fn extract_attr_returns_none_for_absent_attribute() {
+        assert_eq!(extract_attr(r#" title="A""#, "icon"), None);
+        assert_eq!(extract_attr("", "title"), None);
+    }
+
+    #[test]
+    fn extract_attr_reads_each_attribute_of_a_tag() {
+        let tag = r#" title="A Card" icon="star" href="/link""#;
+        assert_eq!(extract_attr(tag, "title").as_deref(), Some("A Card"));
+        assert_eq!(extract_attr(tag, "icon").as_deref(), Some("star"));
+        assert_eq!(extract_attr(tag, "href").as_deref(), Some("/link"));
     }
 }
