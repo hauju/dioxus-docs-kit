@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-use super::utils::{extract_attr, find_closing_tag};
+use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
 use crate::parser::types::*;
 
 static CARD_GROUP_OPEN_RE: LazyLock<Regex> =
@@ -114,10 +114,9 @@ fn parse_cards(content: &str) -> Vec<CardNode> {
         }
 
         // Skip non-card content
-        if let Some(idx) = remaining.find("<Card") {
-            remaining = &remaining[idx..];
-        } else {
-            break;
+        match skip_to_next_tag(remaining, "<Card") {
+            Some(next) => remaining = next,
+            None => break,
         }
     }
 
@@ -196,5 +195,30 @@ mod tests {
         } else {
             panic!("Expected CardGroup node");
         }
+    }
+
+    #[test]
+    fn unclosed_card_tag_terminates() {
+        // An opening tag with no `>` makes parse_single_card return None; the
+        // skip step must still advance or this loops forever.
+        let content =
+            "<CardGroup cols={2}>\n<Card title=\"A\">ok</Card>\n<Card title=\"B\"\n</CardGroup>";
+        let nodes = parse_mdx(content);
+        let group = nodes.iter().find_map(|n| match n {
+            DocNode::CardGroup(g) => Some(g),
+            _ => None,
+        });
+        assert_eq!(group.expect("CardGroup node").cards.len(), 1);
+    }
+
+    #[test]
+    fn non_ascii_prose_between_cards_does_not_panic() {
+        let content = "<CardGroup>\n\u{dc}berblick\n<Card title=\"A\">body</Card>\n</CardGroup>";
+        let nodes = parse_mdx(content);
+        let group = nodes.iter().find_map(|n| match n {
+            DocNode::CardGroup(g) => Some(g),
+            _ => None,
+        });
+        assert_eq!(group.expect("CardGroup node").cards.len(), 1);
     }
 }

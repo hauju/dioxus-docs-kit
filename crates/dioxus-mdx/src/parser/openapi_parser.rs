@@ -93,7 +93,10 @@ fn transform_spec(spec: &OpenAPI) -> OpenApiSpec {
     if let Some(components) = &spec.components {
         for (name, schema_ref) in &components.schemas {
             if let ReferenceOr::Item(schema) = schema_ref {
-                schemas.insert(name.clone(), transform_schema(schema, spec));
+                // Seed the cycle guard with this schema's own name so a direct
+                // self-reference is caught on the first hop.
+                let mut seen = vec![name.clone()];
+                schemas.insert(name.clone(), transform_schema(schema, spec, &mut seen));
             }
         }
     }
@@ -205,7 +208,9 @@ fn transform_parameter(param_ref: &ReferenceOr<Parameter>, spec: &OpenAPI) -> Op
 
     let data = param.parameter_data_ref();
     let schema = match &data.format {
-        ParameterSchemaOrContent::Schema(s) => Some(resolve_and_transform_schema(s, spec)),
+        ParameterSchemaOrContent::Schema(s) => {
+            Some(resolve_and_transform(s, spec, &mut Vec::new()))
+        }
         _ => None,
     };
 
@@ -256,7 +261,7 @@ fn transform_request_body(
             schema: media
                 .schema
                 .as_ref()
-                .map(|s| resolve_and_transform_schema(s, spec)),
+                .map(|s| resolve_and_transform(s, spec, &mut Vec::new())),
             example: media.example.as_ref().map(format_json_value),
         })
         .collect();
@@ -311,7 +316,7 @@ fn transform_response(
                 schema: media
                     .schema
                     .as_ref()
-                    .map(|s| resolve_and_transform_schema(s, spec)),
+                    .map(|s| resolve_and_transform(s, spec, &mut Vec::new())),
                 example: media.example.as_ref().map(format_json_value),
             })
             .collect();
@@ -348,57 +353,51 @@ fn resolve_response<'a>(
     }
 }
 
-/// Resolve a schema reference and transform it.
-fn resolve_and_transform_schema(
-    schema_ref: &ReferenceOr<Schema>,
-    spec: &OpenAPI,
-) -> SchemaDefinition {
-    match schema_ref {
-        ReferenceOr::Item(schema) => transform_schema(schema, spec),
-        ReferenceOr::Reference { reference } => {
-            // Extract the reference name
-            let ref_name = reference
-                .strip_prefix("#/components/schemas/")
-                .map(|s| s.to_string());
+/// Lets one resolver serve both `ReferenceOr<Schema>` and `ReferenceOr<Box<Schema>>`.
+trait AsSchema {
+    fn as_schema(&self) -> &Schema;
+}
 
-            // Try to resolve the schema
-            let resolved = ref_name.as_ref().and_then(|name| {
-                spec.components
-                    .as_ref()?
-                    .schemas
-                    .get(name)
-                    .and_then(|s| match s {
-                        ReferenceOr::Item(schema) => Some(schema),
-                        _ => None,
-                    })
-            });
-
-            if let Some(schema) = resolved {
-                let mut def = transform_schema(schema, spec);
-                def.ref_name = ref_name;
-                def
-            } else {
-                SchemaDefinition {
-                    ref_name,
-                    ..Default::default()
-                }
-            }
-        }
+impl AsSchema for Schema {
+    fn as_schema(&self) -> &Schema {
+        self
     }
 }
 
-/// Resolve a boxed schema reference and transform it.
-fn resolve_and_transform_boxed_schema(
-    schema_ref: &ReferenceOr<Box<Schema>>,
+impl AsSchema for Box<Schema> {
+    fn as_schema(&self) -> &Schema {
+        self
+    }
+}
+
+/// Resolve a schema reference and transform it.
+///
+/// `seen` holds the component names currently being expanded. A reference back
+/// into that set resolves to a name-only stub, so a self-referential schema
+/// (`Node.children -> [Node]`) terminates instead of recursing until the stack
+/// overflows. Accepts both `Schema` and `Box<Schema>` references.
+fn resolve_and_transform<S: AsSchema>(
+    schema_ref: &ReferenceOr<S>,
     spec: &OpenAPI,
+    seen: &mut Vec<String>,
 ) -> SchemaDefinition {
     match schema_ref {
-        ReferenceOr::Item(schema) => transform_schema(schema, spec),
+        ReferenceOr::Item(schema) => transform_schema(schema.as_schema(), spec, seen),
         ReferenceOr::Reference { reference } => {
             // Extract the reference name
             let ref_name = reference
                 .strip_prefix("#/components/schemas/")
                 .map(|s| s.to_string());
+
+            // Already expanding this schema further up the stack - stop here
+            if let Some(name) = &ref_name
+                && seen.contains(name)
+            {
+                return SchemaDefinition {
+                    ref_name: ref_name.clone(),
+                    ..Default::default()
+                };
+            }
 
             // Try to resolve the schema
             let resolved = ref_name.as_ref().and_then(|name| {
@@ -413,7 +412,13 @@ fn resolve_and_transform_boxed_schema(
             });
 
             if let Some(schema) = resolved {
-                let mut def = transform_schema(schema, spec);
+                if let Some(name) = &ref_name {
+                    seen.push(name.clone());
+                }
+                let mut def = transform_schema(schema, spec, seen);
+                if ref_name.is_some() {
+                    seen.pop();
+                }
                 def.ref_name = ref_name;
                 def
             } else {
@@ -436,7 +441,7 @@ fn extract_format<T: std::fmt::Debug>(format: &VariantOrUnknownOrEmpty<T>) -> Op
 }
 
 /// Transform a schema.
-fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
+fn transform_schema(schema: &Schema, spec: &OpenAPI, seen: &mut Vec<String>) -> SchemaDefinition {
     let mut def = SchemaDefinition {
         description: schema.schema_data.description.clone(),
         example: schema.schema_data.example.as_ref().map(format_json_value),
@@ -466,14 +471,14 @@ fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
             Type::Array(a) => {
                 def.schema_type = SchemaType::Array;
                 if let Some(items) = &a.items {
-                    def.items = Some(Box::new(resolve_and_transform_boxed_schema(items, spec)));
+                    def.items = Some(Box::new(resolve_and_transform(items, spec, seen)));
                 }
             }
             Type::Object(o) => {
                 def.schema_type = SchemaType::Object;
                 def.required = o.required.clone();
                 for (name, prop) in &o.properties {
-                    let prop_schema = resolve_and_transform_boxed_schema(prop, spec);
+                    let prop_schema = resolve_and_transform(prop, spec, seen);
                     def.properties.insert(name.clone(), prop_schema);
                 }
                 if let Some(ap) = &o.additional_properties {
@@ -483,7 +488,7 @@ fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
                         }
                         openapiv3::AdditionalProperties::Schema(s) => {
                             def.additional_properties =
-                                Some(Box::new(resolve_and_transform_schema(s, spec)));
+                                Some(Box::new(resolve_and_transform(s, spec, seen)));
                         }
                         _ => {}
                     }
@@ -493,19 +498,19 @@ fn transform_schema(schema: &Schema, spec: &OpenAPI) -> SchemaDefinition {
         SchemaKind::OneOf { one_of } => {
             def.one_of = one_of
                 .iter()
-                .map(|s| resolve_and_transform_schema(s, spec))
+                .map(|s| resolve_and_transform(s, spec, seen))
                 .collect();
         }
         SchemaKind::AnyOf { any_of } => {
             def.any_of = any_of
                 .iter()
-                .map(|s| resolve_and_transform_schema(s, spec))
+                .map(|s| resolve_and_transform(s, spec, seen))
                 .collect();
         }
         SchemaKind::AllOf { all_of } => {
             def.all_of = all_of
                 .iter()
-                .map(|s| resolve_and_transform_schema(s, spec))
+                .map(|s| resolve_and_transform(s, spec, seen))
                 .collect();
         }
         SchemaKind::Not { .. } => {
@@ -553,6 +558,75 @@ paths:
         assert_eq!(spec.operations.len(), 1);
         assert_eq!(spec.operations[0].method, HttpMethod::Get);
         assert_eq!(spec.operations[0].path, "/users");
+    }
+
+    #[test]
+    fn test_self_referential_schema_terminates() {
+        let yaml = r##"
+openapi: "3.0.0"
+info:
+  title: Tree API
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Node"
+"##;
+        let spec = parse_openapi(yaml).unwrap();
+        let node = spec.schemas.get("Node").expect("Node schema");
+
+        // The recursive branch resolves to a name-only stub rather than
+        // expanding forever.
+        let children = node.properties.get("children").expect("children property");
+        let item = children.items.as_ref().expect("array items");
+        assert_eq!(item.ref_name.as_deref(), Some("Node"));
+        assert!(item.properties.is_empty());
+
+        // The non-recursive branch is still expanded normally.
+        assert_eq!(
+            node.properties.get("name").map(|p| p.schema_type.clone()),
+            Some(SchemaType::String)
+        );
+    }
+
+    #[test]
+    fn test_mutually_recursive_schemas_terminate() {
+        let yaml = r##"
+openapi: "3.0.0"
+info:
+  title: Loop API
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        b:
+          $ref: "#/components/schemas/B"
+    B:
+      type: object
+      properties:
+        a:
+          $ref: "#/components/schemas/A"
+"##;
+        let spec = parse_openapi(yaml).unwrap();
+        let a = spec.schemas.get("A").expect("A schema");
+        let b_prop = a.properties.get("b").expect("b property");
+        assert_eq!(b_prop.ref_name.as_deref(), Some("B"));
+
+        // B was expanded once; its back-reference to A is the stub.
+        let a_prop = b_prop.properties.get("a").expect("a property");
+        assert_eq!(a_prop.ref_name.as_deref(), Some("A"));
+        assert!(a_prop.properties.is_empty());
     }
 
     #[test]
