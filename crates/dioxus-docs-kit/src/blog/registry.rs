@@ -288,7 +288,7 @@ impl BlogRegistry {
     /// Search posts by query string.
     ///
     /// Same multi-term AND / tier scoring as docs search (title > description >
-    /// body); posts are indexed whole (no sections). See [`crate::search`].
+    /// body); posts are indexed whole (no sections).
     pub fn search_posts(&self, query: &str) -> Vec<&BlogSearchEntry> {
         crate::search::rank(&self.search_index, query, |e, buf| {
             buf.push(crate::search::Field::title(&e.title_lower));

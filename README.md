@@ -142,9 +142,14 @@ fn DocsPage(slug: Vec<String>) -> Element {
 
 When `dioxus-docs-kit` is a crates.io dependency, Tailwind CSS 4 cannot scan `~/.cargo/` paths. Copy the safelist file into your project and reference it:
 
+`safelist.html` ships at the root of the published crate, so copy it out of the
+vendored source:
+
 ```sh
-cp path/to/dioxus-docs-kit/crates/dioxus-docs-kit/safelist.html safelist-docs-kit.html
+cp ~/.cargo/registry/src/*/dioxus-docs-kit-*/safelist.html safelist-docs-kit.html
 ```
+
+(From a git checkout of this repo the path is `crates/dioxus-docs-kit/safelist.html`.)
 
 Then in your `tailwind.css`:
 

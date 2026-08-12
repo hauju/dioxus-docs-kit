@@ -49,3 +49,7 @@ default = ["web", "mermaid", "highlight"]
 web = ["dioxus/web"]
 mermaid = []
 highlight = ["dep:dioxus-code"]
+
+[package.metadata.docs.rs]
+# Document the highlight/mermaid code paths, not just the default build.
+all-features = true
