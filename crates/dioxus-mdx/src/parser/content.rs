@@ -36,14 +36,36 @@ static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
 pub fn parse_mdx(content: &str) -> Vec<DocNode> {
     // Strip frontmatter if present
     let (_, content) = extract_frontmatter(content);
+    parse_body(content)
+}
+
+/// Parse MDX content whose frontmatter has already been removed.
+///
+/// Callers that extracted the frontmatter themselves must use this instead of
+/// [`parse_mdx`], or a body starting with a thematic break gets mistaken for a
+/// second frontmatter block and everything up to the next `---` is discarded.
+pub(super) fn parse_body(content: &str) -> Vec<DocNode> {
     let content = strip_imports(content);
     let content = strip_helpful_widget(&content);
     parse_content(&content)
 }
 
-/// Strip import statements from MDX content.
+/// Strip import statements from MDX content, leaving fenced code blocks alone.
+///
+/// An `import` line inside a ```js block is part of the sample being documented,
+/// not an MDX import.
 fn strip_imports(content: &str) -> String {
-    IMPORT_RE.replace_all(content, "").to_string()
+    let mut out = String::with_capacity(content.len());
+    let mut last_end = 0;
+
+    for fence in CODE_RE.find_iter(content) {
+        out.push_str(&IMPORT_RE.replace_all(&content[last_end..fence.start()], ""));
+        out.push_str(fence.as_str());
+        last_end = fence.end();
+    }
+    out.push_str(&IMPORT_RE.replace_all(&content[last_end..], ""));
+
+    out
 }
 
 /// Strip the SeggWatIsPageHelpful component (we have our own).
@@ -186,6 +208,9 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
 }
 
 /// Find the index of the next MDX component in the content.
+///
+/// Tags inside fenced code blocks are skipped: a code sample documenting a
+/// component must render as code, not be parsed as that component.
 fn find_next_component(content: &str) -> Option<usize> {
     let patterns = [
         "<Tip>",
@@ -209,7 +234,21 @@ fn find_next_component(content: &str) -> Option<usize> {
         "<OpenAPI",
     ];
 
-    patterns.iter().filter_map(|p| content.find(p)).min()
+    let fences: Vec<(usize, usize)> = CODE_RE
+        .find_iter(content)
+        .map(|m| (m.start(), m.end()))
+        .collect();
+    let in_fence = |idx: usize| fences.iter().any(|&(start, end)| idx >= start && idx < end);
+
+    patterns
+        .iter()
+        .filter_map(|p| {
+            content
+                .match_indices(p)
+                .map(|(idx, _)| idx)
+                .find(|&idx| !in_fence(idx))
+        })
+        .min()
 }
 
 /// Get raw markdown from parsed content (for fallback rendering).
@@ -470,5 +509,60 @@ After the diagram."#;
             panic!("Expected CodeBlock node, got {:?}", nodes[1]);
         }
         assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("Next Section")));
+    }
+
+    #[test]
+    fn component_tag_inside_code_fence_stays_code() {
+        // A sample documenting <Card> must render as a code block, not be
+        // parsed into a real CardGroup.
+        let content = "Example:\n\n```mdx\n<Card title=\"Demo\">Body</Card>\n```\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+
+        assert!(
+            !nodes.iter().any(|n| matches!(n, DocNode::CardGroup(_))),
+            "fenced sample must not become a CardGroup, got: {nodes:?}"
+        );
+        let code = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::CodeBlock(c) => Some(c),
+                _ => None,
+            })
+            .expect("expected a CodeBlock");
+        assert_eq!(code.language.as_deref(), Some("mdx"));
+        assert!(code.code.contains("<Card title=\"Demo\">Body</Card>"));
+    }
+
+    #[test]
+    fn import_inside_code_fence_is_preserved() {
+        let content = "```js\nimport React from \"react\";\nconsole.log(1);\n```\n";
+        let nodes = parse_mdx(content);
+        let code = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::CodeBlock(c) => Some(c),
+                _ => None,
+            })
+            .expect("expected a CodeBlock");
+        assert!(
+            code.code.contains("import React from"),
+            "import line was stripped from the sample: {:?}",
+            code.code
+        );
+    }
+
+    #[test]
+    fn mdx_import_outside_fence_is_still_stripped() {
+        let content = "import Foo from \"./foo\";\n\nBody text.\n";
+        let nodes = parse_mdx(content);
+        let md = nodes
+            .iter()
+            .find_map(|n| match n {
+                DocNode::Markdown(m) => Some(m),
+                _ => None,
+            })
+            .expect("expected Markdown");
+        assert!(!md.contains("import Foo"), "got: {md:?}");
+        assert!(md.contains("Body text."));
     }
 }

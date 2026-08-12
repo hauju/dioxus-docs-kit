@@ -38,7 +38,9 @@ pub fn parse_document(content: &str) -> ParsedDoc {
     // Consumer layouts render the frontmatter title in their own <h1>; drop a
     // duplicate body H1 so the page emits exactly one.
     let body = strip_leading_h1(remaining);
-    let nodes = parse_mdx(body);
+    // Frontmatter is already gone; parse_mdx would strip a second time and eat
+    // the body up to the next `---`.
+    let nodes = content::parse_body(body);
     let raw_markdown = get_raw_markdown(&nodes);
 
     ParsedDoc {
@@ -83,5 +85,20 @@ mod tests {
             "mid-document H1 should survive, got: {:?}",
             doc.raw_markdown
         );
+    }
+
+    #[test]
+    fn parse_document_keeps_body_starting_with_thematic_break() {
+        // parse_mdx would strip frontmatter a second time here and swallow
+        // everything up to the next `---`.
+        let content = "---\ntitle: T\n---\n\n---\n\nfirst para\n\n---\n\nsecond para\n";
+        let doc = parse_document(content);
+        assert_eq!(doc.frontmatter.title, "T");
+        assert!(
+            doc.raw_markdown.contains("first para"),
+            "body before the second rule was eaten: {:?}",
+            doc.raw_markdown
+        );
+        assert!(doc.raw_markdown.contains("second para"));
     }
 }
