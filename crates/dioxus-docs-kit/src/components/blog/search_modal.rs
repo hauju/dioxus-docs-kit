@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
 use crate::components::search_shell::{SearchHit, SearchModalShell};
-use crate::search::{SNIPPET_WINDOW, build_snippet, split_terms};
+use crate::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
 
 /// Blog search modal triggered by Cmd/Ctrl+K or the search button.
 #[component]
@@ -16,6 +16,8 @@ pub fn BlogSearchModal() -> Element {
         registry
             .search_posts(&query)
             .into_iter()
+            // Cap before building hits: snippet extraction is the expensive part.
+            .take(MAX_RESULTS)
             .map(|entry| SearchHit {
                 target: entry.slug.clone(),
                 title: entry.title.clone(),

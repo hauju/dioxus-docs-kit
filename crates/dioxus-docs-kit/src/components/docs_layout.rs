@@ -169,8 +169,16 @@ pub fn DocsLayout(
         use_context_provider(|| CodeThemeOverride(code_theme.into()));
     }
 
-    // Active tab state
-    let mut active_tab = use_signal(|| nav.tabs.first().cloned().unwrap_or_default());
+    // Active tab state. Seed from the current path, not tabs[0]: the sync
+    // effect below does not run during SSR, so a server-rendered API-reference
+    // URL would otherwise ship the Docs sidebar to crawlers and visibly flip
+    // tabs after hydration.
+    let mut active_tab = use_signal(|| {
+        registry
+            .tab_for_path(&ctx.current_path.peek())
+            .or_else(|| nav.tabs.first().cloned())
+            .unwrap_or_default()
+    });
     use_context_provider(|| ActiveTab(active_tab));
 
     // Sync active tab from current path

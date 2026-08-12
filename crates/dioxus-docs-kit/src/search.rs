@@ -73,6 +73,14 @@ const POSITION_CAP: i32 = 200;
 /// Default snippet window in characters, centred on the first match.
 pub(crate) const SNIPPET_WINDOW: usize = 100;
 
+/// Cap on how many ranked matches get turned into rendered results.
+///
+/// The query memo re-runs on every keystroke, and each hit costs a snippet
+/// scan plus a mounted component. A single-letter query matches most of the
+/// corpus, so without a cap a mid-size site builds hundreds of hits per
+/// keypress into a modal that shows about six.
+pub(crate) const MAX_RESULTS: usize = 25;
+
 /// One char in, one char out, so char offsets stay aligned with the original
 /// text (snippet highlight ranges rely on this).
 fn lower_char(c: char) -> char {
