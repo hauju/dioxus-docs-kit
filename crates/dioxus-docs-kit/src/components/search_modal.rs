@@ -179,12 +179,13 @@ mod tests {
     }
 
     #[test]
-    fn docs_hits_builds_snippets_only_for_returned_rows() {
+    fn docs_hits_fully_builds_every_returned_row() {
         let registry = wide_registry(40);
         let hits = docs_hits(registry, "widget", 5);
         assert_eq!(hits.len(), 5);
-        // Every returned row is fully built (the cap must not truncate work
-        // that the rendered rows still need).
+        // The cap must not truncate work the rendered rows still need. (That
+        // the *dropped* rows skip snippet building is not observable from the
+        // return value — it is a property of applying `take` before the map.)
         assert!(hits.iter().all(|h| !h.snippet.is_empty()));
     }
 
