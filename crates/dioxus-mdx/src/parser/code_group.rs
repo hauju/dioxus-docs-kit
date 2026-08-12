@@ -7,8 +7,14 @@ use regex::Regex;
 use super::utils::find_closing_tag;
 use crate::parser::types::*;
 
-static CODE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"```(\w+)?(?:\s+([^\n]+))?\n([\s\S]*?)```").unwrap());
+// Mirrors content.rs's CODE_RE.
+// IMPORTANT: Use [ \t]+ (not \s+) for the filename separator, or a fence with no
+// language matches across the newline and swallows the first code line as the
+// filename. \r? keeps CRLF files from leaving a stray CR in the tab label.
+static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```")
+        .unwrap()
+});
 
 /// Try to parse a CodeGroup container.
 pub(super) fn try_parse_code_group(content: &str) -> Option<(DocNode, &str)> {
@@ -86,6 +92,7 @@ fn parse_code_blocks(content: &str) -> Vec<CodeBlockNode> {
 
 #[cfg(test)]
 mod tests {
+    use super::try_parse_code_group;
     use crate::parser::content::parse_mdx;
     use crate::parser::types::*;
 
@@ -144,6 +151,35 @@ curl -X POST https://api.example.com
             assert_eq!(ex.blocks[0].language, Some("json".to_string()));
         } else {
             panic!("Expected ResponseExample node");
+        }
+    }
+
+    #[test]
+    fn language_less_fence_keeps_its_body() {
+        // `\s+` for the filename separator used to match across the newline,
+        // turning the first code line into the tab label.
+        let content = "<CodeGroup>\n```\ncurl https://example.com\n```\n</CodeGroup>";
+        let (node, _) = try_parse_code_group(content).expect("CodeGroup");
+        match node {
+            DocNode::CodeGroup(group) => {
+                assert_eq!(group.blocks.len(), 1);
+                assert_eq!(group.blocks[0].filename, None);
+                assert_eq!(group.blocks[0].code, "curl https://example.com");
+            }
+            other => panic!("expected CodeGroup, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn crlf_fence_does_not_leak_carriage_return_into_filename() {
+        let content = "<CodeGroup>\r\n```bash cURL\r\necho hi\r\n```\r\n</CodeGroup>";
+        let (node, _) = try_parse_code_group(content).expect("CodeGroup");
+        match node {
+            DocNode::CodeGroup(group) => {
+                assert_eq!(group.blocks[0].filename.as_deref(), Some("cURL"));
+                assert_eq!(group.blocks[0].language.as_deref(), Some("bash"));
+            }
+            other => panic!("expected CodeGroup, got {other:?}"),
         }
     }
 }
