@@ -3,7 +3,7 @@ use dioxus_docs_kit::{
     BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogThemeToggle,
     Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, Language,
     SearchButton, SearchModal, SourceCode, Theme, ThemeToggle, use_blog_providers,
-    use_docs_providers,
+    use_docs_context, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -374,12 +374,12 @@ fn MyDocsLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_path = use_memo(use_reactive!(|route| match route {
+    let current_path = match route {
         Route::DocsPage { slug } => slug.join("/"),
         _ => String::new(),
-    }));
+    };
 
-    let docs_ctx = DocsContext::new(
+    let docs_ctx = use_docs_context(
         current_path,
         "/docs",
         Callback::new(move |path: String| {

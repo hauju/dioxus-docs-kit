@@ -219,8 +219,8 @@ enum Route {
 ```rust
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    DocsContext, DocsLayout, DocsPageContent, SearchButton, ThemeToggle,
-    use_docs_providers,
+    DocsLayout, DocsPageContent, SearchButton, ThemeToggle,
+    use_docs_context, use_docs_providers,
 };
 
 #[component]
@@ -228,12 +228,14 @@ fn MyDocsLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_path = use_memo(use_reactive!(|route| match route {
+    let current_path = match route {
         Route::DocsPage { slug } => slug.join("/"),
         _ => String::new(),
-    }));
+    };
 
-    let docs_ctx = DocsContext::new(
+    // Pass the path by value: use_docs_context rewraps it reactively. Building
+    // the signal yourself with a plain use_memo freezes the sidebar highlight.
+    let docs_ctx = use_docs_context(
         current_path,
         "/docs",
         Callback::new(move |path: String| {

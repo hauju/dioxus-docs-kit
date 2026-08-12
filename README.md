@@ -99,12 +99,15 @@ fn MyDocsLayout() -> Element {
     let nav = use_navigator();
     let route = use_route::<Route>();
 
-    let current_path = use_memo(move || match route.clone() {
+    let current_path = match route {
         Route::DocsPage { slug } => slug.join("/"),
         _ => String::new(),
-    });
+    };
 
-    let docs_ctx = DocsContext::new(
+    // `use_docs_context` rewraps the path reactively for you. Building the
+    // signal yourself with a plain `use_memo(move || ...)` captures the first
+    // route and never updates — the sidebar highlight would freeze.
+    let docs_ctx = use_docs_context(
         current_path,
         "/docs",
         Callback::new(move |path: String| {

@@ -255,7 +255,7 @@ pub use components::{
     SearchModal, SearchOpen, ThemeToggle, use_theme_provider,
 };
 
-pub use hooks::{DocsProviders, use_docs_providers};
+pub use hooks::{DocsProviders, use_docs_context, use_docs_providers};
 
 pub use dioxus_mdx::{
     ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
