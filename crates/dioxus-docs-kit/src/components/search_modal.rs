@@ -4,7 +4,7 @@ use dioxus_mdx::HttpMethod;
 use super::search_shell::{SearchHit, SearchModalShell};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-use crate::search::{SNIPPET_WINDOW, build_snippet, split_terms};
+use crate::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
 
 /// Full-screen search modal triggered by Cmd/Ctrl+K or the search button.
 #[component]
@@ -17,6 +17,8 @@ pub fn SearchModal() -> Element {
         registry
             .search_docs(&query)
             .into_iter()
+            // Cap before building hits: snippet extraction is the expensive part.
+            .take(MAX_RESULTS)
             .map(|entry| {
                 // Section hits deep-link via `path#anchor`; page-level hits use
                 // the bare path.
