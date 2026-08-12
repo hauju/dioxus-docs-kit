@@ -5,6 +5,92 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [0.6.0] — 2026-08-12
+
+### Fixed
+
+- **Parser crashes on malformed or non-English input.** Three separate
+  crash-class bugs in `dioxus-mdx`, each with a regression test:
+  - Non-ASCII prose before the first child tag panicked (`start byte index 1 is
+    not a char boundary`) in the Tabs, Accordion and ResponseField scan loops,
+    which advanced by a raw byte.
+  - An unclosed `<Card` made the Card scan loop reassign its cursor to itself
+    and spin forever, hanging the build script or SSR worker.
+  - A self-referential OpenAPI schema (`Node.children -> [Node]`) overflowed
+    the stack: `$ref` resolution inlined eagerly with no cycle guard. References
+    already being expanded now resolve to a name-only stub.
+- **Content silently dropped from fenced code blocks.** A docs framework's docs
+  are full of samples showing its own components, and four scanners tore them
+  apart:
+  - Component tags inside a fence were parsed as real components, so a ```` ```mdx ````
+    block containing `<Card>` rendered as a card plus two orphan fence lines.
+  - `import` lines were stripped from JS/TS/Python samples.
+  - `<CodeGroup>` used `\s+` for the filename separator, so a fence with no
+    language rendered its first code line as the tab label with an empty body.
+  - `parse_document` extracted frontmatter and then called `parse_mdx`, which
+    extracted it again — a body starting with a thematic break lost everything
+    up to the next `---`.
+- **TOC entries for headings inside code fences.** `extract_headers` regexed
+  raw markdown, so a `## Setup` inside a sample became an entry linking to an
+  anchor the renderer never emits.
+- **`~~~` fences were not treated as code at all.** Fence handling was
+  backtick-only in the body parser, so a `~~~` block had its `import` lines
+  stripped, its component tags parsed as real components, and never became a
+  `CodeBlock` — while `toc.rs` and the search splitter *did* skip tilde fences,
+  so the same page behaved inconsistently across surfaces. Both remaining
+  fence regexes are replaced by one shared line-based scanner
+  (`find_fenced_blocks`) that handles ``` and `~~~` with CommonMark's
+  same-marker-closes rule: the other marker inside a fence is literal content.
+  `~~~` blocks now render as code blocks (with language and filename tabs),
+  including inside `<CodeGroup>` / `<RequestExample>` / `<ResponseExample>`,
+  where they previously vanished silently.
+- **Invalid XML in RSS and sitemaps.** Titles, descriptions and URLs were
+  interpolated unescaped; a post titled `Rust & WASM` emitted a bare `&`, which
+  makes readers reject the whole feed rather than the single item.
+- **Opening tags matched by prefix.** `<Tabs` counted as an opening `<Tab` (and
+  `<CardGroup` as a `<Card`) while the closing tags never collide, so nesting
+  depth never rebalanced: nested Tabs lost the outer tab entirely, and a Card
+  wrapping a CardGroup leaked its raw tags onto the page as visible text.
+- **`extract_attr` matched attribute-name suffixes** — asking for `title` on
+  `<Card subtitle="Sub" title="Real">` returned `"Sub"`.
+- **Wrong sidebar in server-rendered HTML.** The active tab was seeded to
+  `tabs[0]` and corrected only by an effect, which does not run during SSR, so
+  a crawler requesting an API-reference URL got the Docs sidebar and the tab
+  visibly flipped after hydration.
+
+### Added
+
+- **`use_docs_context(path, base_path, navigate)`** — builds a `DocsContext`
+  from the current path as a plain `String` and rewraps it reactively inside
+  the hook. Both READMEs previously taught
+  `use_memo(move || match route { .. })`, which reads no reactive source
+  (`use_route` returns a plain value, not a signal): the memo ran once and
+  never again, freezing the sidebar highlight, tab sync and drawer auto-close
+  on the first page visited. Passing the path by value makes that mistake
+  impossible. `DocsContext::new` is unchanged for callers that hold a signal.
+- `[package.metadata.docs.rs] all-features` on `dioxus-docs-kit` and
+  `dioxus-mdx`. The `server` module (`SeoRouter`) was a 404 on docs.rs for
+  0.5.0 because it only builds under a non-default feature.
+- CI now runs an MSRV job and `cargo test --workspace --all-features` (the
+  `server` module is cfg-gated, so its tests had never run in CI).
+
+### Changed
+
+- **MSRV is now 1.88** (was declared 1.85). The declaration was already false:
+  `cargo +1.85 check -p dioxus-mdx` fails with five `E0658` errors — the crates
+  use let-chains, which need 1.88. Nothing caught it because every CI job pins
+  a much newer toolchain.
+- **Search results are capped at 25** before hits are built. The query re-runs
+  on every keystroke and each hit costs a snippet scan plus a mounted
+  component, so a broad query on a mid-size site built hundreds of hits into a
+  modal that shows about six.
+- **Parsing is ~7x faster** (244ms → 34ms over this repo's own docs corpus,
+  release build). `extract_attr` called `Regex::new` on every attribute lookup;
+  regex compilation dominated parse time.
+- A zero-line code block (opening fence immediately followed by the closing
+  fence) inside `<CodeGroup>` is no longer matched, aligning it with the
+  top-level fence parser, which has behaved this way since 0.5.0.
+
 ## [0.5.0] — 2026-07-19
 
 ### Added
