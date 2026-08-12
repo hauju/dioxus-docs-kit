@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::content::parse_content;
-use super::utils::find_closing_tag;
+use super::utils::{find_closing_tag, skip_to_next_tag};
 use crate::parser::types::*;
 
 static TAB_OPEN_RE: LazyLock<Regex> =
@@ -59,10 +59,9 @@ fn parse_tabs(content: &str) -> Vec<TabNode> {
         }
 
         // Skip to next Tab
-        if let Some(idx) = remaining[1..].find("<Tab") {
-            remaining = &remaining[idx + 1..];
-        } else {
-            break;
+        match skip_to_next_tag(remaining, "<Tab") {
+            Some(next) => remaining = next,
+            None => break,
         }
     }
 
@@ -114,5 +113,18 @@ mod tests {
         } else {
             panic!("Expected Tabs node");
         }
+    }
+
+    #[test]
+    fn non_ascii_prose_between_tabs_does_not_panic() {
+        // Stray prose before the first <Tab> used to be skipped by a raw byte
+        // slice, splitting any multi-byte char mid-codepoint.
+        let content = "<Tabs>\n\u{dc}berblick\n<Tab title=\"A\">body</Tab>\n</Tabs>";
+        let nodes = parse_mdx(content);
+        let tabs = nodes.iter().find_map(|n| match n {
+            DocNode::Tabs(t) => Some(t),
+            _ => None,
+        });
+        assert_eq!(tabs.expect("Tabs node").tabs.len(), 1);
     }
 }

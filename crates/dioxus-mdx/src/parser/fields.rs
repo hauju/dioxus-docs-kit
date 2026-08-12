@@ -1,7 +1,7 @@
 //! ParamField, ResponseField, and Expandable parsers.
 
 use super::content::parse_content;
-use super::utils::{extract_attr, find_closing_tag};
+use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
 use crate::parser::types::*;
 
 /// Try to parse a ParamField component.
@@ -184,10 +184,9 @@ fn parse_response_fields(content: &str) -> Vec<ResponseFieldNode> {
         }
 
         // Skip to next ResponseField
-        if let Some(idx) = remaining[1..].find("<ResponseField") {
-            remaining = &remaining[idx + 1..];
-        } else {
-            break;
+        match skip_to_next_tag(remaining, "<ResponseField") {
+            Some(next) => remaining = next,
+            None => break,
         }
     }
 
@@ -367,5 +366,15 @@ mod tests {
         } else {
             panic!("Expected ParamField node");
         }
+    }
+
+    #[test]
+    fn non_ascii_prose_between_response_fields_does_not_panic() {
+        let content = "<ResponseField name=\"outer\" type=\"object\">\n<Expandable title=\"Details\">\n\u{dc}berblick\n<ResponseField name=\"id\" type=\"string\">The id</ResponseField>\n</Expandable>\n</ResponseField>";
+        let nodes = parse_mdx(content);
+        assert!(
+            nodes.iter().any(|n| matches!(n, DocNode::ResponseField(_))),
+            "Expected ResponseField node"
+        );
     }
 }

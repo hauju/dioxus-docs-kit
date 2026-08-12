@@ -1,7 +1,7 @@
 //! Accordion and AccordionGroup parser.
 
 use super::content::parse_content;
-use super::utils::{extract_attr, find_closing_tag};
+use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
 use crate::parser::types::*;
 
 /// Try to parse an AccordionGroup component.
@@ -55,10 +55,9 @@ fn parse_accordions(content: &str) -> Vec<AccordionNode> {
         }
 
         // Skip to next Accordion
-        if let Some(idx) = remaining[1..].find("<Accordion") {
-            remaining = &remaining[idx + 1..];
-        } else {
-            break;
+        match skip_to_next_tag(remaining, "<Accordion") {
+            Some(next) => remaining = next,
+            None => break,
         }
     }
 
@@ -139,5 +138,16 @@ mod tests {
     fn non_accordion_input_returns_none() {
         assert!(try_parse_accordion_group("plain text").is_none());
         assert!(try_parse_standalone_accordion("plain text").is_none());
+    }
+
+    #[test]
+    fn non_ascii_prose_between_accordions_does_not_panic() {
+        let content = "<AccordionGroup>\n\u{dc}berblick\n<Accordion title=\"A\">body</Accordion>\n</AccordionGroup>";
+        let nodes = crate::parser::content::parse_mdx(content);
+        let group = nodes.iter().find_map(|n| match n {
+            DocNode::AccordionGroup(g) => Some(g),
+            _ => None,
+        });
+        assert_eq!(group.expect("AccordionGroup node").items.len(), 1);
     }
 }
