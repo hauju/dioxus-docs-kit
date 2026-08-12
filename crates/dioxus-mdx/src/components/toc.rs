@@ -230,14 +230,36 @@ fn TocItem(props: TocItemProps) -> Element {
 }
 
 /// Extract headers from markdown content for table of contents.
+///
+/// Fenced code blocks are skipped so a `## Setup` inside a sample does not
+/// become a TOC entry linking to an anchor the renderer never emits. Mirrors
+/// the fence handling in the docs-kit search splitter and build-time anchor
+/// validator.
 pub fn extract_headers(content: &str) -> Vec<(String, String, u8)> {
     let mut headers = Vec::new();
+    let mut fence: Option<char> = None;
 
-    for caps in HEADING_RE.captures_iter(content) {
-        let level = caps[1].len() as u8;
-        let title = caps[2].trim().to_string();
-        let id = slugify(&title);
-        headers.push((id, title, level));
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            let marker = if trimmed.starts_with("```") { '`' } else { '~' };
+            match fence {
+                None => fence = Some(marker),
+                Some(open) if open == marker => fence = None,
+                Some(_) => {} // the other marker inside a fence is literal content
+            }
+            continue;
+        }
+        if fence.is_some() {
+            continue;
+        }
+
+        if let Some(caps) = HEADING_RE.captures(line) {
+            let level = caps[1].len() as u8;
+            let title = caps[2].trim().to_string();
+            let id = slugify(&title);
+            headers.push((id, title, level));
+        }
     }
 
     headers
@@ -364,5 +386,30 @@ More text.
         assert_eq!(slugify("Hello World"), "hello-world");
         assert_eq!(slugify("Getting Started!"), "getting-started");
         assert_eq!(slugify("API v1.0"), "api-v1-0");
+    }
+
+    #[test]
+    fn extract_headers_skips_headings_inside_code_fences() {
+        let content = "## Real One\n\n```md\n## Fake Heading\n```\n\n### Real Two\n";
+        let headers = extract_headers(content);
+        let titles: Vec<&str> = headers.iter().map(|(_, t, _)| t.as_str()).collect();
+        assert_eq!(titles, vec!["Real One", "Real Two"]);
+    }
+
+    #[test]
+    fn extract_headers_skips_headings_inside_tilde_fences() {
+        let content = "## Real\n\n~~~\n## Fake\n~~~\n";
+        let headers = extract_headers(content);
+        assert_eq!(headers.len(), 1);
+        assert_eq!(headers[0].1, "Real");
+    }
+
+    #[test]
+    fn extract_headers_treats_other_marker_inside_fence_as_content() {
+        // A ``` line inside a ~~~ fence is literal text, not a fence toggle.
+        let content = "~~~\n```\n## Fake\n~~~\n\n## Real\n";
+        let headers = extract_headers(content);
+        assert_eq!(headers.len(), 1);
+        assert_eq!(headers[0].1, "Real");
     }
 }
