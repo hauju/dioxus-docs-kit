@@ -31,6 +31,21 @@ pub(crate) fn jsonld_to_string(payload: &serde_json::Value) -> String {
         .replace("</", "<\\/")
 }
 
+/// Escape text for interpolation into an XML element or attribute.
+///
+/// RSS and sitemap output is parsed strictly: a single unescaped `&` in a post
+/// title makes readers reject the whole feed, not just that item.
+pub(crate) fn xml_escape(value: &str) -> String {
+    // `&` first, or the ampersands introduced by the later replacements get
+    // escaped a second time.
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
 #[cfg(test)]
 mod tests {
     use super::join_site_url;

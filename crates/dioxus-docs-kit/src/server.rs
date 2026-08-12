@@ -20,6 +20,7 @@
 use dioxus::server::axum::{Router, http::header, routing::get};
 
 use crate::blog::BlogRegistry;
+use crate::components::seo::xml_escape;
 use crate::registry::DocsRegistry;
 
 const TEXT: &str = "text/plain; charset=utf-8";
@@ -165,7 +166,7 @@ impl SeoRouter {
              </sitemapindex>\n",
             sitemap_index_entries
                 .iter()
-                .map(|loc| format!("<sitemap><loc>{loc}</loc></sitemap>\n"))
+                .map(|loc| format!("<sitemap><loc>{}</loc></sitemap>\n", xml_escape(loc)))
                 .collect::<String>()
         );
         router = router.route(

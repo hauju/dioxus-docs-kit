@@ -7,7 +7,7 @@ mod mobile_drawer;
 mod page_nav;
 mod search_modal;
 mod search_shell;
-mod seo;
+pub(crate) mod seo;
 pub(crate) mod shared;
 mod sidebar;
 mod theme_toggle;
