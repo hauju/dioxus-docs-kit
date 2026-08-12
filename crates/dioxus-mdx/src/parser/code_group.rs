@@ -1,25 +1,7 @@
 //! CodeGroup, RequestExample, and ResponseExample parsers.
 
-use std::sync::LazyLock;
-
-use regex::Regex;
-
-use super::utils::find_closing_tag;
+use super::utils::{find_closing_tag, find_fenced_blocks};
 use crate::parser::types::*;
-
-// IMPORTANT: Use [ \t]+ (not \s+) for the filename separator, or a fence with no
-// language matches across the newline and swallows the first code line as the
-// filename. \r? keeps CRLF files from leaving a stray CR in the tab label.
-//
-// Close to content.rs's CODE_RE but deliberately not identical: there is no
-// trailing `[ \t]*(?:\r?\n|$)`, since blocks here are always followed by more
-// tag content rather than ending the document. Like content.rs, this requires a
-// newline before the closing fence, so a zero-line block (``` immediately
-// followed by ```) is not matched.
-static CODE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?m)^[ \t]*```(\w+)?(?:[ \t]+([^\r\n]+))?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```")
-        .unwrap()
-});
 
 /// Try to parse a CodeGroup container.
 pub(super) fn try_parse_code_group(content: &str) -> Option<(DocNode, &str)> {
@@ -75,24 +57,14 @@ pub(super) fn try_parse_response_example(content: &str) -> Option<(DocNode, &str
 
 /// Parse fenced code blocks from content.
 fn parse_code_blocks(content: &str) -> Vec<CodeBlockNode> {
-    let mut blocks = Vec::new();
-
-    for caps in CODE_RE.captures_iter(content) {
-        let language = caps.get(1).map(|m| m.as_str().to_string());
-        let filename = caps.get(2).map(|m| m.as_str().to_string());
-        let code = caps
-            .get(3)
-            .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_default();
-
-        blocks.push(CodeBlockNode {
-            language,
-            filename,
-            code,
-        });
-    }
-
-    blocks
+    find_fenced_blocks(content)
+        .into_iter()
+        .map(|block| CodeBlockNode {
+            language: block.language.map(str::to_string),
+            filename: block.filename.map(str::to_string),
+            code: block.code.trim().to_string(),
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -169,6 +141,21 @@ curl -X POST https://api.example.com
             DocNode::CodeGroup(group) => {
                 assert_eq!(group.blocks.len(), 1);
                 assert_eq!(group.blocks[0].filename, None);
+                assert_eq!(group.blocks[0].code, "curl https://example.com");
+            }
+            other => panic!("expected CodeGroup, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tilde_fence_inside_code_group_is_extracted() {
+        let content = "<CodeGroup>\n~~~bash cURL\ncurl https://example.com\n~~~\n</CodeGroup>";
+        let (node, _) = try_parse_code_group(content).expect("CodeGroup");
+        match node {
+            DocNode::CodeGroup(group) => {
+                assert_eq!(group.blocks.len(), 1);
+                assert_eq!(group.blocks[0].language.as_deref(), Some("bash"));
+                assert_eq!(group.blocks[0].filename.as_deref(), Some("cURL"));
                 assert_eq!(group.blocks[0].code, "curl https://example.com");
             }
             other => panic!("expected CodeGroup, got {other:?}"),
