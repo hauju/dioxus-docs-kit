@@ -77,6 +77,23 @@ pub mod server;
 
 use dioxus::prelude::*;
 
+/// Precompiled stylesheet covering every class the kit's components emit
+/// (Tailwind utilities, DaisyUI dark/light themes, typography prose, and the
+/// `--dk-*` token surface from `theme.css`).
+///
+/// Link it to run the kit without any Tailwind/Bun setup of your own:
+///
+/// ```rust,ignore
+/// rsx! {
+///     document::Stylesheet { href: dioxus_docs_kit::DOCS_KIT_CSS }
+/// }
+/// ```
+///
+/// If your app already runs its own Tailwind build, skip this and use the
+/// `safelist.html` approach from the README instead — the precompiled sheet
+/// only contains the kit's classes, not yours.
+pub const DOCS_KIT_CSS: Asset = asset!("/assets/docs-kit.css");
+
 // ============================================================================
 // Docs context
 // ============================================================================

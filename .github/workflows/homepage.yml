@@ -50,6 +50,12 @@ jobs:
         run: |
           bun install --frozen-lockfile
           bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
+      # The crate ships a precompiled stylesheet (DOCS_KIT_CSS). Fail if the
+      # committed output is stale relative to its input/sources (`just css`).
+      - name: Check precompiled kit CSS is fresh
+        run: |
+          bunx @tailwindcss/cli -i crates/dioxus-docs-kit/tailwind.css -o crates/dioxus-docs-kit/assets/docs-kit.css --minify
+          git diff --exit-code crates/dioxus-docs-kit/assets/docs-kit.css
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Run Clippy (highlight feature off)

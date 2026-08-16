@@ -138,9 +138,24 @@ fn DocsPage(slug: Vec<String>) -> Element {
 }
 ```
 
-### 5. Set up Tailwind CSS
+### 5. Add the styles
 
-When `dioxus-docs-kit` is a crates.io dependency, Tailwind CSS 4 cannot scan `~/.cargo/` paths. Copy the safelist file into your project and reference it:
+**Option A — precompiled stylesheet (zero setup, recommended to start).** The
+crate ships a compiled stylesheet covering everything its components emit
+(Tailwind utilities, DaisyUI dark/light themes, typography prose, the `--dk-*`
+theming tokens). Link it and you're done — no Tailwind, no Bun, no safelist:
+
+```rust
+rsx! {
+    document::Stylesheet { href: dioxus_docs_kit::DOCS_KIT_CSS }
+}
+```
+
+The sheet only contains the *kit's* classes. If your own pages use Tailwind
+utilities the kit doesn't, switch to Option B.
+
+**Option B — your own Tailwind build.** When `dioxus-docs-kit` is a crates.io
+dependency, Tailwind CSS 4 cannot scan `~/.cargo/` paths. Copy the safelist file into your project and reference it:
 
 `safelist.html` ships at the root of the published crate, so copy it out of the
 vendored source:

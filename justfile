@@ -13,6 +13,11 @@ test:
 serve:
     dx serve
 
+# Rebuild the kit's precompiled stylesheet (matches the CI freshness check)
+[group("dev")]
+css:
+    bunx @tailwindcss/cli -i crates/dioxus-docs-kit/tailwind.css -o crates/dioxus-docs-kit/assets/docs-kit.css --minify
+
 # Format check (matches CI)
 [group("lint")]
 fmt:
