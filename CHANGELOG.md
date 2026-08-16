@@ -91,6 +91,42 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   fence) inside `<CodeGroup>` is no longer matched, aligning it with the
   top-level fence parser, which has behaved this way since 0.5.0.
 
+### Migration notes
+
+Nothing was removed from the public API, so most consumers only bump the
+version. Three things can still bite:
+
+- **Rust 1.88 is now required** (0.5.0 declared 1.85). Below it the build fails
+  inside a dependency with an unrelated-looking `E0658` about `let` expressions,
+  which is confusing if you don't know the MSRV moved. Bump your toolchain, or
+  stay on 0.5.0 — which, despite its declaration, never actually built on 1.85
+  either.
+- **Your rendered docs may change**, always in the direction of "the sample is
+  now treated as a sample":
+  - Component tags inside a fenced block (```` ```mdx ```` showing `<Card>`)
+    render as code instead of becoming a real component.
+  - `import` lines inside JS/TS/Python samples are no longer stripped.
+  - `~~~` blocks become code blocks instead of raw markdown, and are extracted
+    inside `<CodeGroup>` / `<RequestExample>` / `<ResponseExample>` instead of
+    vanishing.
+  - Headings inside fences no longer appear in the table of contents.
+
+  If a page relied on the old behavior — e.g. an unfenced-looking component you
+  wanted rendered — it needs the fence removed.
+- **`DocsContext::new` is unchanged and still supported.** The new
+  [`use_docs_context`] hook is additive, not a replacement. Migrating is
+  recommended but optional: it takes the path as a plain `String` and wraps it
+  reactively for you, which removes the frozen-sidebar failure mode that the
+  0.5.0 READMEs taught (`use_memo(move || match route { .. })` reads no
+  reactive source, so it runs once and never updates). If your layout already
+  uses `use_memo(use_reactive!(|route| ..))`, it is correct as-is.
+
+Also worth knowing: `safelist.html` lives at the **root** of the published
+crate. The 0.5.0 root README documented a `crates/dioxus-docs-kit/` path that
+only exists in a git checkout — fixed in this release.
+
+[`use_docs_context`]: https://docs.rs/dioxus-docs-kit/latest/dioxus_docs_kit/hooks/fn.use_docs_context.html
+
 ## [0.5.0] — 2026-07-19
 
 ### Added
