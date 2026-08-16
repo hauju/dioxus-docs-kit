@@ -127,7 +127,22 @@ See the [example project](https://github.com/hauju/dioxus-docs-kit) for a comple
 
 ## Styling Setup
 
-This crate requires **Tailwind CSS 4**, **DaisyUI 5**, and **@tailwindcss/typography**.
+### Zero-setup: the precompiled stylesheet
+
+The crate ships a compiled stylesheet (`DOCS_KIT_CSS`) covering every class its
+components emit — Tailwind utilities, DaisyUI dark/light themes, typography
+prose, and the `--dk-*` theming tokens. Link it and skip the rest of this
+section — no Tailwind, no Bun, no safelist:
+
+```rust
+rsx! {
+    document::Stylesheet { href: dioxus_docs_kit::DOCS_KIT_CSS }
+}
+```
+
+It only contains the *kit's* classes; if your own pages use Tailwind utilities
+the kit doesn't, run your own build instead. That path requires **Tailwind CSS
+4**, **DaisyUI 5**, and **@tailwindcss/typography**:
 
 ### Install dependencies
 

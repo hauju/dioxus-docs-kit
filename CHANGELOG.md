@@ -5,6 +5,20 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Added
+
+- **Precompiled stylesheet — a Tailwind toolchain is now optional.**
+  `dioxus-docs-kit` ships a compiled `docs-kit.css` asset exposed as
+  `dioxus_docs_kit::DOCS_KIT_CSS`. It covers every class the kit's and
+  `dioxus-mdx`'s components emit (Tailwind utilities, DaisyUI dark/light
+  themes, typography prose, and the `--dk-*` token surface from `theme.css`),
+  so a consumer can link one stylesheet instead of setting up Bun + Tailwind +
+  the safelist copy. The safelist path remains the right choice for apps that
+  use their own Tailwind classes. The sheet is rebuilt with `just css`; CI
+  fails if the committed output is stale.
+
 ## [0.6.0] — 2026-08-12
 
 ### Fixed

@@ -1,0 +1,30 @@
+/*
+ * Input for the precompiled stylesheet shipped with the crate
+ * (assets/docs-kit.css, exposed as `dioxus_docs_kit::DOCS_KIT_CSS`).
+ *
+ * Rebuild after changing component markup, safelist.html, or theme.css:
+ *
+ *   just css        (from the repo root)
+ *
+ * CI fails if the committed output is stale.
+ *
+ * This is NOT the example app's stylesheet (that one lives at the repo root
+ * and adds the site's brand overrides). This input contains only what the
+ * kit's own components need, so consumers can style docs pages without any
+ * Tailwind/Bun setup of their own.
+ */
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+    themes: dark --default, light;
+}
+
+/* safelist.html carries the dynamic classes (match-arm badge colors etc.)
+   that scanning the Rust source cannot detect. */
+@source "./safelist.html";
+@source "./src/**/*.{rs,html,css}";
+@source "../dioxus-mdx/src/**/*.{rs,html,css}";
+
+@import "./theme.css";
