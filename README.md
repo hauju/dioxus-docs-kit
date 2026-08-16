@@ -2,6 +2,21 @@
 
 A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time.
 
+## Quick Start
+
+```sh
+dx new my-docs --template gh:hauju/dioxus-docs-kit-template
+cd my-docs && dx serve
+```
+
+That's a complete docs site — sidebar, ⌘K search, dark/light themes, sample MDX
+pages — with no Node, Tailwind, or safelist setup ([template
+repo](https://github.com/hauju/dioxus-docs-kit-template)). Add pages by
+dropping `.mdx` files into `docs/` and listing them in `docs/_nav.json`.
+
+To add the kit to an **existing** Dioxus app instead, follow the
+[Integration Guide](#integration-guide) below.
+
 ## Crates
 
 | Crate | Description |
@@ -18,10 +33,10 @@ A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MD
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = "0.5"
+dioxus-docs-kit = "0.6.1"
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.5"
+dioxus-docs-kit-build = "0.6.1"
 
 [features]
 default = ["web"]
