@@ -5,10 +5,11 @@ use crate::registry::DocsRegistry;
 
 /// Page navigation (previous/next).
 ///
-/// Page order follows `_nav.json`. API endpoint pages are included in the
-/// ordering only if the owning spec's nav group contains a page named
-/// `<prefix>/overview` — endpoints are inserted right after it. Without an
-/// overview page, endpoint pages render without prev/next links.
+/// Page order follows `_nav.json`. API endpoint and Rust API item pages are
+/// included in the ordering only if the owning spec's/model's nav group
+/// contains a page named `<prefix>/overview` — dynamic pages are inserted
+/// right after it. Without an overview page, they render without prev/next
+/// links.
 #[component]
 pub fn DocsPageNav(current_path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
@@ -31,13 +32,22 @@ pub fn DocsPageNav(current_path: String) -> Element {
             all_pages.push(page.clone());
             // Insert a spec's endpoint pages right after its "<prefix>/overview"
             // page, so endpoints participate in prev/next ordering.
-            if let Some(prefix) = page.strip_suffix("/overview")
-                && let Some(spec) = registry.get_api_spec(prefix)
-            {
+            if let Some(prefix) = page.strip_suffix("/overview") {
+                if let Some(spec) = registry.get_api_spec(prefix) {
+                    all_pages.extend(
+                        spec.operations
+                            .iter()
+                            .map(|op| format!("{prefix}/{}", op.slug())),
+                    );
+                }
+                // Same for a Rust API model's item pages, in sidebar order.
                 all_pages.extend(
-                    spec.operations
+                    registry
+                        .get_rust_sidebar_entries()
                         .iter()
-                        .map(|op| format!("{prefix}/{}", op.slug())),
+                        .flat_map(|(_, entries)| entries.iter())
+                        .filter(|e| e.prefix == prefix)
+                        .map(|e| format!("{prefix}/{}", e.slug)),
                 );
             }
         }

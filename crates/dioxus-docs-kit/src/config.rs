@@ -66,8 +66,10 @@ pub struct DocsConfig {
     nav_json: String,
     content_map: HashMap<&'static str, &'static str>,
     openapi_specs: Vec<(String, String)>,
+    rust_api_models: Vec<(String, String)>,
     default_path: Option<String>,
     api_group_name: Option<String>,
+    rust_api_group_name: Option<String>,
     theme: Option<ThemeConfig>,
     #[cfg(feature = "highlight")]
     code_theme: CodeThemeConfig,
@@ -82,8 +84,10 @@ impl DocsConfig {
             nav_json: nav_json.to_string(),
             content_map,
             openapi_specs: Vec::new(),
+            rust_api_models: Vec::new(),
             default_path: None,
             api_group_name: None,
+            rust_api_group_name: None,
             theme: None,
             #[cfg(feature = "highlight")]
             code_theme: CodeThemeConfig::default(),
@@ -105,6 +109,22 @@ impl DocsConfig {
         self
     }
 
+    /// Add a distilled Rust API model (crate reference pages).
+    ///
+    /// - `prefix`: The URL prefix for this crate's item pages (e.g. "rust-api").
+    /// - `model_json`: The distilled model JSON produced by
+    ///   `dioxus-docs-kit-build`'s `distill-rustdoc` from nightly rustdoc JSON.
+    ///
+    /// Like [`Self::with_openapi`], the sidebar entries are injected dynamically
+    /// into the nav group whose `"group"` matches
+    /// [`Self::with_rust_api_group_name`] (defaults to `"Rust API"`) — do **not**
+    /// list item paths in `_nav.json`.
+    pub fn with_rustdoc(mut self, prefix: &str, model_json: &str) -> Self {
+        self.rust_api_models
+            .push((prefix.to_string(), model_json.to_string()));
+        self
+    }
+
     /// Set the default documentation path for redirects.
     ///
     /// Defaults to the first page in the first nav group if not set.
@@ -120,6 +140,16 @@ impl DocsConfig {
     /// See [`Self::with_openapi`] for details.
     pub fn with_api_group_name(mut self, name: &str) -> Self {
         self.api_group_name = Some(name.to_string());
+        self
+    }
+
+    /// Set the display name for the Rust API sidebar group.
+    ///
+    /// Defaults to `"Rust API"`. The value must match a `"group"` in `_nav.json`
+    /// so the library knows where to inject the Rust API item sidebar entries.
+    /// See [`Self::with_rustdoc`] for details.
+    pub fn with_rust_api_group_name(mut self, name: &str) -> Self {
+        self.rust_api_group_name = Some(name.to_string());
         self
     }
 
@@ -204,6 +234,14 @@ impl DocsConfig {
 
     pub(crate) fn openapi_specs(&self) -> &[(String, String)] {
         &self.openapi_specs
+    }
+
+    pub(crate) fn rust_api_models(&self) -> &[(String, String)] {
+        &self.rust_api_models
+    }
+
+    pub(crate) fn rust_api_group_name_value(&self) -> Option<&str> {
+        self.rust_api_group_name.as_deref()
     }
 
     pub(crate) fn default_path_value(&self) -> Option<&str> {

@@ -1,6 +1,6 @@
 //! Error types for registry construction.
 
-use dioxus_mdx::OpenApiError;
+use dioxus_mdx::{OpenApiError, RustApiError};
 
 /// Errors produced when building a [`DocsRegistry`](crate::DocsRegistry) or
 /// [`BlogRegistry`](crate::blog::BlogRegistry) from configuration.
@@ -17,6 +17,13 @@ pub enum DocsKitError {
         /// The underlying parse error.
         error: OpenApiError,
     },
+    /// A distilled Rust API model failed to parse.
+    RustApi {
+        /// URL prefix the model was registered under.
+        prefix: String,
+        /// The underlying parse error.
+        error: RustApiError,
+    },
 }
 
 impl std::fmt::Display for DocsKitError {
@@ -28,6 +35,10 @@ impl std::fmt::Display for DocsKitError {
                 f,
                 "failed to parse OpenAPI spec for prefix \"{prefix}\": {error}"
             ),
+            Self::RustApi { prefix, error } => write!(
+                f,
+                "failed to parse Rust API model for prefix \"{prefix}\": {error}"
+            ),
         }
     }
 }
@@ -37,6 +48,7 @@ impl std::error::Error for DocsKitError {
         match self {
             Self::NavParse(e) | Self::BlogManifestParse(e) => Some(e),
             Self::OpenApi { error, .. } => Some(error),
+            Self::RustApi { error, .. } => Some(error),
         }
     }
 }

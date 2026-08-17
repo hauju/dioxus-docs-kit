@@ -28,6 +28,11 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
             "api-reference",
             include_str!("../docs/api-reference/petstore.yaml"),
         )
+        // Distilled from nightly rustdoc JSON — regenerate with `just api`.
+        .with_rustdoc(
+            "rust-api",
+            include_str!("../docs/rust-api/dioxus-docs-kit.api.json"),
+        )
         .with_default_path("getting-started/introduction")
         .with_theme_toggle("light", "dark", "dark")
         .build()

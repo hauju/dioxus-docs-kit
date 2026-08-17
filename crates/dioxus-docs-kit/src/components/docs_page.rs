@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_mdx::{DocContent, DocTableOfContents, EndpointPage, extract_headers};
+use dioxus_mdx::{DocContent, DocTableOfContents, EndpointPage, RustApiItemPage, extract_headers};
 
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
@@ -41,6 +41,22 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
                         }
                         DocsPageNav { current_path: path.clone() }
                     }
+                }
+            }
+        };
+    }
+
+    // Check if this is a Rust API item page
+    if let Some((item, model)) = registry.get_rust_api_item_with_model(&path) {
+        return rsx! {
+            DocsPageMeta { path: path.clone() }
+            main { class: "dk-rust-api px-8 py-12 lg:px-12",
+                RustApiItemPage { item: item.clone(), crate_name: model.crate_name.clone() }
+                div { class: "max-w-3xl mx-auto mt-8",
+                    if let Some(ft) = article_footer {
+                        div { class: "dk-article-footer-slot mb-6", {ft} }
+                    }
+                    DocsPageNav { current_path: path.clone() }
                 }
             }
         };

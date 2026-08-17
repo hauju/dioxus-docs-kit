@@ -1,6 +1,6 @@
 # dioxus-docs-kit
 
-A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time.
+A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, rustdoc-powered Rust API reference pages, and theme switching — all embedded at compile time.
 
 ## Quick Start
 

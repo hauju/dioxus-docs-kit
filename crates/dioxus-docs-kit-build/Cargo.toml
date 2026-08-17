@@ -17,3 +17,10 @@ readme = "README.md"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+# Pinned to the rustdoc JSON format version this crate's distiller understands.
+# Bumping it changes which nightly's `--output-format json` output parses.
+rustdoc-types = "0.60.0"
+
+[[bin]]
+name = "distill-rustdoc"
+path = "src/bin/distill_rustdoc.rs"

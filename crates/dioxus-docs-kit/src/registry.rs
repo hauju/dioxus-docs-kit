@@ -9,8 +9,8 @@ use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
 use crate::search::{Field, clean_markdown, search_lower};
 use dioxus_mdx::{
-    ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, parse_openapi,
-    slugify,
+    ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, RustApiItem, RustApiModel,
+    RustItemKind, parse_document, parse_openapi, parse_rust_api, slugify,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -58,6 +58,19 @@ pub struct ApiEndpointEntry {
     pub title: String,
     /// HTTP method.
     pub method: HttpMethod,
+}
+
+/// A sidebar entry for a Rust API item.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RustApiItemEntry {
+    /// URL prefix of the model that owns this item (e.g. "rust-api").
+    pub prefix: String,
+    /// URL slug (e.g. "struct.DocsConfig").
+    pub slug: String,
+    /// Display title (the item name).
+    pub title: String,
+    /// Item kind (drives the sidebar chip).
+    pub kind: RustItemKind,
 }
 
 /// A searchable entry in the documentation.
@@ -222,10 +235,18 @@ pub struct DocsRegistry {
     api_sidebar_entries: Vec<(ApiTag, Vec<ApiEndpointEntry>)>,
     /// Full docs path ("prefix/slug") → (spec index, operation index).
     api_operation_index: HashMap<String, (usize, usize)>,
+    /// Distilled Rust API models keyed by URL prefix.
+    rust_apis: Vec<(String, RustApiModel)>,
+    /// Precomputed Rust API sidebar entries grouped by item kind.
+    rust_sidebar_entries: Vec<(&'static str, Vec<RustApiItemEntry>)>,
+    /// Full docs path ("prefix/slug") → (model index, item index).
+    rust_item_index: HashMap<String, (usize, usize)>,
     /// Default page path for redirects.
     pub default_path: String,
     /// Display name for the API Reference sidebar group.
     pub api_group_name: String,
+    /// Display name for the Rust API sidebar group.
+    pub rust_api_group_name: String,
     /// Optional theme configuration.
     pub theme: Option<ThemeConfig>,
     /// Syntax-highlighting theme for code blocks.
@@ -260,6 +281,20 @@ impl DocsRegistry {
             })
             .collect::<Result<_, _>>()?;
 
+        // Parse distilled Rust API models
+        let rust_apis: Vec<(String, RustApiModel)> = config
+            .rust_api_models()
+            .iter()
+            .map(|(prefix, json)| {
+                parse_rust_api(json)
+                    .map(|model| (prefix.clone(), model))
+                    .map_err(|error| DocsKitError::RustApi {
+                        prefix: prefix.clone(),
+                        error,
+                    })
+            })
+            .collect::<Result<_, _>>()?;
+
         // Determine default path
         let default_path = config
             .default_path_value()
@@ -277,6 +312,11 @@ impl DocsRegistry {
             .map(String::from)
             .unwrap_or_else(|| "API Reference".to_string());
 
+        let rust_api_group_name = config
+            .rust_api_group_name_value()
+            .map(String::from)
+            .unwrap_or_else(|| "Rust API".to_string());
+
         let theme = config.theme_config().cloned();
         #[cfg(feature = "highlight")]
         let code_theme = config.code_theme_value();
@@ -291,9 +331,26 @@ impl DocsRegistry {
             );
         }
 
+        // Same gotcha for Rust API models: sidebar entries inject into a matching group.
+        if !rust_apis.is_empty() && !nav.groups.iter().any(|g| g.group == rust_api_group_name) {
+            tracing::warn!(
+                "dioxus-docs-kit: Rust API models registered but no nav group \
+                 matches rust_api_group_name \"{rust_api_group_name}\". API items won't \
+                 appear in the sidebar. Add a group with `\"group\": \"{rust_api_group_name}\"` \
+                 to _nav.json, or call .with_rust_api_group_name(\"<your group name>\") on \
+                 DocsConfig."
+            );
+        }
+
         // Build search index
-        let search_index =
-            Self::build_search_index(&nav, &parsed_docs, &openapi_specs, &api_group_name);
+        let search_index = Self::build_search_index(
+            &nav,
+            &parsed_docs,
+            &openapi_specs,
+            &api_group_name,
+            &rust_apis,
+            &rust_api_group_name,
+        );
 
         let api_sidebar_entries = Self::build_api_sidebar_entries(&openapi_specs);
 
@@ -307,6 +364,18 @@ impl DocsRegistry {
             })
             .collect();
 
+        let rust_sidebar_entries = Self::build_rust_sidebar_entries(&rust_apis);
+
+        let rust_item_index = rust_apis
+            .iter()
+            .enumerate()
+            .flat_map(|(model_idx, (prefix, model))| {
+                model.items.iter().enumerate().map(move |(item_idx, item)| {
+                    (format!("{prefix}/{}", item.slug), (model_idx, item_idx))
+                })
+            })
+            .collect();
+
         Ok(Self {
             nav,
             parsed_docs,
@@ -314,8 +383,12 @@ impl DocsRegistry {
             openapi_specs,
             api_sidebar_entries,
             api_operation_index,
+            rust_apis,
+            rust_sidebar_entries,
+            rust_item_index,
             default_path,
             api_group_name,
+            rust_api_group_name,
             theme,
             #[cfg(feature = "highlight")]
             code_theme,
@@ -335,6 +408,10 @@ impl DocsRegistry {
                 .summary
                 .clone()
                 .or_else(|| Some(op.slug().replace('-', " ")));
+        }
+
+        if let Some(item) = self.get_rust_api_item(path) {
+            return Some(item.name.clone());
         }
 
         self.get_parsed_doc(path).and_then(|doc| {
@@ -372,6 +449,9 @@ impl DocsRegistry {
                 .clone()
                 .or_else(|| Some(op.slug().replace('-', " ")));
         }
+        if let Some(item) = self.get_rust_api_item(path) {
+            return Some(item.name.clone());
+        }
         self.get_doc_title(path)
     }
 
@@ -383,6 +463,9 @@ impl DocsRegistry {
     pub fn get_page_description(&self, path: &str) -> Option<String> {
         if let Some(op) = self.get_api_operation(path) {
             return op.description.clone();
+        }
+        if let Some(item) = self.get_rust_api_item(path) {
+            return item.summary();
         }
         self.get_parsed_doc(path)
             .and_then(|doc| doc.frontmatter.description.clone())
@@ -517,6 +600,71 @@ impl DocsRegistry {
         paths
     }
 
+    // ========================================================================
+    // Rust API methods
+    // ========================================================================
+
+    /// Look up a Rust API item by its full docs path, e.g. "rust-api/struct.DocsConfig".
+    pub fn get_rust_api_item(&self, path: &str) -> Option<&RustApiItem> {
+        self.get_rust_api_item_with_model(path)
+            .map(|(item, _)| item)
+    }
+
+    /// Look up a Rust API item together with the model that owns it.
+    pub fn get_rust_api_item_with_model(
+        &self,
+        path: &str,
+    ) -> Option<(&RustApiItem, &RustApiModel)> {
+        let &(model_idx, item_idx) = self.rust_item_index.get(path)?;
+        let (_, model) = &self.rust_apis[model_idx];
+        Some((&model.items[item_idx], model))
+    }
+
+    /// Get Rust API sidebar entries grouped by item kind (precomputed).
+    pub fn get_rust_sidebar_entries(&self) -> &[(&'static str, Vec<RustApiItemEntry>)] {
+        &self.rust_sidebar_entries
+    }
+
+    /// Get all Rust API item paths for navigation ordering.
+    pub fn get_rust_api_item_paths(&self) -> Vec<String> {
+        self.rust_sidebar_entries
+            .iter()
+            .flat_map(|(_, entries)| entries.iter())
+            .map(|e| format!("{}/{}", e.prefix, e.slug))
+            .collect()
+    }
+
+    /// Build Rust API sidebar entries grouped by item kind, alphabetical
+    /// within each group (rustdoc-style).
+    fn build_rust_sidebar_entries(
+        rust_apis: &[(String, RustApiModel)],
+    ) -> Vec<(&'static str, Vec<RustApiItemEntry>)> {
+        let mut groups = Vec::new();
+        for kind in RustItemKind::ALL {
+            let mut entries: Vec<RustApiItemEntry> = rust_apis
+                .iter()
+                .flat_map(|(prefix, model)| {
+                    model
+                        .items
+                        .iter()
+                        .filter(|item| item.kind == kind)
+                        .map(|item| RustApiItemEntry {
+                            prefix: prefix.clone(),
+                            slug: item.slug.clone(),
+                            title: item.name.clone(),
+                            kind: item.kind,
+                        })
+                })
+                .collect();
+            if entries.is_empty() {
+                continue;
+            }
+            entries.sort_by(|a, b| a.title.cmp(&b.title));
+            groups.push((kind.group_label(), entries));
+        }
+        groups
+    }
+
     /// Determine which tab a given page path belongs to.
     pub fn tab_for_path(&self, path: &str) -> Option<String> {
         // Check static pages in nav groups
@@ -531,6 +679,17 @@ impl DocsRegistry {
             if path.starts_with(&format!("{prefix}/")) {
                 for group in &self.nav.groups {
                     if group.group == self.api_group_name {
+                        return group.tab.clone();
+                    }
+                }
+            }
+        }
+
+        // Check dynamic Rust API item pages
+        for (prefix, _) in &self.rust_apis {
+            if path.starts_with(&format!("{prefix}/")) {
+                for group in &self.nav.groups {
+                    if group.group == self.rust_api_group_name {
                         return group.tab.clone();
                     }
                 }
@@ -646,6 +805,16 @@ impl DocsRegistry {
             }
         }
 
+        // Rust API item pages
+        for (prefix, model) in &self.rust_apis {
+            for item in &model.items {
+                let loc = xml_escape(&format!("{site_url}{docs_path}/{prefix}/{}", item.slug));
+                xml.push_str(&format!(
+                    "<url>\n<loc>{loc}</loc>\n<changefreq>monthly</changefreq>\n<priority>0.5</priority>\n</url>\n"
+                ));
+            }
+        }
+
         xml.push_str("</urlset>\n");
         xml
     }
@@ -683,6 +852,8 @@ impl DocsRegistry {
         parsed_docs: &HashMap<&'static str, ParsedDoc>,
         openapi_specs: &[(String, OpenApiSpec)],
         api_group_name: &str,
+        rust_apis: &[(String, RustApiModel)],
+        rust_api_group_name: &str,
     ) -> Vec<SearchEntry> {
         let mut entries = Vec::new();
 
@@ -747,6 +918,29 @@ impl DocsRegistry {
                     clean_markdown(&description),
                     format!("{api_group_name} > {tag}"),
                     Some(op.method),
+                ));
+            }
+        }
+
+        // Index Rust API items (page-level). The signature goes into the body
+        // so a search for a method name (`with_openapi`) finds its type's page.
+        for (prefix, model) in rust_apis {
+            for item in &model.items {
+                let description = item.summary().unwrap_or_default();
+                let mut body = clean_markdown(item.docs.as_deref().unwrap_or(""));
+                for member in &item.members {
+                    body.push(' ');
+                    body.push_str(&member.name);
+                }
+                entries.push(SearchEntry::new(
+                    format!("{prefix}/{}", item.slug),
+                    String::new(),
+                    item.name.clone(),
+                    String::new(),
+                    description,
+                    body,
+                    format!("{rust_api_group_name} > {}", item.kind.group_label()),
+                    None,
                 ));
             }
         }
@@ -826,6 +1020,36 @@ paths:
           description: OK
 "#;
 
+    const RUST_MODEL: &str = r#"{
+        "model_version": 1,
+        "crate_name": "demo_crate",
+        "crate_version": "1.2.3",
+        "items": [
+            {
+                "slug": "struct.Widget",
+                "name": "Widget",
+                "kind": "struct",
+                "signature": "pub struct Widget",
+                "docs": "A zeta widget.\n\nLonger body text.",
+                "members": [
+                    {"kind": "method", "name": "spin", "signature": "pub fn spin(&self)"}
+                ]
+            },
+            {
+                "slug": "fn.make_widget",
+                "name": "make_widget",
+                "kind": "function",
+                "signature": "pub fn make_widget() -> Widget"
+            },
+            {
+                "slug": "struct.Anvil",
+                "name": "Anvil",
+                "kind": "struct",
+                "signature": "pub struct Anvil"
+            }
+        ]
+    }"#;
+
     fn content_map() -> HashMap<&'static str, &'static str> {
         HashMap::from([
             ("g/body-doc", BODY_DOC),
@@ -842,6 +1066,104 @@ paths:
             .with_openapi("api-reference", PETS_SPEC)
             .with_openapi("admin-api", ADMIN_SPEC)
             .build()
+    }
+
+    const RUST_NAV: &str = r#"{
+        "tabs": ["Docs", "Rust API"],
+        "groups": [
+            { "group": "Getting Started", "tab": "Docs", "pages": ["getting-started/intro"] },
+            { "group": "Rust API", "tab": "Rust API", "pages": ["rust-api/overview"] }
+        ]
+    }"#;
+
+    fn rust_registry() -> DocsRegistry {
+        let mut map = HashMap::new();
+        map.insert("getting-started/intro", INTRO);
+        map.insert("rust-api/overview", OVERVIEW);
+        DocsConfig::new(RUST_NAV, map)
+            .with_rustdoc("rust-api", RUST_MODEL)
+            .build()
+    }
+
+    #[test]
+    fn rust_item_lookup_resolves_owning_model() {
+        let reg = rust_registry();
+        let (item, model) = reg
+            .get_rust_api_item_with_model("rust-api/struct.Widget")
+            .unwrap();
+        assert_eq!(item.name, "Widget");
+        assert_eq!(model.crate_name, "demo_crate");
+        assert!(reg.get_rust_api_item("rust-api/struct.Nope").is_none());
+        assert!(reg.get_rust_api_item("wrong/struct.Widget").is_none());
+    }
+
+    #[test]
+    fn rust_sidebar_entries_group_by_kind_alphabetically() {
+        let reg = rust_registry();
+        let groups = reg.get_rust_sidebar_entries();
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].0, "Structs");
+        let titles: Vec<&str> = groups[0].1.iter().map(|e| e.title.as_str()).collect();
+        assert_eq!(titles, vec!["Anvil", "Widget"]);
+        assert_eq!(groups[1].0, "Functions");
+        assert_eq!(groups[1].1[0].slug, "fn.make_widget");
+    }
+
+    #[test]
+    fn rust_item_pages_resolve_tab_title_and_description() {
+        let reg = rust_registry();
+        assert_eq!(
+            reg.tab_for_path("rust-api/struct.Widget").as_deref(),
+            Some("Rust API")
+        );
+        assert_eq!(
+            reg.get_page_title("rust-api/struct.Widget").as_deref(),
+            Some("Widget")
+        );
+        assert_eq!(
+            reg.get_page_description("rust-api/struct.Widget")
+                .as_deref(),
+            Some("A zeta widget.")
+        );
+        assert_eq!(
+            reg.get_sidebar_title("rust-api/fn.make_widget").as_deref(),
+            Some("make_widget")
+        );
+    }
+
+    #[test]
+    fn rust_items_are_searchable_by_name_and_member() {
+        let reg = rust_registry();
+        let by_name = reg.search_docs("widget");
+        assert!(
+            by_name
+                .iter()
+                .any(|e| e.path == "rust-api/struct.Widget" && e.breadcrumb.contains("Structs"))
+        );
+        // Member names are folded into the body, so method searches hit the page.
+        let by_method = reg.search_docs("spin");
+        assert!(by_method.iter().any(|e| e.path == "rust-api/struct.Widget"));
+    }
+
+    #[test]
+    fn rust_items_appear_in_sitemap() {
+        let out = rust_registry().generate_sitemap("https://example.com", "/docs");
+        assert!(out.contains("<loc>https://example.com/docs/rust-api/struct.Widget</loc>"));
+        assert!(out.contains("<loc>https://example.com/docs/rust-api/fn.make_widget</loc>"));
+    }
+
+    #[test]
+    fn try_build_reports_rust_api_error_with_prefix() {
+        let Err(err) = DocsConfig::new(RUST_NAV, HashMap::new())
+            .with_rustdoc("rust-api", "{ not json")
+            .try_build()
+        else {
+            panic!("expected Rust API parse error");
+        };
+        match &err {
+            DocsKitError::RustApi { prefix, .. } => assert_eq!(prefix, "rust-api"),
+            other => panic!("expected RustApi error, got {other:?}"),
+        }
     }
 
     #[test]

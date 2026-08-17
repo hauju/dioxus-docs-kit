@@ -1,0 +1,1522 @@
+{
+  "model_version": 1,
+  "crate_name": "dioxus_docs_kit",
+  "crate_version": "0.6.1",
+  "crate_docs": "# dioxus-docs-kit\n\nReusable documentation site shell and blog engine for Dioxus applications.\n\nProvides a complete docs layout with sidebar navigation, search modal,\npage navigation, OpenAPI API reference pages, and mobile drawer.\nAlso includes a full blog engine with post listing, tag filtering,\nsearch, reading time, and MDX rendering.\n\n## Quick Start — Docs\n\n```rust\nuse dioxus::prelude::*;\nuse dioxus_docs_kit::{DocsConfig, DocsRegistry, DocsContext, DocsLayout, DocsPageContent};\nuse std::sync::LazyLock;\n\nstatic DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {\n    DocsConfig::new(include_str!(\"../docs/_nav.json\"), doc_content_map())\n        .with_default_path(\"getting-started/introduction\")\n        .build()\n});\n```\n\n## Quick Start — Blog\n\n```rust\nuse dioxus::prelude::*;\nuse dioxus_docs_kit::{BlogConfig, BlogRegistry, BlogContext, BlogLayout, BlogList, BlogPostView};\nuse std::sync::LazyLock;\n\ndioxus_docs_kit::blog_content_map!();\n\nstatic BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {\n    BlogConfig::new(include_str!(\"../blog/_blog.json\"), blog_content_map())\n        .with_posts_per_page(9)\n        .build()\n});\n```",
+  "items": [
+    {
+      "slug": "struct.BlogConfig",
+      "name": "BlogConfig",
+      "kind": "struct",
+      "signature": "pub struct BlogConfig { /* private fields */ }",
+      "docs": "Builder for constructing a `BlogRegistry`.\n\n# Example\n\n```rust\nlet registry = BlogConfig::new(include_str!(\"../blog/_blog.json\"), blog_content_map())\n    .with_posts_per_page(9)\n    .with_theme_toggle(\"light\", \"dark\", \"dark\")\n    .build();\n```",
+      "members": [
+        {
+          "kind": "method",
+          "name": "new",
+          "signature": "pub fn new(manifest_json: &str, content_map: HashMap<&'static str, &'static str>) -> Self",
+          "docs": "Create a new builder from a `_blog.json` string and a content map."
+        },
+        {
+          "kind": "method",
+          "name": "with_posts_per_page",
+          "signature": "pub fn with_posts_per_page(self, n: usize) -> Self",
+          "docs": "Set the number of posts per page for pagination (default: 9)."
+        },
+        {
+          "kind": "method",
+          "name": "with_date_format",
+          "signature": "pub fn with_date_format(self, fmt: &str) -> Self",
+          "docs": "Set the date display format (default: \"%B %d, %Y\")."
+        },
+        {
+          "kind": "method",
+          "name": "with_theme",
+          "signature": "pub fn with_theme(self, theme: &str) -> Self",
+          "docs": "Set a single theme (no toggle button)."
+        },
+        {
+          "kind": "method",
+          "name": "with_theme_toggle",
+          "signature": "pub fn with_theme_toggle(self, light: &str, dark: &str, default: &str) -> Self",
+          "docs": "Enable a light/dark theme toggle."
+        },
+        {
+          "kind": "method",
+          "name": "build",
+          "signature": "pub fn build(self) -> BlogRegistry",
+          "docs": "Build the `BlogRegistry`.\n\n# Panics\n\nPanics with a descriptive message if `_blog.json` fails to parse.\nUse `Self::try_build` to handle the error yourself."
+        },
+        {
+          "kind": "method",
+          "name": "try_build",
+          "signature": "pub fn try_build(self) -> Result<BlogRegistry, DocsKitError>",
+          "docs": "Build the `BlogRegistry`, returning an error instead of panicking when\n`_blog.json` fails to parse."
+        }
+      ]
+    },
+    {
+      "slug": "struct.ActiveTag",
+      "name": "ActiveTag",
+      "kind": "struct",
+      "signature": "pub struct ActiveTag(pub Signal<Option<String>>);",
+      "docs": "Newtype wrapper for the active tag filter on the blog list page.",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "struct.CurrentPage",
+      "name": "CurrentPage",
+      "kind": "struct",
+      "signature": "pub struct CurrentPage(pub Signal<usize>);",
+      "docs": "Newtype wrapper for the current blog list pagination page (0-based).",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "struct.BlogProviders",
+      "name": "BlogProviders",
+      "kind": "struct",
+      "signature": "pub struct BlogProviders",
+      "docs": "Signals returned by `use_blog_providers`.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "search_open",
+          "signature": "pub search_open: Signal<bool>"
+        },
+        {
+          "kind": "field",
+          "name": "drawer_open",
+          "signature": "pub drawer_open: Signal<bool>"
+        },
+        {
+          "kind": "field",
+          "name": "active_tag",
+          "signature": "pub active_tag: Signal<Option<String>>"
+        },
+        {
+          "kind": "field",
+          "name": "current_page",
+          "signature": "pub current_page: Signal<usize>"
+        }
+      ]
+    },
+    {
+      "slug": "fn.use_blog_providers",
+      "name": "use_blog_providers",
+      "kind": "function",
+      "signature": "pub fn use_blog_providers(registry: &'static BlogRegistry, blog_ctx: BlogContext) -> BlogProviders",
+      "docs": "One-call setup for all context providers that `BlogLayout` and its children expect."
+    },
+    {
+      "slug": "struct.BlogRegistry",
+      "name": "BlogRegistry",
+      "kind": "struct",
+      "signature": "pub struct BlogRegistry { /* private fields */ }",
+      "docs": "Central blog registry holding all parsed content.\n\nCreated via `BlogConfig` builder and typically stored in a `LazyLock<BlogRegistry>` static.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "posts_per_page",
+          "signature": "pub posts_per_page: usize",
+          "docs": "Posts per page for pagination."
+        },
+        {
+          "kind": "field",
+          "name": "date_format",
+          "signature": "pub date_format: String",
+          "docs": "Date display format string."
+        },
+        {
+          "kind": "field",
+          "name": "theme",
+          "signature": "pub theme: Option<ThemeConfig>",
+          "docs": "Optional theme configuration."
+        },
+        {
+          "kind": "method",
+          "name": "get_post",
+          "signature": "pub fn get_post(&self, slug: &str) -> Option<&BlogPost>"
+        },
+        {
+          "kind": "method",
+          "name": "all_posts",
+          "signature": "pub fn all_posts(&self) -> &[BlogPost]"
+        },
+        {
+          "kind": "method",
+          "name": "featured_posts",
+          "signature": "pub fn featured_posts(&self) -> Vec<&BlogPost>",
+          "docs": "Get all featured/pinned posts, sorted by date (newest first)."
+        },
+        {
+          "kind": "method",
+          "name": "has_featured",
+          "signature": "pub fn has_featured(&self) -> bool",
+          "docs": "Check if there are any featured posts."
+        },
+        {
+          "kind": "method",
+          "name": "posts_by_tag",
+          "signature": "pub fn posts_by_tag(&self, tag: &str) -> Vec<&BlogPost>"
+        },
+        {
+          "kind": "method",
+          "name": "non_featured_posts_page",
+          "signature": "pub fn non_featured_posts_page(&self, page: usize) -> Vec<&BlogPost>",
+          "docs": "Get a page of non-featured posts for the main blog index."
+        },
+        {
+          "kind": "method",
+          "name": "non_featured_total_pages",
+          "signature": "pub fn non_featured_total_pages(&self) -> usize",
+          "docs": "Total number of pages for the main blog index, excluding featured posts."
+        },
+        {
+          "kind": "method",
+          "name": "related_posts",
+          "signature": "pub fn related_posts(&self, slug: &str, max: usize) -> Vec<&BlogPost>",
+          "docs": "Find posts related to the given slug by tag overlap.\n\nReturns up to `max` posts sorted by number of overlapping tags (descending),\nthen by date (newest first). Excludes the current post."
+        },
+        {
+          "kind": "method",
+          "name": "posts_page",
+          "signature": "pub fn posts_page(&self, page: usize) -> &[BlogPost]"
+        },
+        {
+          "kind": "method",
+          "name": "posts_page_by_tag",
+          "signature": "pub fn posts_page_by_tag(&self, tag: &str, page: usize) -> Vec<&BlogPost>"
+        },
+        {
+          "kind": "method",
+          "name": "total_pages",
+          "signature": "pub fn total_pages(&self) -> usize"
+        },
+        {
+          "kind": "method",
+          "name": "total_pages_for_tag",
+          "signature": "pub fn total_pages_for_tag(&self, tag: &str) -> usize"
+        },
+        {
+          "kind": "method",
+          "name": "prev_post",
+          "signature": "pub fn prev_post(&self, slug: &str) -> Option<&BlogPost>",
+          "docs": "Get the previous post (older) relative to the given slug."
+        },
+        {
+          "kind": "method",
+          "name": "next_post",
+          "signature": "pub fn next_post(&self, slug: &str) -> Option<&BlogPost>",
+          "docs": "Get the next post (newer) relative to the given slug."
+        },
+        {
+          "kind": "method",
+          "name": "all_tags",
+          "signature": "pub fn all_tags(&self) -> &[String]"
+        },
+        {
+          "kind": "method",
+          "name": "tag_count",
+          "signature": "pub fn tag_count(&self, tag: &str) -> usize"
+        },
+        {
+          "kind": "method",
+          "name": "get_author",
+          "signature": "pub fn get_author(&self, id: &str) -> Option<&Author>"
+        },
+        {
+          "kind": "method",
+          "name": "search_posts",
+          "signature": "pub fn search_posts(&self, query: &str) -> Vec<&BlogSearchEntry>",
+          "docs": "Search posts by query string.\n\nSame multi-term AND / tier scoring as docs search (title > description >\nbody); posts are indexed whole (no sections)."
+        },
+        {
+          "kind": "method",
+          "name": "generate_rss",
+          "signature": "pub fn generate_rss(&self, site_title: &str, site_url: &str, blog_path: &str) -> String"
+        },
+        {
+          "kind": "method",
+          "name": "generate_llms_txt",
+          "signature": "pub fn generate_llms_txt(&self, site_title: &str, site_description: &str, base_url: &str, blog_path: &str) -> String"
+        },
+        {
+          "kind": "method",
+          "name": "generate_sitemap",
+          "signature": "pub fn generate_sitemap(&self, site_url: &str, blog_path: &str) -> String",
+          "docs": "Generate a sitemap.xml for all blog posts."
+        },
+        {
+          "kind": "method",
+          "name": "format_date",
+          "signature": "pub fn format_date(&self, date: &str) -> String"
+        }
+      ]
+    },
+    {
+      "slug": "fn.format_date_with",
+      "name": "format_date_with",
+      "kind": "function",
+      "path": [
+        "blog",
+        "registry"
+      ],
+      "signature": "pub fn format_date_with(date: &str, fmt: &str) -> String",
+      "docs": "Format an ISO 8601 date string (YYYY-MM-DD) with a simple format pattern."
+    },
+    {
+      "slug": "struct.BlogManifest",
+      "name": "BlogManifest",
+      "kind": "struct",
+      "path": [
+        "blog",
+        "types"
+      ],
+      "signature": "pub struct BlogManifest",
+      "docs": "Blog manifest parsed from `_blog.json`.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "authors",
+          "signature": "pub authors: std::collections::HashMap<String, Author>"
+        },
+        {
+          "kind": "field",
+          "name": "posts",
+          "signature": "pub posts: Vec<String>"
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "Deserialize<'de>"
+      ]
+    },
+    {
+      "slug": "struct.Author",
+      "name": "Author",
+      "kind": "struct",
+      "signature": "pub struct Author",
+      "docs": "Author definition from the blog manifest.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "name",
+          "signature": "pub name: String"
+        },
+        {
+          "kind": "field",
+          "name": "avatar",
+          "signature": "pub avatar: Option<String>"
+        },
+        {
+          "kind": "field",
+          "name": "bio",
+          "signature": "pub bio: Option<String>"
+        },
+        {
+          "kind": "field",
+          "name": "url",
+          "signature": "pub url: Option<String>"
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "Deserialize<'de>",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.BlogFrontmatter",
+      "name": "BlogFrontmatter",
+      "kind": "struct",
+      "signature": "pub struct BlogFrontmatter",
+      "docs": "Blog post frontmatter extracted from MDX files.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "title",
+          "signature": "pub title: String"
+        },
+        {
+          "kind": "field",
+          "name": "description",
+          "signature": "pub description: Option<String>"
+        },
+        {
+          "kind": "field",
+          "name": "date",
+          "signature": "pub date: String",
+          "docs": "ISO 8601 date string, e.g. \"2026-03-15\""
+        },
+        {
+          "kind": "field",
+          "name": "author",
+          "signature": "pub author: String",
+          "docs": "Author ID referencing `_blog.json` authors map"
+        },
+        {
+          "kind": "field",
+          "name": "tags",
+          "signature": "pub tags: Vec<String>"
+        },
+        {
+          "kind": "field",
+          "name": "cover_image",
+          "signature": "pub cover_image: Option<String>",
+          "docs": "Cover image path (relative to assets/)"
+        },
+        {
+          "kind": "field",
+          "name": "draft",
+          "signature": "pub draft: bool",
+          "docs": "Set to true to hide from listing"
+        },
+        {
+          "kind": "field",
+          "name": "featured",
+          "signature": "pub featured: bool",
+          "docs": "Set to true to pin this post to the featured section"
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "Deserialize<'de>",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.BlogPost",
+      "name": "BlogPost",
+      "kind": "struct",
+      "signature": "pub struct BlogPost",
+      "docs": "A fully parsed blog post.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "slug",
+          "signature": "pub slug: String",
+          "docs": "URL slug (from filename)"
+        },
+        {
+          "kind": "field",
+          "name": "frontmatter",
+          "signature": "pub frontmatter: BlogFrontmatter"
+        },
+        {
+          "kind": "field",
+          "name": "content",
+          "signature": "pub content: Vec<dioxus_mdx::DocNode>",
+          "docs": "Parsed MDX content nodes"
+        },
+        {
+          "kind": "field",
+          "name": "raw_markdown",
+          "signature": "pub raw_markdown: String",
+          "docs": "Raw markdown for search indexing and reading time calculation"
+        },
+        {
+          "kind": "field",
+          "name": "reading_time_minutes",
+          "signature": "pub reading_time_minutes: u32",
+          "docs": "Estimated reading time in minutes"
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.BlogSearchEntry",
+      "name": "BlogSearchEntry",
+      "kind": "struct",
+      "signature": "pub struct BlogSearchEntry { /* private fields */ }",
+      "docs": "A searchable entry in the blog (one per post — blog search has no sections).\n\nThe `*_lower` fields are lowercased once at build time so search never\nre-lowercases per keystroke.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "slug",
+          "signature": "pub slug: String"
+        },
+        {
+          "kind": "field",
+          "name": "title",
+          "signature": "pub title: String"
+        },
+        {
+          "kind": "field",
+          "name": "description",
+          "signature": "pub description: String"
+        },
+        {
+          "kind": "field",
+          "name": "body",
+          "signature": "pub body: String",
+          "docs": "Cleaned post body used for matching and snippet extraction."
+        },
+        {
+          "kind": "field",
+          "name": "date",
+          "signature": "pub date: String"
+        },
+        {
+          "kind": "field",
+          "name": "tags",
+          "signature": "pub tags: Vec<String>"
+        }
+      ],
+      "trait_impls": [
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "fn.extract_blog_frontmatter",
+      "name": "extract_blog_frontmatter",
+      "kind": "function",
+      "path": [
+        "blog",
+        "types"
+      ],
+      "signature": "pub fn extract_blog_frontmatter(content: &str) -> Result<(BlogFrontmatter, &str), String>",
+      "docs": "Extract blog frontmatter from MDX content.\n\nReturns the parsed frontmatter and the remaining content after the frontmatter block,\nor a description of why the frontmatter is invalid."
+    },
+    {
+      "slug": "fn.calculate_reading_time",
+      "name": "calculate_reading_time",
+      "kind": "function",
+      "path": [
+        "blog",
+        "types"
+      ],
+      "signature": "pub fn calculate_reading_time(text: &str) -> u32",
+      "docs": "Calculate reading time from raw text (words / 200 WPM, minimum 1 minute)."
+    },
+    {
+      "slug": "fn.AuthorInfo",
+      "name": "AuthorInfo",
+      "kind": "function",
+      "signature": "pub fn AuthorInfo(_: AuthorInfoProps) -> Element",
+      "docs": " Author info display (avatar + name).\n# Props\n*For details, see the props struct definition.*\n- `author_id` : `String`"
+    },
+    {
+      "slug": "fn.BlogCard",
+      "name": "BlogCard",
+      "kind": "function",
+      "signature": "pub fn BlogCard(_: BlogCardProps) -> Element",
+      "docs": " Individual blog post card for the listing page.\n# Props\n*For details, see the props struct definition.*\n- `post` : `BlogPost`"
+    },
+    {
+      "slug": "fn.BlogLayout",
+      "name": "BlogLayout",
+      "kind": "function",
+      "signature": "pub fn BlogLayout(_: BlogLayoutProps) -> Element",
+      "docs": " Blog layout shell.\n\n # Context requirements\n\n - `&'static BlogRegistry` — provided by consumer\n - `BlogContext` — provided by consumer\n# Props\n*For details, see the props struct definition.*\n- `header` : `Option<Element>`\n- `show_header` : `bool`\n- `children` : `Element`"
+    },
+    {
+      "slug": "fn.SearchButton",
+      "name": "SearchButton",
+      "kind": "function",
+      "signature": "pub fn SearchButton(_: SearchButtonProps) -> Element",
+      "docs": " Reusable search button component for headers.\n# Props\n*For details, see the props struct definition.*\n- `search_open` : `Signal<bool>`"
+    },
+    {
+      "slug": "fn.BlogList",
+      "name": "BlogList",
+      "kind": "function",
+      "signature": "pub fn BlogList(_: BlogListProps) -> Element",
+      "docs": " Blog listing page with cards grid, tag filter, and pagination.\n# Props\n*For details, see the props struct definition.*\n- `hero` : `Option<Element>`"
+    },
+    {
+      "slug": "fn.BlogIndexMeta",
+      "name": "BlogIndexMeta",
+      "kind": "function",
+      "signature": "pub fn BlogIndexMeta(_: BlogIndexMetaProps) -> Element",
+      "docs": " Injects basic SEO meta tags for the blog index/listing page.\n\n Reads `auto_meta` and `site_url` from `BlogContext`. When `auto_meta` is\n off, emits nothing. Canonical and `og:url` only emit when `site_url` is set.\n# Props\n*For details, see the props struct definition.*\n- `title` : `String`\n- `description` : `String`"
+    },
+    {
+      "slug": "fn.BlogPostMeta",
+      "name": "BlogPostMeta",
+      "kind": "function",
+      "signature": "pub fn BlogPostMeta(_: BlogPostMetaProps) -> Element",
+      "docs": " Injects Open Graph / SEO meta tags and document title for a single blog post.\n\n Reads `auto_meta` and `site_url` from `BlogContext`. When `auto_meta` is\n off, emits nothing. Otherwise emits title/description, Open Graph, Twitter\n Card, article metadata, and schema.org Article JSON-LD from frontmatter.\n Canonical, `og:url`, and the JSON-LD `@id` are only emitted when `site_url`\n is also set.\n# Props\n*For details, see the props struct definition.*\n- `slug` : `String`"
+    },
+    {
+      "slug": "fn.BlogPostView",
+      "name": "BlogPostView",
+      "kind": "function",
+      "signature": "pub fn BlogPostView(_: BlogPostViewProps) -> Element",
+      "docs": " Single blog post view.\n# Props\n*For details, see the props struct definition.*\n- `slug` : `String`"
+    },
+    {
+      "slug": "fn.BlogMobileDrawer",
+      "name": "BlogMobileDrawer",
+      "kind": "function",
+      "signature": "pub fn BlogMobileDrawer(_: BlogMobileDrawerProps) -> Element",
+      "docs": " Slide-in drawer for mobile screens (blog variant).\n# Props\n*For details, see the props struct definition.*\n- `open` : `Signal<bool>`"
+    },
+    {
+      "slug": "fn.BlogPostNav",
+      "name": "BlogPostNav",
+      "kind": "function",
+      "signature": "pub fn BlogPostNav(_: BlogPostNavProps) -> Element",
+      "docs": " Previous/Next post navigation.\n# Props\n*For details, see the props struct definition.*\n- `current_slug` : `String`"
+    },
+    {
+      "slug": "fn.ReadingProgressBar",
+      "name": "ReadingProgressBar",
+      "kind": "function",
+      "signature": "pub fn ReadingProgressBar() -> Element",
+      "docs": "A thin reading progress bar fixed at the top of the viewport.\n\nUses a scroll event listener (RAF-throttled) to track reading progress."
+    },
+    {
+      "slug": "fn.ReadingTimeBadge",
+      "name": "ReadingTimeBadge",
+      "kind": "function",
+      "signature": "pub fn ReadingTimeBadge(_: ReadingTimeBadgeProps) -> Element",
+      "docs": " Reading time badge component.\n# Props\n*For details, see the props struct definition.*\n- `minutes` : `u32`"
+    },
+    {
+      "slug": "fn.RelatedPosts",
+      "name": "RelatedPosts",
+      "kind": "function",
+      "signature": "pub fn RelatedPosts(_: RelatedPostsProps) -> Element",
+      "docs": " Displays related posts based on tag overlap.\n\n Renders nothing if no related posts are found.\n# Props\n*For details, see the props struct definition.*\n- `slug` : `String`\n- `max` : `usize`"
+    },
+    {
+      "slug": "fn.BlogSearchModal",
+      "name": "BlogSearchModal",
+      "kind": "function",
+      "signature": "pub fn BlogSearchModal() -> Element",
+      "docs": "Blog search modal triggered by Cmd/Ctrl+K or the search button."
+    },
+    {
+      "slug": "fn.TagFilter",
+      "name": "TagFilter",
+      "kind": "function",
+      "signature": "pub fn TagFilter() -> Element",
+      "docs": "Horizontal tag filter bar."
+    },
+    {
+      "slug": "fn.BlogThemeToggle",
+      "name": "BlogThemeToggle",
+      "kind": "function",
+      "signature": "pub fn BlogThemeToggle() -> Element",
+      "docs": "Light/dark theme toggle for blog layouts."
+    },
+    {
+      "slug": "fn.CopyPageButton",
+      "name": "CopyPageButton",
+      "kind": "function",
+      "signature": "pub fn CopyPageButton(_: CopyPageButtonProps) -> Element",
+      "docs": " \"Copy page\" button for MDX documentation pages.\n\n Copies the page's raw Markdown source to the clipboard — the \"copy page for\n LLMs\" pattern. On success it swaps to a \"Copied\" state (check icon) for ~2\n seconds, then reverts.\n\n The Markdown is handed to the clipboard via `document::eval` argument\n passing (`eval.send`), never string-interpolated into the script, so\n backticks and quotes in the source can't break the JS.\n\n # Props\n\n - `content`: Raw Markdown source of the current page.\n\n # Stable public classes\n\n Carries `dk-copy-page` so theme presets can target the button.\n# Props\n*For details, see the props struct definition.*\n- `content` : `String`"
+    },
+    {
+      "slug": "struct.ActiveTab",
+      "name": "ActiveTab",
+      "kind": "struct",
+      "signature": "pub struct ActiveTab(pub Signal<String>);",
+      "docs": "Newtype wrapper for the active tab-bar tab, provided by `DocsLayout`.",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "struct.CurrentTheme",
+      "name": "CurrentTheme",
+      "kind": "struct",
+      "signature": "pub struct CurrentTheme(pub Signal<String>);",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "fn.DocsLayout",
+      "name": "DocsLayout",
+      "kind": "function",
+      "signature": "pub fn DocsLayout(_: DocsLayoutProps) -> Element",
+      "docs": " Documentation layout shell.\n\n Renders the tab bar, sidebar, content area, search modal, and mobile drawer.\n The consumer wraps this in their own navbar via Dioxus route layouts.\n\n # Context requirements\n\n - `&'static DocsRegistry` — provided by consumer\n - `DocsContext` — provided by consumer\n\n # Props\n\n - `header`: Optional element to render inside the docs area header (e.g. branding + search button).\n   If not provided, a default header with search button and hamburger is rendered.\n - `show_header`: Whether to render the internal header area (default header/custom header *and*\n   tab bar). Defaults to `true`. Set to `false` when the consumer provides their own header\n   and tab bar outside of `DocsLayout`.\n - `announcement_bar`: Optional element rendered at the very top, above `header`.\n - `sidebar_header`: Optional element rendered above the generated sidebar nav.\n - `sidebar_footer`: Optional element rendered below the generated sidebar nav\n   (e.g. \"Edit this page\" links).\n - `footer`: Optional element rendered at the bottom of the layout (site-wide footer).\n - `variant`: Density preset (`Prose` default, `Reference` for denser API/reference docs).\n - `children`: The routed page content (from `Outlet` or explicit child).\n\n # Stable public classes\n\n `DocsLayout` tags its structural nodes with semver-stable `dk-*` classes so\n CSS overrides don't drift: `dk-root`, `dk-docs-root`, `dk-header`, `dk-shell`,\n `dk-sidebar`, `dk-main`, and slot wrappers like `dk-announcement-slot`.\n# Props\n*For details, see the props struct definition.*\n- `header` : `Option<Element>`\n- `show_header` : `bool`\n- `announcement_bar` : `Option<Element>`\n- `sidebar_header` : `Option<Element>`\n- `sidebar_footer` : `Option<Element>`\n- `footer` : `Option<Element>`\n- `variant` : `DocsVariant`\n- `children` : `Element`"
+    },
+    {
+      "slug": "enum.DocsVariant",
+      "name": "DocsVariant",
+      "kind": "enum",
+      "signature": "pub enum DocsVariant",
+      "docs": "Density preset for the docs layout.\n\nConsumers target the emitted class (`dk-variant-prose` or `dk-variant-reference`)\nin their own CSS to further tweak the look. The shipped `theme.css` applies\nwidth / type-scale differences out of the box.",
+      "members": [
+        {
+          "kind": "variant",
+          "name": "Prose",
+          "signature": "Prose",
+          "docs": "Default: wide margins, generous line-height, optimized for long-form prose."
+        },
+        {
+          "kind": "variant",
+          "name": "Reference",
+          "signature": "Reference",
+          "docs": "Tight: narrower article column, denser type, better for API/reference docs."
+        },
+        {
+          "kind": "method",
+          "name": "class",
+          "signature": "pub fn class(self) -> &'static str",
+          "docs": "The CSS class appended to `dk-root` for this variant."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Copy",
+        "Debug",
+        "Default",
+        "Eq",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.DrawerOpen",
+      "name": "DrawerOpen",
+      "kind": "struct",
+      "signature": "pub struct DrawerOpen(pub Signal<bool>);",
+      "docs": "Newtype wrapper for the drawer-open signal, so it can't collide with other\n`Signal<bool>` values in the context system.\n\nConsumers can provide this before rendering `DocsLayout` to control\nthe mobile drawer from a custom header.",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "struct.LayoutOffsets",
+      "name": "LayoutOffsets",
+      "kind": "struct",
+      "signature": "pub struct LayoutOffsets",
+      "docs": "Layout offset values computed by `DocsLayout` and consumed by child components\n(e.g. `DocsPageContent`) via context.\n\nThe values are determined by `show_header` and whether tabs exist, so that the\nTOC sidebar and heading scroll targets align with the actual header height.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "sticky_top",
+          "signature": "pub sticky_top: &'static str",
+          "docs": "Tailwind sticky top class for sidebars/TOC (e.g. `\"top-[6.5rem]\"`, `\"top-16\"`, `\"top-0\"`)."
+        },
+        {
+          "kind": "field",
+          "name": "scroll_mt",
+          "signature": "pub scroll_mt: &'static str",
+          "docs": "Tailwind scroll-margin-top class for heading anchors (e.g. `\"scroll-mt-[6.5rem]\"`)."
+        },
+        {
+          "kind": "field",
+          "name": "sidebar_height",
+          "signature": "pub sidebar_height: &'static str",
+          "docs": "Tailwind height calc for sidebar (e.g. `\"h-[calc(100vh-6.5rem)]\"`)."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug"
+      ]
+    },
+    {
+      "slug": "struct.SearchOpen",
+      "name": "SearchOpen",
+      "kind": "struct",
+      "signature": "pub struct SearchOpen(pub Signal<bool>);",
+      "docs": "Newtype wrapper for the search-modal open signal, so it can't collide with\nother `Signal<bool>` values in the context system.\n\nProvided by `DocsLayout`/`BlogLayout` (or `use_docs_providers` /\n`use_blog_providers`); consumers can provide it\nbeforehand to control search from a custom header.",
+      "trait_impls": [
+        "Clone",
+        "Copy"
+      ]
+    },
+    {
+      "slug": "fn.DocsPageMeta",
+      "name": "DocsPageMeta",
+      "kind": "function",
+      "signature": "pub fn DocsPageMeta(_: DocsPageMetaProps) -> Element",
+      "docs": " Injects SEO meta tags and document title for a single docs page (MDX or API endpoint).\n\n Reads `auto_meta` and `site_url` from `DocsContext`. When `auto_meta` is\n off, emits nothing. Otherwise pulls title/description from the registry —\n frontmatter for MDX pages, the OpenAPI operation's `summary`/`description`\n for API endpoint pages — and emits `<title>`, `<meta name=\"description\">`,\n Open Graph, Twitter Card, and schema.org `TechArticle` JSON-LD tags.\n Canonical, `og:url`, the JSON-LD `@id`, and a `BreadcrumbList` are only\n emitted when `site_url` is also set.\n# Props\n*For details, see the props struct definition.*\n- `path` : `String`"
+    },
+    {
+      "slug": "fn.DocsPageContent",
+      "name": "DocsPageContent",
+      "kind": "function",
+      "signature": "pub fn DocsPageContent(_: DocsPageContentProps) -> Element",
+      "docs": " Documentation page content renderer.\n\n Checks if the path is an API endpoint page or a regular MDX page and renders accordingly.\n\n # Props\n\n - `path`: Current docs page path.\n - `article_footer`: Optional element rendered after the article body, before\n   pagination (e.g. \"Was this helpful?\" widget).\n\n # Stable public classes\n\n Uses `dk-article`, `dk-article-title`, `dk-article-body`, `dk-article-header`,\n and `dk-article-footer-slot` for consumer CSS hooks.\n# Props\n*For details, see the props struct definition.*\n- `path` : `String`\n- `article_footer` : `Option<Element>`"
+    },
+    {
+      "slug": "fn.MobileDrawer",
+      "name": "MobileDrawer",
+      "kind": "function",
+      "signature": "pub fn MobileDrawer(_: MobileDrawerProps) -> Element",
+      "docs": " Slide-in sidebar drawer for mobile screens.\n# Props\n*For details, see the props struct definition.*\n- `open` : `Signal<bool>`"
+    },
+    {
+      "slug": "fn.DocsPageNav",
+      "name": "DocsPageNav",
+      "kind": "function",
+      "signature": "pub fn DocsPageNav(_: DocsPageNavProps) -> Element",
+      "docs": " Page navigation (previous/next).\n\n Page order follows `_nav.json`. API endpoint pages are included in the\n ordering only if the owning spec's nav group contains a page named\n `<prefix>/overview` — endpoints are inserted right after it. Without an\n overview page, endpoint pages render without prev/next links.\n# Props\n*For details, see the props struct definition.*\n- `current_path` : `String`"
+    },
+    {
+      "slug": "fn.SearchModal",
+      "name": "SearchModal",
+      "kind": "function",
+      "signature": "pub fn SearchModal() -> Element",
+      "docs": "Full-screen search modal triggered by Cmd/Ctrl+K or the search button."
+    },
+    {
+      "slug": "fn.use_theme_provider",
+      "name": "use_theme_provider",
+      "kind": "function",
+      "signature": "pub fn use_theme_provider(theme: Option<ThemeConfig>) -> Signal<String>",
+      "docs": "Provide the `CurrentTheme` context and apply the persisted theme on mount.\n\nReads the stored preference from localStorage (falling back to the config's\ndefault theme), sets `data-theme` on `<html>`, and keeps the returned signal\nin sync. Called by `DocsLayout`/`BlogLayout`; call it yourself when you\nrender kit components (e.g. `ThemeToggle`) outside\nthose layouts, e.g. in a landing-page navbar."
+    },
+    {
+      "slug": "fn.DocsSidebar",
+      "name": "DocsSidebar",
+      "kind": "function",
+      "signature": "pub fn DocsSidebar() -> Element",
+      "docs": "Documentation sidebar navigation."
+    },
+    {
+      "slug": "fn.ThemeToggle",
+      "name": "ThemeToggle",
+      "kind": "function",
+      "signature": "pub fn ThemeToggle() -> Element",
+      "docs": "Light/dark theme toggle button.\n\nReads theme configuration from `DocsRegistry` context and current theme from\nthe `CurrentTheme` context (provided by\n`DocsLayout` or `use_theme_provider`).\n\nRenders nothing if the registry has no `toggle_themes` configured."
+    },
+    {
+      "slug": "struct.ThemeConfig",
+      "name": "ThemeConfig",
+      "kind": "struct",
+      "signature": "pub struct ThemeConfig",
+      "docs": "Theme configuration for the documentation site.\n\nControls which DaisyUI theme(s) are applied and whether a toggle button is shown.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "default_theme",
+          "signature": "pub default_theme: String",
+          "docs": "The default theme name (must match a DaisyUI theme defined in `tailwind.css`)."
+        },
+        {
+          "kind": "field",
+          "name": "toggle_themes",
+          "signature": "pub toggle_themes: Option<(String, String)>",
+          "docs": "If set, enables a light/dark toggle button. Tuple is `(light_theme, dark_theme)`."
+        },
+        {
+          "kind": "field",
+          "name": "storage_key",
+          "signature": "pub storage_key: String",
+          "docs": "localStorage key used to persist the user's theme preference."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "enum.CodeThemeConfig",
+      "name": "CodeThemeConfig",
+      "kind": "enum",
+      "signature": "pub enum CodeThemeConfig",
+      "docs": "How rendered code blocks pick their syntax-highlighting theme.\n\nDefaults to `CodeThemeConfig::Adaptive` with GitHub Light / Tokyo Night.\n\nOnly available with the `highlight` feature (default), which pulls in `dioxus-code`.",
+      "members": [
+        {
+          "kind": "variant",
+          "name": "Fixed",
+          "signature": "Fixed(dioxus_code::Theme)",
+          "docs": "Always use this one theme, regardless of the site's light/dark state."
+        },
+        {
+          "kind": "variant",
+          "name": "Adaptive",
+          "signature": "Adaptive { light: dioxus_code::Theme, dark: dioxus_code::Theme }",
+          "docs": "Pick `light` or `dark` to match the site theme.\n\nWhen a light/dark toggle is configured (via `DocsConfig::with_theme_toggle`),\nthe choice tracks the active `data-theme` (not the OS `prefers-color-scheme`),\nso code blocks stay in sync with the toggle. Without a toggle it falls back to\n`prefers-color-scheme`."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Copy",
+        "Debug",
+        "Default"
+      ]
+    },
+    {
+      "slug": "struct.DocsConfig",
+      "name": "DocsConfig",
+      "kind": "struct",
+      "signature": "pub struct DocsConfig { /* private fields */ }",
+      "docs": "Builder for constructing a `DocsRegistry`.\n\n# Example\n\n```rust\nlet registry = DocsConfig::new(nav_json, content_map)\n    .with_openapi(\"api-reference\", spec_yaml)\n    .with_default_path(\"getting-started/introduction\")\n    .build();\n```",
+      "members": [
+        {
+          "kind": "method",
+          "name": "new",
+          "signature": "pub fn new(nav_json: &str, content_map: HashMap<&'static str, &'static str>) -> Self",
+          "docs": "Create a new builder from a `_nav.json` string and a content map.\n\nThe content map is typically generated by `build.rs` using `include_str!()`."
+        },
+        {
+          "kind": "method",
+          "name": "with_openapi",
+          "signature": "pub fn with_openapi(self, prefix: &str, yaml: &str) -> Self",
+          "docs": "Add an OpenAPI specification.\n\n- `prefix`: The URL prefix for this spec's endpoints (e.g. \"api-reference\").\n- `yaml`: The raw YAML string of the OpenAPI spec.\n\nThe `prefix` must correspond to a nav group in `_nav.json` whose `\"group\"` value\nmatches `Self::with_api_group_name` (defaults to `\"API Reference\"`). The library\ndynamically injects API endpoints into that group's sidebar — do **not** list\nindividual operation paths in the `\"pages\"` array of `_nav.json`."
+        },
+        {
+          "kind": "method",
+          "name": "with_default_path",
+          "signature": "pub fn with_default_path(self, path: &str) -> Self",
+          "docs": "Set the default documentation path for redirects.\n\nDefaults to the first page in the first nav group if not set."
+        },
+        {
+          "kind": "method",
+          "name": "with_api_group_name",
+          "signature": "pub fn with_api_group_name(self, name: &str) -> Self",
+          "docs": "Set the display name for the API Reference sidebar group.\n\nDefaults to `\"API Reference\"`. The value must match a `\"group\"` in `_nav.json`\nso the library knows where to inject the API endpoint sidebar entries.\nSee `Self::with_openapi` for details."
+        },
+        {
+          "kind": "method",
+          "name": "with_theme",
+          "signature": "pub fn with_theme(self, theme: &str) -> Self",
+          "docs": "Set a single theme (no toggle button).\n\nThe theme name must match a DaisyUI theme defined in the consumer's `tailwind.css`."
+        },
+        {
+          "kind": "method",
+          "name": "with_theme_toggle",
+          "signature": "pub fn with_theme_toggle(self, light: &str, dark: &str, default: &str) -> Self",
+          "docs": "Enable a light/dark theme toggle.\n\n- `light`: Name of the light DaisyUI theme.\n- `dark`: Name of the dark DaisyUI theme.\n- `default`: Which of the two to use on first visit (`light` or `dark`)."
+        },
+        {
+          "kind": "method",
+          "name": "with_code_theme",
+          "signature": "pub fn with_code_theme(self, theme: Theme) -> Self",
+          "docs": "Use a single, fixed syntax-highlighting theme for all code blocks.\n\nUse this for single-theme sites (e.g. a dark-only app) so the code block\nbackground matches the site instead of following the reader's OS setting.\n\nOnly available with the `highlight` feature (default), which pulls in `dioxus-code`."
+        },
+        {
+          "kind": "method",
+          "name": "with_code_themes",
+          "signature": "pub fn with_code_themes(self, light: Theme, dark: Theme) -> Self",
+          "docs": "Use a light/dark pair of syntax themes for code blocks.\n\nWhen a theme toggle is configured (see `Self::with_theme_toggle`), the active\nchoice tracks the toggle's `data-theme`; otherwise it follows the reader's OS\n`prefers-color-scheme`. Defaults to GitHub Light / Tokyo Night when not set.\n\nOnly available with the `highlight` feature (default), which pulls in `dioxus-code`."
+        },
+        {
+          "kind": "method",
+          "name": "build",
+          "signature": "pub fn build(self) -> DocsRegistry",
+          "docs": "Build the `DocsRegistry`.\n\nParses all documents, builds the search index, and parses OpenAPI specs.\n\n# Panics\n\nPanics with a descriptive message if `_nav.json` or an OpenAPI spec fails\nto parse. Use `Self::try_build` to handle these errors yourself."
+        },
+        {
+          "kind": "method",
+          "name": "try_build",
+          "signature": "pub fn try_build(self) -> Result<DocsRegistry, DocsKitError>",
+          "docs": "Build the `DocsRegistry`, returning an error instead of panicking when\n`_nav.json` or an OpenAPI spec fails to parse."
+        }
+      ]
+    },
+    {
+      "slug": "enum.DocsKitError",
+      "name": "DocsKitError",
+      "kind": "enum",
+      "signature": "pub enum DocsKitError",
+      "docs": "Errors produced when building a `DocsRegistry` or\n`BlogRegistry` from configuration.",
+      "members": [
+        {
+          "kind": "variant",
+          "name": "NavParse",
+          "signature": "NavParse(serde_json::Error)",
+          "docs": "`_nav.json` failed to parse."
+        },
+        {
+          "kind": "variant",
+          "name": "BlogManifestParse",
+          "signature": "BlogManifestParse(serde_json::Error)",
+          "docs": "`_blog.json` failed to parse."
+        },
+        {
+          "kind": "variant",
+          "name": "OpenApi",
+          "signature": "OpenApi { prefix: String, error: dioxus_mdx::OpenApiError }",
+          "docs": "An OpenAPI spec failed to parse."
+        }
+      ],
+      "trait_impls": [
+        "Debug",
+        "Display",
+        "Error"
+      ]
+    },
+    {
+      "slug": "struct.DocsProviders",
+      "name": "DocsProviders",
+      "kind": "struct",
+      "signature": "pub struct DocsProviders",
+      "docs": "Signals returned by `use_docs_providers` so the consumer's header RSX\ncan reference them (e.g. to wire up a search button or drawer toggle).",
+      "members": [
+        {
+          "kind": "field",
+          "name": "search_open",
+          "signature": "pub search_open: Signal<bool>"
+        },
+        {
+          "kind": "field",
+          "name": "drawer_open",
+          "signature": "pub drawer_open: Signal<bool>"
+        }
+      ]
+    },
+    {
+      "slug": "fn.use_docs_context",
+      "name": "use_docs_context",
+      "kind": "function",
+      "signature": "pub fn use_docs_context(current_path: String, base_path: impl Into<String>, navigate: Callback<String>) -> DocsContext",
+      "docs": "Build a `DocsContext` from the current docs path as a plain `String`.\n\nPrefer this over `DocsContext::new` when the path comes from your router.\n`use_route::<Route>()` returns a plain value, not a signal, so wrapping it\nyourself with `use_memo(move || ...)` reads no reactive source: the memo\nruns once and never again, freezing the sidebar highlight, tab sync and\nmobile-drawer auto-close on the first page visited. (`use_memo` paired with\n`use_reactive!` is correct, but easy to forget.)\n\nTaking the path by value removes the trap — this hook re-runs with your\nlayout component on every navigation and rewraps the path reactively.\n\n```rust\nlet route = use_route::<Route>();\nlet current_path = match route {\n    Route::DocsPage { slug } => slug.join(\"/\"),\n    _ => String::new(),\n};\n\nlet docs_ctx = use_docs_context(current_path, \"/docs\", Callback::new(move |path: String| {\n    nav.push(Route::DocsPage { slug: path.split('/').map(String::from).collect() });\n}));\n```"
+    },
+    {
+      "slug": "fn.use_docs_providers",
+      "name": "use_docs_providers",
+      "kind": "function",
+      "signature": "pub fn use_docs_providers(registry: &'static DocsRegistry, docs_ctx: DocsContext) -> DocsProviders",
+      "docs": "One-call setup for all the context providers that `DocsLayout` and its\nchildren expect.\n\nCall this in your docs layout wrapper **before** rendering `DocsLayout`:\n\n```rust\nlet providers = use_docs_providers(&*DOCS, docs_ctx);\n// Use providers.search_open / providers.drawer_open in your header RSX\n```\n\nThis replaces the manual calls to:\n- `use_context_provider(|| registry)`\n- `use_context_provider(|| docs_ctx)`\n- `use_signal(|| false)` × 2 + `use_context_provider` for search_open / DrawerOpen"
+    },
+    {
+      "slug": "struct.NavConfig",
+      "name": "NavConfig",
+      "kind": "struct",
+      "signature": "pub struct NavConfig",
+      "docs": "Navigation configuration for the documentation sidebar.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "tabs",
+          "signature": "pub tabs: Vec<String>"
+        },
+        {
+          "kind": "field",
+          "name": "groups",
+          "signature": "pub groups: Vec<NavGroup>"
+        },
+        {
+          "kind": "method",
+          "name": "has_tabs",
+          "signature": "pub fn has_tabs(&self) -> bool",
+          "docs": "Whether the nav config has multiple tabs."
+        },
+        {
+          "kind": "method",
+          "name": "groups_for_tab",
+          "signature": "pub fn groups_for_tab(&self, tab: &str) -> Vec<&NavGroup>",
+          "docs": "Get groups belonging to a specific tab."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "Deserialize<'de>"
+      ]
+    },
+    {
+      "slug": "struct.NavGroup",
+      "name": "NavGroup",
+      "kind": "struct",
+      "signature": "pub struct NavGroup",
+      "docs": "A group of navigation items in the sidebar.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "group",
+          "signature": "pub group: String"
+        },
+        {
+          "kind": "field",
+          "name": "tab",
+          "signature": "pub tab: Option<String>"
+        },
+        {
+          "kind": "field",
+          "name": "pages",
+          "signature": "pub pages: Vec<String>"
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "Deserialize<'de>",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.ApiEndpointEntry",
+      "name": "ApiEndpointEntry",
+      "kind": "struct",
+      "signature": "pub struct ApiEndpointEntry",
+      "docs": "A sidebar entry for an API endpoint.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "prefix",
+          "signature": "pub prefix: String",
+          "docs": "URL prefix of the spec that owns this endpoint (e.g. \"api-reference\")."
+        },
+        {
+          "kind": "field",
+          "name": "slug",
+          "signature": "pub slug: String",
+          "docs": "URL slug (e.g. \"list-pets\")."
+        },
+        {
+          "kind": "field",
+          "name": "title",
+          "signature": "pub title: String",
+          "docs": "Display title (summary or fallback)."
+        },
+        {
+          "kind": "field",
+          "name": "method",
+          "signature": "pub method: dioxus_mdx::HttpMethod",
+          "docs": "HTTP method."
+        }
+      ],
+      "trait_impls": [
+        "Clone",
+        "Debug",
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.SearchEntry",
+      "name": "SearchEntry",
+      "kind": "struct",
+      "signature": "pub struct SearchEntry { /* private fields */ }",
+      "docs": "A searchable entry in the documentation.\n\nOne entry per document *section* (split on h2–h4 headings): content before\nthe first heading is a page-level \"intro\" entry with an empty `heading` /\n`anchor`, and each heading starts a new entry whose `anchor` deep-links to\nthe rendered heading id. OpenAPI operations are indexed as single page-level\nentries. The `*_lower` fields are lowercased once at build time so search\nnever re-lowercases per keystroke.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "path",
+          "signature": "pub path: String",
+          "docs": "Content path of the owning page (e.g. \"getting-started/introduction\")."
+        },
+        {
+          "kind": "field",
+          "name": "anchor",
+          "signature": "pub anchor: String",
+          "docs": "Anchor id of the section heading, empty for page-level / intro entries.\nMatches the rendered heading `id` (`dioxus_mdx::slugify`)."
+        },
+        {
+          "kind": "field",
+          "name": "title",
+          "signature": "pub title: String",
+          "docs": "Page title (frontmatter title or humanised slug / API summary)."
+        },
+        {
+          "kind": "field",
+          "name": "heading",
+          "signature": "pub heading: String",
+          "docs": "Section heading text, empty for page-level / intro entries."
+        },
+        {
+          "kind": "field",
+          "name": "description",
+          "signature": "pub description: String",
+          "docs": "Page/operation description."
+        },
+        {
+          "kind": "field",
+          "name": "body",
+          "signature": "pub body: String",
+          "docs": "Cleaned section body text used for matching and snippet extraction."
+        },
+        {
+          "kind": "field",
+          "name": "breadcrumb",
+          "signature": "pub breadcrumb: String",
+          "docs": "Sidebar breadcrumb (nav group, or API group + tag)."
+        },
+        {
+          "kind": "field",
+          "name": "api_method",
+          "signature": "pub api_method: Option<dioxus_mdx::HttpMethod>",
+          "docs": "HTTP method for API operation entries (drives the result badge)."
+        }
+      ],
+      "trait_impls": [
+        "PartialEq",
+        "StructuralPartialEq"
+      ]
+    },
+    {
+      "slug": "struct.DocsRegistry",
+      "name": "DocsRegistry",
+      "kind": "struct",
+      "signature": "pub struct DocsRegistry { /* private fields */ }",
+      "docs": "Central documentation registry holding all parsed content.\n\nCreated via `DocsConfig` builder and typically stored in a `Lazy<DocsRegistry>` static.\nProvide it to UI components via `use_context_provider(|| &*DOCS as &'static DocsRegistry)`.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "nav",
+          "signature": "pub nav: NavConfig",
+          "docs": "Navigation configuration."
+        },
+        {
+          "kind": "field",
+          "name": "default_path",
+          "signature": "pub default_path: String",
+          "docs": "Default page path for redirects."
+        },
+        {
+          "kind": "field",
+          "name": "api_group_name",
+          "signature": "pub api_group_name: String",
+          "docs": "Display name for the API Reference sidebar group."
+        },
+        {
+          "kind": "field",
+          "name": "theme",
+          "signature": "pub theme: Option<ThemeConfig>",
+          "docs": "Optional theme configuration."
+        },
+        {
+          "kind": "field",
+          "name": "code_theme",
+          "signature": "pub code_theme: CodeThemeConfig",
+          "docs": "Syntax-highlighting theme for code blocks."
+        },
+        {
+          "kind": "method",
+          "name": "get_parsed_doc",
+          "signature": "pub fn get_parsed_doc(&self, path: &str) -> Option<&ParsedDoc>",
+          "docs": "Get a pre-parsed document by path."
+        },
+        {
+          "kind": "method",
+          "name": "get_sidebar_title",
+          "signature": "pub fn get_sidebar_title(&self, path: &str) -> Option<String>",
+          "docs": "Get the sidebar title for a documentation path."
+        },
+        {
+          "kind": "method",
+          "name": "get_doc_title",
+          "signature": "pub fn get_doc_title(&self, path: &str) -> Option<String>",
+          "docs": "Get the document title from frontmatter."
+        },
+        {
+          "kind": "method",
+          "name": "get_page_title",
+          "signature": "pub fn get_page_title(&self, path: &str) -> Option<String>",
+          "docs": "Get the page title for the document `<head>`.\n\nResolves MDX frontmatter titles *and* OpenAPI operation pages (which are\nnot in `parsed_docs`): for an endpoint path it returns the operation\nsummary, falling back to a humanised slug. Branding/suffixes are left to\nthe caller."
+        },
+        {
+          "kind": "method",
+          "name": "get_page_description",
+          "signature": "pub fn get_page_description(&self, path: &str) -> Option<String>",
+          "docs": "Get the meta description for the document `<head>`.\n\nResolves MDX frontmatter descriptions *and* OpenAPI operation\ndescriptions, so endpoint pages ship a unique `<meta name=\"description\">`\ninstead of falling through to a generic default."
+        },
+        {
+          "kind": "method",
+          "name": "get_doc_icon",
+          "signature": "pub fn get_doc_icon(&self, path: &str) -> Option<String>",
+          "docs": "Get the icon for a documentation path from frontmatter."
+        },
+        {
+          "kind": "method",
+          "name": "get_doc_content",
+          "signature": "pub fn get_doc_content(&self, path: &str) -> Option<&str>",
+          "docs": "Get raw documentation content by path."
+        },
+        {
+          "kind": "method",
+          "name": "get_all_paths",
+          "signature": "pub fn get_all_paths(&self) -> Vec<&str>",
+          "docs": "Get all available documentation paths."
+        },
+        {
+          "kind": "method",
+          "name": "get_api_operation",
+          "signature": "pub fn get_api_operation(&self, path: &str) -> Option<&ApiOperation>",
+          "docs": "Look up an API operation by its slug across all registered specs.\n\nThe `path` is the full docs path, e.g. \"api-reference/list-pets\"."
+        },
+        {
+          "kind": "method",
+          "name": "get_api_operation_with_spec",
+          "signature": "pub fn get_api_operation_with_spec(&self, path: &str) -> Option<(&ApiOperation, &OpenApiSpec)>",
+          "docs": "Look up an API operation together with the spec that owns it.\n\nUse this instead of pairing `Self::get_api_operation` with\n`Self::get_first_api_spec` — with multiple registered specs, the\nfirst spec is not necessarily the one the operation belongs to."
+        },
+        {
+          "kind": "method",
+          "name": "get_api_spec",
+          "signature": "pub fn get_api_spec(&self, prefix: &str) -> Option<&OpenApiSpec>",
+          "docs": "Get the OpenAPI spec that owns a given path prefix."
+        },
+        {
+          "kind": "method",
+          "name": "get_first_api_spec",
+          "signature": "pub fn get_first_api_spec(&self) -> Option<&OpenApiSpec>",
+          "docs": "Get the first OpenAPI spec (convenience for single-spec setups)."
+        },
+        {
+          "kind": "method",
+          "name": "get_first_api_prefix",
+          "signature": "pub fn get_first_api_prefix(&self) -> Option<&str>",
+          "docs": "Get the prefix of the first OpenAPI spec."
+        },
+        {
+          "kind": "method",
+          "name": "get_api_sidebar_entries",
+          "signature": "pub fn get_api_sidebar_entries(&self) -> &[(ApiTag, Vec<ApiEndpointEntry>)]",
+          "docs": "Get API endpoint sidebar entries grouped by tag (precomputed)."
+        },
+        {
+          "kind": "method",
+          "name": "get_api_endpoint_paths",
+          "signature": "pub fn get_api_endpoint_paths(&self) -> Vec<String>",
+          "docs": "Get all API endpoint paths for navigation ordering."
+        },
+        {
+          "kind": "method",
+          "name": "tab_for_path",
+          "signature": "pub fn tab_for_path(&self, path: &str) -> Option<String>",
+          "docs": "Determine which tab a given page path belongs to."
+        },
+        {
+          "kind": "method",
+          "name": "generate_llms_txt",
+          "signature": "pub fn generate_llms_txt(&self, site_title: &str, site_description: &str, docs_base_url: &str) -> String",
+          "docs": "Generate an `llms.txt` index listing all doc pages with titles and descriptions.\n\n`docs_base_url` is the absolute URL of the docs root, e.g.\n`\"https://example.com/docs\"`; page URLs are formed as\n`<docs_base_url>/<page>`."
+        },
+        {
+          "kind": "method",
+          "name": "generate_llms_full_txt",
+          "signature": "pub fn generate_llms_full_txt(&self, site_title: &str, site_description: &str, docs_base_url: &str) -> String",
+          "docs": "Generate an `llms-full.txt` with the full MDX content of every doc page.\n\nSee `Self::generate_llms_txt` for the `docs_base_url` format."
+        },
+        {
+          "kind": "method",
+          "name": "generate_sitemap",
+          "signature": "pub fn generate_sitemap(&self, site_url: &str, docs_path: &str) -> String",
+          "docs": "Generate a sitemap.xml for all documentation pages."
+        },
+        {
+          "kind": "method",
+          "name": "search_docs",
+          "signature": "pub fn search_docs(&self, query: &str) -> Vec<&SearchEntry>",
+          "docs": "Search documentation by query string.\n\nSplits the query on whitespace and returns section-level entries whose\nfields all match every term (multi-term AND), ranked title > heading >\ndescription > body with a word-boundary bonus. See `crate::search`."
+        }
+      ]
+    },
+    {
+      "slug": "struct.SeoRouter",
+      "name": "SeoRouter",
+      "kind": "struct",
+      "path": [
+        "server"
+      ],
+      "signature": "pub struct SeoRouter { /* private fields */ }",
+      "docs": "Builder for the crawler-facing routes of a docs/blog site.\n\nGenerated routes:\n\n| Route | Condition | Content |\n|---|---|---|\n| `<docs_path>/<page>.md` | docs | raw Markdown per doc page |\n| `/llms.txt`, `/llms-full.txt` | docs | LLM-friendly docs index / full corpus |\n| `/sitemap-docs.xml` | docs | docs sitemap |\n| `<blog_path>/<slug>.md` | blog | raw Markdown per post |\n| `<blog_path>/rss.xml` | blog | RSS feed |\n| `/sitemap-blog.xml` | blog | blog sitemap |\n| `/sitemap.xml` | always | sitemap index over the above |\n| `/robots.txt` | always | allow-all incl. explicit AI-crawler entries |",
+      "members": [
+        {
+          "kind": "method",
+          "name": "new",
+          "signature": "pub fn new(site_url: &str, site_title: &str, site_description: &str) -> Self",
+          "docs": "Create a builder.\n\n- `site_url`: public origin, e.g. `\"https://example.com\"` (no trailing slash needed).\n- `site_title` / `site_description`: used in `llms.txt` headers and the RSS channel."
+        },
+        {
+          "kind": "method",
+          "name": "with_docs",
+          "signature": "pub fn with_docs(self, registry: &'static DocsRegistry, base_path: &str) -> Self",
+          "docs": "Serve docs endpoints for `registry`, mounted under `base_path` (e.g. `\"/docs\"`)."
+        },
+        {
+          "kind": "method",
+          "name": "with_blog",
+          "signature": "pub fn with_blog(self, registry: &'static BlogRegistry, base_path: &str) -> Self",
+          "docs": "Serve blog endpoints for `registry`, mounted under `base_path` (e.g. `\"/blog\"`)."
+        },
+        {
+          "kind": "method",
+          "name": "into_router",
+          "signature": "pub fn into_router(self) -> Router",
+          "docs": "Build the Axum router. Merge it into your app router with\n`Router::merge`."
+        }
+      ]
+    },
+    {
+      "slug": "constant.DOCS_KIT_CSS",
+      "name": "DOCS_KIT_CSS",
+      "kind": "constant",
+      "signature": "pub const DOCS_KIT_CSS: Asset = _;",
+      "docs": "Precompiled stylesheet covering every class the kit's components emit\n(Tailwind utilities, DaisyUI dark/light themes, typography prose, and the\n`--dk-*` token surface from `theme.css`).\n\nLink it to run the kit without any Tailwind/Bun setup of your own:\n\n```rust\nrsx! {\n    document::Stylesheet { href: dioxus_docs_kit::DOCS_KIT_CSS }\n}\n```\n\nIf your app already runs its own Tailwind build, skip this and use the\n`safelist.html` approach from the README instead — the precompiled sheet\nonly contains the kit's classes, not yours."
+    },
+    {
+      "slug": "struct.DocsContext",
+      "name": "DocsContext",
+      "kind": "struct",
+      "signature": "pub struct DocsContext",
+      "docs": "Navigation bridge that decouples library components from the consumer's Route enum.\n\nThe consumer creates this in their docs layout wrapper and provides it via `use_context_provider`.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "current_path",
+          "signature": "pub current_path: ReadSignal<String>",
+          "docs": "Current docs page path (e.g. \"getting-started/introduction\")."
+        },
+        {
+          "kind": "field",
+          "name": "base_path",
+          "signature": "pub base_path: String",
+          "docs": "Base URL path for docs (e.g. \"/docs\")."
+        },
+        {
+          "kind": "field",
+          "name": "navigate",
+          "signature": "pub navigate: Callback<String>",
+          "docs": "Callback to navigate to a docs page by content path."
+        },
+        {
+          "kind": "field",
+          "name": "site_url",
+          "signature": "pub site_url: Option<String>",
+          "docs": "Optional full site URL (e.g. `https://example.com`). Used as the canonical\nhost for emitted `<link rel=\"canonical\">` and `og:url` tags. Independent\nof `auto_meta` — set it whenever you want kit helpers\n(sitemap generation, canonical URLs) to know the public origin, even if\nyou suppress automatic meta emission."
+        },
+        {
+          "kind": "field",
+          "name": "auto_meta",
+          "signature": "pub auto_meta: bool",
+          "docs": "When true, the kit emits per-page `<title>`, `<meta name=\"description\">`,\nOpen Graph and Twitter Card tags from frontmatter. Set to `false` if your\napp manages its own `<head>` (e.g. brand-specific OG images, structured\ndata) and the kit's emissions would conflict. Title and description tags\nalways emit when this is on; canonical and `og:url` only emit when\n`site_url` is also set."
+        },
+        {
+          "kind": "field",
+          "name": "markdown_alternate",
+          "signature": "pub markdown_alternate: bool",
+          "docs": "When true, `DocsPageMeta` emits a\n`<link rel=\"alternate\" type=\"text/markdown\">` pointing at the page's raw\nMarkdown source (`<base_path>/<path>.md`), a discoverability hint for AI\ncrawlers and \"view as Markdown\" tooling. Enable this only if your server\nactually serves those `.md` URLs (see `server::SeoRouter` behind the\n`server` feature). Emitted only for MDX pages (OpenAPI endpoint pages\nhave no Markdown source), and only when `auto_meta`\nis also on."
+        },
+        {
+          "kind": "method",
+          "name": "new",
+          "signature": "pub fn new(current_path: impl Into<ReadSignal<String>>, base_path: impl Into<String>, navigate: Callback<String>) -> Self",
+          "docs": "Create a context from the three required fields.\n\nThe meta fields default to `site_url: None`, `auto_meta: true`,\n`markdown_alternate: false`; override them with the `with_*` setters.\nPrefer this over a struct literal — new fields get sensible defaults\nhere instead of breaking your build."
+        },
+        {
+          "kind": "method",
+          "name": "with_site_url",
+          "signature": "pub fn with_site_url(self, site_url: impl Into<String>) -> Self",
+          "docs": "Set the public site origin (e.g. `\"https://example.com\"`)."
+        },
+        {
+          "kind": "method",
+          "name": "with_auto_meta",
+          "signature": "pub fn with_auto_meta(self, auto_meta: bool) -> Self",
+          "docs": "Enable or disable automatic per-page meta emission (default: on)."
+        },
+        {
+          "kind": "method",
+          "name": "with_markdown_alternate",
+          "signature": "pub fn with_markdown_alternate(self, markdown_alternate: bool) -> Self",
+          "docs": "Emit `<link rel=\"alternate\" type=\"text/markdown\">` tags (default: off)."
+        }
+      ],
+      "trait_impls": [
+        "Clone"
+      ]
+    },
+    {
+      "slug": "struct.BlogContext",
+      "name": "BlogContext",
+      "kind": "struct",
+      "signature": "pub struct BlogContext",
+      "docs": "Navigation bridge for blog pages, decoupled from the consumer's Route enum.\n\nThe consumer creates this in their blog layout wrapper and provides it via `use_context_provider`.",
+      "members": [
+        {
+          "kind": "field",
+          "name": "current_slug",
+          "signature": "pub current_slug: ReadSignal<String>",
+          "docs": "Current blog post slug (empty on the list/index page)."
+        },
+        {
+          "kind": "field",
+          "name": "base_path",
+          "signature": "pub base_path: String",
+          "docs": "Base URL path for the blog (e.g. \"/blog\")."
+        },
+        {
+          "kind": "field",
+          "name": "navigate",
+          "signature": "pub navigate: Callback<String>",
+          "docs": "Callback to navigate to a blog post by slug (empty string = blog index)."
+        },
+        {
+          "kind": "field",
+          "name": "site_url",
+          "signature": "pub site_url: Option<String>",
+          "docs": "Optional full site URL (e.g. `https://example.com`). Used as the canonical\nhost for emitted `<link rel=\"canonical\">`, `og:url`, and JSON-LD URLs.\nIndependent of `auto_meta` — set it whenever you want\nkit helpers (sitemap/RSS, canonical URLs) to know the public origin, even\nif you suppress automatic meta emission."
+        },
+        {
+          "kind": "field",
+          "name": "auto_meta",
+          "signature": "pub auto_meta: bool",
+          "docs": "When true, the kit emits per-page `<title>`, `<meta name=\"description\">`,\nOpen Graph, Twitter Card, and Article JSON-LD tags from frontmatter. Set\nto `false` if your app manages its own `<head>` (e.g. brand-specific OG\nimages, structured data) and the kit's emissions would conflict. Title\nand description tags always emit when this is on; canonical, `og:url`,\nand JSON-LD `@id` only emit when `site_url` is also set."
+        },
+        {
+          "kind": "field",
+          "name": "markdown_alternate",
+          "signature": "pub markdown_alternate: bool",
+          "docs": "When true, `BlogPostMeta` emits a\n`<link rel=\"alternate\" type=\"text/markdown\">` pointing at the post's raw\nMarkdown source (`<base_path>/<slug>.md`), a discoverability hint for AI\ncrawlers and \"view as Markdown\" tooling. Enable this only if your server\nactually serves those `.md` URLs (see `server::SeoRouter` behind the\n`server` feature). Emitted only when `auto_meta` is\nalso on."
+        },
+        {
+          "kind": "method",
+          "name": "new",
+          "signature": "pub fn new(current_slug: impl Into<ReadSignal<String>>, base_path: impl Into<String>, navigate: Callback<String>) -> Self",
+          "docs": "Create a context from the three required fields.\n\nThe meta fields default to `site_url: None`, `auto_meta: true`,\n`markdown_alternate: false`; override them with the `with_*` setters.\nPrefer this over a struct literal — new fields get sensible defaults\nhere instead of breaking your build."
+        },
+        {
+          "kind": "method",
+          "name": "with_site_url",
+          "signature": "pub fn with_site_url(self, site_url: impl Into<String>) -> Self",
+          "docs": "Set the public site origin (e.g. `\"https://example.com\"`)."
+        },
+        {
+          "kind": "method",
+          "name": "with_auto_meta",
+          "signature": "pub fn with_auto_meta(self, auto_meta: bool) -> Self",
+          "docs": "Enable or disable automatic per-page meta emission (default: on)."
+        },
+        {
+          "kind": "method",
+          "name": "with_markdown_alternate",
+          "signature": "pub fn with_markdown_alternate(self, markdown_alternate: bool) -> Self",
+          "docs": "Emit `<link rel=\"alternate\" type=\"text/markdown\">` tags (default: off)."
+        }
+      ],
+      "trait_impls": [
+        "Clone"
+      ]
+    },
+    {
+      "slug": "macro.doc_content_map",
+      "name": "doc_content_map",
+      "kind": "macro",
+      "signature": "macro_rules! doc_content_map {\n    () => { ... };\n}",
+      "docs": "Generates a `doc_content_map()` function that returns a\n`HashMap<&'static str, &'static str>` from the build-script output.\n\nPlace this at module level in your `main.rs`:\n\n```rust\ndioxus_docs_kit::doc_content_map!();\n```\n\nRequires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`\nthat calls `dioxus_docs_kit_build::generate_content_map(\"docs/_nav.json\")`."
+    },
+    {
+      "slug": "macro.blog_content_map",
+      "name": "blog_content_map",
+      "kind": "macro",
+      "signature": "macro_rules! blog_content_map {\n    () => { ... };\n}",
+      "docs": "Generates a `blog_content_map()` function that returns a\n`HashMap<&'static str, &'static str>` from the build-script output.\n\nPlace this at module level in your `main.rs`:\n\n```rust\ndioxus_docs_kit::blog_content_map!();\n```\n\nRequires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`\nthat calls `dioxus_docs_kit_build::generate_blog_content_map(\"blog/_blog.json\")`."
+    }
+  ]
+}

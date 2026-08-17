@@ -15,6 +15,7 @@ mod heading;
 mod openapi_parser;
 mod openapi_tag;
 mod openapi_types;
+mod rust_api;
 mod steps;
 mod tabs;
 mod types;
@@ -26,6 +27,10 @@ pub use frontmatter::extract_frontmatter;
 pub use heading::strip_leading_h1;
 pub use openapi_parser::{OpenApiError, parse_openapi};
 pub use openapi_types::*;
+pub use rust_api::{
+    RustApiError, RustApiItem, RustApiMember, RustApiModel, RustItemKind, RustMemberKind,
+    parse_rust_api,
+};
 pub use types::*;
 
 /// Parse a complete MDX document, extracting frontmatter and content.

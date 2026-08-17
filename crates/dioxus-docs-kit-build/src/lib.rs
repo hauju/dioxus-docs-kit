@@ -4,6 +4,9 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+pub mod rustdoc;
+pub use rustdoc::{DistillOptions, MODEL_VERSION, distill_rustdoc};
+
 #[derive(Deserialize)]
 struct NavConfig {
     groups: Vec<NavGroup>,

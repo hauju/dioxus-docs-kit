@@ -1,5 +1,5 @@
 {
-  "tabs": ["Docs", "Guides", "API Reference", "Changelog"],
+  "tabs": ["Docs", "Guides", "API Reference", "Rust API", "Changelog"],
   "groups": [
     {
       "group": "Getting Started",
@@ -15,6 +15,11 @@
       "group": "API Reference",
       "tab": "API Reference",
       "pages": ["api-reference/overview"]
+    },
+    {
+      "group": "Rust API",
+      "tab": "Rust API",
+      "pages": ["rust-api/overview"]
     },
     {
       "group": "Changelog",

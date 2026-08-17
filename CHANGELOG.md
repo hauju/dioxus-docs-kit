@@ -5,6 +5,36 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Added
+
+- **Rustdoc-powered Rust API reference pages.** The kit can now render a
+  crate's own public API the way it renders OpenAPI endpoints:
+  - `dioxus-docs-kit-build` gains a `distill-rustdoc` binary (and
+    `distill_rustdoc` library function) that reduces nightly rustdoc JSON
+    (`cargo +nightly rustdoc -- -Z unstable-options --output-format json`,
+    megabytes, format-version-locked) to a small committed model JSON. It
+    walks public items reachable from the crate root — following re-exports,
+    preferring the shortest path — and renders full signatures (generics,
+    where clauses, `&mut self`, `impl Trait`), strips intra-doc links to
+    their display text, normalizes rustdoc code fences (```` ```rust,ignore ````
+    and bare fences become `rust` so samples highlight), and can exclude
+    macro-generated noise (`--exclude Props`). Pinned to `rustdoc-types` 0.60
+    (rustdoc JSON format 60).
+  - `DocsConfig::with_rustdoc(prefix, model_json)` registers a model;
+    `.with_rust_api_group_name` (default `"Rust API"`) names the nav group the
+    items inject into — same contract as the OpenAPI integration, including
+    the startup warning when no nav group matches.
+  - Item pages (`dioxus-mdx`'s `RustApiItemPage`) show a kind badge, module
+    breadcrumb, highlighted declaration with copy button, doc comments
+    rendered as markdown, implemented traits, and member sections (variants,
+    fields, methods, associated items). The sidebar groups items by kind with
+    one-letter chips; items join search, the sitemap, and prev/next
+    navigation.
+  - The example site documents the kit's own API under a new "Rust API" tab
+    (`just api` regenerates the committed model).
+
 ## [0.6.1] — 2026-08-16
 
 ### Added

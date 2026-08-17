@@ -264,7 +264,7 @@ pub use config::CodeThemeConfig;
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
 pub use registry::DocsRegistry;
-pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, SearchEntry};
+pub use registry::{ApiEndpointEntry, NavConfig, NavGroup, RustApiItemEntry, SearchEntry};
 
 pub use components::{
     ActiveTab, CopyPageButton, CurrentTheme, DocsLayout, DocsPageContent, DocsPageMeta,
@@ -276,7 +276,8 @@ pub use hooks::{DocsProviders, use_docs_context, use_docs_providers};
 
 pub use dioxus_mdx::{
     ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
-    ParsedDoc, extract_headers,
+    ParsedDoc, RustApiItem, RustApiItemPage, RustApiMember, RustApiModel, RustItemKind,
+    RustMemberKind, extract_headers,
 };
 
 #[cfg(feature = "highlight")]

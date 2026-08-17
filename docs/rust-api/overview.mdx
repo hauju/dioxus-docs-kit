@@ -1,0 +1,53 @@
+---
+title: Rust API Overview
+description: Crate reference pages generated from rustdoc — the kit documenting its own public API
+sidebarTitle: Overview
+icon: package
+---
+
+## Rustdoc-powered reference
+
+The item pages in this sidebar are generated from **rustdoc JSON** — the same
+data `cargo doc` renders. This is the `dioxus-docs-kit` crate documenting its
+own public API: structs with fields and methods, functions with full
+signatures, doc comments rendered as markdown, and everything indexed in the
+site search (press `⌘K` and try `with_openapi`).
+
+<Note>
+No JavaScript docs tool can do this: the reference comes straight from the
+compiler's view of the crate, so it can never drift from the code.
+</Note>
+
+## How it works
+
+<Steps>
+  <Step title="Generate rustdoc JSON (nightly)">
+    ```bash
+    cargo +nightly rustdoc -p my-crate --lib -- -Z unstable-options --output-format json
+    ```
+  </Step>
+
+  <Step title="Distill it into a small committed model">
+    The raw JSON is megabytes and format-version-locked, so a distiller from
+    `dioxus-docs-kit-build` reduces it to a compact JSON file you commit:
+
+    ```bash
+    cargo run -p dioxus-docs-kit-build --bin distill-rustdoc -- \
+      target/doc/my_crate.json docs/rust-api/my-crate.api.json --exclude Props
+    ```
+  </Step>
+
+  <Step title="Register it on the DocsConfig">
+    ```rust
+    DocsConfig::new(nav_json, doc_content_map())
+        .with_rustdoc("rust-api", include_str!("../docs/rust-api/my-crate.api.json"))
+        .build()
+    ```
+
+    Add a `"Rust API"` group to `_nav.json` (or set your own name with
+    `.with_rust_api_group_name`) and the item pages appear in the sidebar,
+    search, sitemap, and prev/next navigation automatically.
+  </Step>
+</Steps>
+
+In this repo, `just api` runs the first two steps.

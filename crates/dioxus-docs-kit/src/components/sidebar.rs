@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_mdx::HttpMethod;
+use dioxus_mdx::{HttpMethod, RustItemKind};
 
 use crate::DocsContext;
 use crate::components::docs_layout::ActiveTab;
@@ -27,14 +27,46 @@ pub fn DocsSidebar() -> Element {
     }
 }
 
-/// A single sidebar group (normal or API Reference).
+/// A single sidebar group (normal, API Reference, or Rust API).
 #[component]
 fn SidebarGroup(group: NavGroup) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let api_entries = registry.get_api_sidebar_entries();
     let is_api_group = group.group == registry.api_group_name;
+    let is_rust_group = group.group == registry.rust_api_group_name;
 
-    if is_api_group {
+    if is_rust_group && !registry.get_rust_sidebar_entries().is_empty() {
+        rsx! {
+            div { class: "dk-nav-group space-y-2",
+                h3 { class: "dk-nav-group-title font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
+                    "{group.group}"
+                }
+                ul { class: "space-y-1",
+                    for page in group.pages.iter() {
+                        SidebarLink { path: page.clone() }
+                    }
+                }
+                // Dynamic Rust API items grouped by kind
+                for (kind_label, entries) in registry.get_rust_sidebar_entries().iter() {
+                    div { class: "dk-nav-subgroup mt-3",
+                        h4 { class: "dk-nav-subgroup-title text-xs font-medium text-base-content/50 uppercase tracking-wider px-3 mb-1",
+                            "{kind_label}"
+                        }
+                        ul { class: "space-y-0.5",
+                            for entry in entries.iter() {
+                                RustApiSidebarLink {
+                                    prefix: entry.prefix.clone(),
+                                    slug: entry.slug.clone(),
+                                    title: entry.title.clone(),
+                                    kind: entry.kind,
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else if is_api_group {
         rsx! {
             div { class: "dk-nav-group space-y-2",
                 h3 { class: "dk-nav-group-title font-semibold text-sm text-base-content/70 uppercase tracking-wider px-3",
@@ -76,6 +108,37 @@ fn SidebarGroup(group: NavGroup) -> Element {
                         SidebarLink { path: page.clone() }
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Sidebar link for Rust API items with kind chips.
+#[component]
+fn RustApiSidebarLink(prefix: String, slug: String, title: String, kind: RustItemKind) -> Element {
+    let ctx = use_context::<DocsContext>();
+
+    let path = format!("{prefix}/{slug}");
+    let is_active = (ctx.current_path)() == path;
+
+    let active_class = if is_active {
+        "dk-nav-item-active bg-primary/10 text-primary font-medium border-l-2 border-primary"
+    } else {
+        "text-base-content/70 hover:text-base-content hover:bg-base-200"
+    };
+
+    let badge_class = kind.badge_class();
+    let href = format!("{}/{}", ctx.base_path, path);
+
+    rsx! {
+        li {
+            Link {
+                to: NavigationTarget::Internal(href),
+                class: "dk-nav-item dk-nav-item-rust flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors {active_class}",
+                span { class: "badge badge-xs font-mono font-bold {badge_class} shrink-0",
+                    "{kind.abbrev()}"
+                }
+                span { class: "truncate font-mono text-xs", "{title}" }
             }
         }
     }
