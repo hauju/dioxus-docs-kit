@@ -49,3 +49,25 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
 highlight = ["dioxus-docs-kit/highlight"]
+
+# `dx` does not build with the plain `release` profile: it derives one per
+# bundle format, so `dx bundle --web --release` compiles the wasm client with
+# `wasm-release` and the fullstack server with `server-release` (see
+# `BundleFormat::profile_name` in dioxus-cli). Defining them here replaces the
+# ad-hoc profiles dx would otherwise synthesise (`inherits = "release"` plus
+# `opt-level = "s"` for the web client).
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+# wasm-only profile, so aborting is safe here - it never applies to the server.
+panic = "abort"
+
+[profile.server-release]
+inherits = "release"
+# The server binary is not shipped over the wire, so keep it fast (`release`
+# opt-level) and keep unwinding; strip is what shrinks the container image.
+lto = "fat"
+codegen-units = 1
+strip = true

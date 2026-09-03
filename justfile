@@ -21,6 +21,11 @@ css:
     bun install --frozen-lockfile
     ./node_modules/.bin/tailwindcss -i crates/dioxus-docs-kit/tailwind.css -o crates/dioxus-docs-kit/assets/docs-kit.css --minify
 
+# Report the bundled web asset sizes (run after `dx bundle --web --release`)
+[group("dev")]
+size:
+    ./scripts/wasm-size.sh
+
 # Format check (matches CI)
 [group("lint")]
 fmt:
