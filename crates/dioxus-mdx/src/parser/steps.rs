@@ -2,7 +2,7 @@
 
 use std::sync::LazyLock;
 
-use regex::Regex;
+use crate::re::Regex;
 
 use super::content::parse_content;
 use super::utils::find_closing_tag;

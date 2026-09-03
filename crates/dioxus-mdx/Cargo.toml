@@ -21,7 +21,10 @@ dioxus-code = { workspace = true, optional = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true, optional = true }
 tracing = { workspace = true }
-regex = "1.11"
+# `regex` only when `highlight` is on: arborium-tree-sitter links it then anyway,
+# so sharing it is free. Every other build gets the much smaller `regex-lite`.
+regex = { version = "1.11", optional = true }
+regex-lite = "0.1"
 markdown = "1.0"
 openapiv3 = { version = "2.0", optional = true }
 
@@ -48,7 +51,7 @@ default = [
 ]
 web = ["dioxus/web"]
 mermaid = []
-highlight = ["dep:dioxus-code"]
+highlight = ["dep:dioxus-code", "dep:regex"]
 openapi = ["dep:openapiv3", "dep:serde_yaml"]
 
 # Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its

@@ -12,15 +12,15 @@ use crate::components::{
 };
 use crate::parser::{CardGroupNode, DocNode, parse_mdx};
 
-static HEADING_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"<(h[2-4])>(.*?)</h[2-4]>").unwrap());
-static HTML_TAG_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"<[^>]+>").unwrap());
+static HEADING_RE: LazyLock<crate::re::Regex> =
+    LazyLock::new(|| crate::re::Regex::new(r"<(h[2-4])>(.*?)</h[2-4]>").unwrap());
+static HTML_TAG_RE: LazyLock<crate::re::Regex> =
+    LazyLock::new(|| crate::re::Regex::new(r"<[^>]+>").unwrap());
 
 /// Inject `id` attributes into heading tags so TOC anchor links work.
 fn inject_heading_ids(html: &str) -> String {
     HEADING_RE
-        .replace_all(html, |caps: &regex::Captures| {
+        .replace_all(html, |caps: &crate::re::Captures| {
             let tag = &caps[1];
             let inner = &caps[2];
             // Strip any inner HTML tags to get plain text for the slug

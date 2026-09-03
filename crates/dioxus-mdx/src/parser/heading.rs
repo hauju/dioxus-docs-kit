@@ -9,7 +9,7 @@
 
 use std::sync::LazyLock;
 
-use regex::Regex;
+use crate::re::Regex;
 
 static ATX_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^ {0,3}#[ \t]+\S[^\n]*(?:\r?\n|$)").unwrap());
