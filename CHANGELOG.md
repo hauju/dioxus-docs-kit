@@ -5,6 +5,113 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Fixed
+
+- **The production web bundle shipped unoptimized.** `dx bundle --web --release`
+  keeps DWARF by default, which makes wasm-opt abort ("compile unit size was
+  incorrect") and dx silently fall back to the raw wasm-bindgen output. The
+  homepage workflow now builds with `--debug-symbols false` and the root
+  manifest defines the `wasm-release` / `server-release` profiles dx actually
+  uses (`opt-level = "z"`, fat LTO, one codegen unit and `panic = "abort"` for
+  the wasm; `strip = true` for the server). On its own this took the example
+  site's wasm from 25.1 MB to 18.2 MB.
+
+### Added
+
+- **Brotli sidecars and a size gate in CI.** The homepage workflow writes a
+  `.br` file next to every `.wasm`/`.js`/`.css` in the bundle (`dioxus-server`
+  serves them with `content-encoding: br`, so the wasm costs ~2 MB on the wire
+  instead of 25 MB) and runs `scripts/wasm-size.sh` (`just size`), which reports
+  raw and brotli sizes and fails when the raw wasm exceeds
+  `WASM_SIZE_LIMIT_BYTES`.
+- **Per-language syntax-highlighting features.** `highlight` on its own compiles
+  only the Rust grammar (it ships with `dioxus-code`'s `runtime`); every other
+  language is a `lang-*` feature on both `dioxus-mdx` and `dioxus-docs-kit`.
+  Default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`,
+  `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`,
+  `lang-tsx`, `lang-typescript`, `lang-yaml`. Available but off by default:
+  `lang-c-sharp`, `lang-cpp` (plus `lang-rust`, a no-op alias).
+- **`openapi` cargo feature** (on by default) on `dioxus-docs-kit` and
+  `dioxus-mdx`. It gates spec *parsing* only: `parse_openapi`, `OpenApiError`,
+  inline `<OpenAPI>…</OpenAPI>` blocks and `DocsConfig::with_openapi`. With it
+  off, `openapiv3`, `serde_yaml` and `unsafe-libyaml` leave the dependency graph
+  entirely; the `OpenApiSpec` types, `DocNode::OpenApi` and the viewer
+  components stay, the API sidebar/search see an empty spec list, and an
+  `<OpenAPI>` block renders as plain markdown.
+- **`dioxus_mdx::parse_yaml_lite`** — a small dependency-free parser for the
+  flat YAML subset frontmatter uses (plain and quoted scalars with `\"`/`\\`
+  escapes, `true`/`false`, block and flow sequences, comments). The build script
+  emits a `cargo:warning` when a docs page's frontmatter uses a shape it rejects
+  (nested mapping, non-scalar sequence item, multi-line scalar), so a page that
+  builds never silently loses its frontmatter at runtime.
+
+### Changed
+
+- **BREAKING: the C# and C++ grammars are no longer compiled by default.** Their
+  tree-sitter tables were ~8 MB of the bundle; dropping them took the example
+  site's release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB → 6.3 MB).
+  Fences in those languages render as plain text unless `lang-c-sharp` /
+  `lang-cpp` is enabled.
+- **BREAKING: the workspace `dioxus` dependency is `default-features = false`.**
+  `dioxus-mdx` and `dioxus-docs-kit` request only `lib` (+ `router` on the kit),
+  so they no longer force `launch`, `logger` or `devtools` onto consumers through
+  cargo feature unification. (`dioxus-free-icons 0.10.0` still enables dioxus's
+  defaults itself, so most builds see no difference until that is fixed
+  upstream.)
+- **BREAKING: `DocFrontmatter` and `BlogFrontmatter` no longer derive
+  `serde::Deserialize`.** Frontmatter (docs and blog) is parsed by
+  `parse_yaml_lite` instead of `serde_yaml`. Behaviour on unsupported input is
+  unchanged: docs pages warn and fall back to an empty `DocFrontmatter` with the
+  block still stripped; blog posts return the existing error.
+- A code fence whose grammar is not compiled in renders as escaped plain text
+  inside the same `<pre class="dxc">` markup. Previously any unresolved language
+  (including a bare fence) was highlighted with the Markdown grammar.
+- docs.rs metadata uses explicit feature lists instead of `all-features`.
+
+### Migration
+
+- **C# / C++ code blocks.** Add the features back, otherwise those blocks render
+  as plain text:
+
+  ```toml
+  dioxus-docs-kit = { version = "0.7", features = ["lang-c-sharp", "lang-cpp"] }
+  ```
+
+- **Trimming further.** Ship only what you actually fence:
+
+  ```toml
+  dioxus-docs-kit = { version = "0.7", default-features = false, features = [
+      "web", "mermaid", "highlight", "openapi", "lang-bash", "lang-json", "lang-toml",
+  ] }
+  ```
+
+  `lang-rust` needs no grammar of its own; `highlight` alone highlights Rust.
+
+- **Any other language** (Go, Zig, Kotlin, SQL, …). The kit deliberately carries
+  features only for the languages above. For anything else add `dioxus-code` to
+  your own manifest with the grammar you want; cargo unifies that feature into
+  the copy the kit already uses, so `Language::from_slug` picks it up:
+
+  ```toml
+  dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }
+  ```
+
+  Fence it with `dioxus-code`'s canonical slug (` ```go `); the friendly aliases
+  (` ```c++ `, ` ```yml `, ` ```sh `) only exist for the kit's own `lang-*`
+  features.
+
+- **dioxus features.** If your binary relied on the kit for `launch`, `logger`
+  or `devtools`, request them on your own `dioxus` dependency:
+
+  ```toml
+  dioxus = { version = "0.7", features = ["lib", "router", "fullstack", "launch", "devtools", "logger"] }
+  ```
+
+- **`default-features = false` consumers** must add `"openapi"` to keep
+  `DocsConfig::with_openapi` and `<OpenAPI>` blocks working.
+
 ## [0.6.1] — 2026-08-16
 
 ### Added
