@@ -12,7 +12,7 @@ env:
   IMAGE_NAME: oxidt/dioxus-docs-kit
   # Fail the build job when the raw (uncompressed) wasm grows past this. Retune
   # it deliberately when size work lands - see scripts/wasm-size.sh.
-  WASM_SIZE_LIMIT_BYTES: "20000000"
+  WASM_SIZE_LIMIT_BYTES: "10000000"
 
 # Cancel superseded runs on rapid pushes to the same ref.
 concurrency:
