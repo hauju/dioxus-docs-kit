@@ -78,8 +78,8 @@
 //! - `lang-*`: One tree-sitter grammar each. `highlight` alone highlights only
 //!   Rust; the default set adds `lang-bash`, `lang-css`, `lang-dockerfile`,
 //!   `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`,
-//!   `lang-python`, `lang-toml`, `lang-tsx`, `lang-typescript` and `lang-yaml`.
-//!   `lang-c-sharp` and `lang-cpp` exist but are off by default. For any other
+//!   `lang-python`, `lang-toml`, `lang-typescript` and `lang-yaml`.
+//!   `lang-c-sharp`, `lang-cpp` and `lang-tsx` exist but are off by default. For any other
 //!   language, depend on `dioxus-code` directly with its `lang-*` flag
 //!   (`features = ["runtime", "lang-go"]`); cargo unifies it into the copy this
 //!   crate uses, so `Language::from_slug` resolves the grammar.

@@ -44,7 +44,7 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
 
-The kit's default features are `web` + `mermaid` + `highlight` + `openapi`, plus one `lang-*` syntax-highlighting grammar each for bash, css, dockerfile, html, javascript, json, markdown, python, toml, tsx, typescript and yaml (Rust is always highlighted). If you disable default features, re-enable `mermaid`, `highlight`, `openapi` and the `lang-*` features your docs need, or ` ```mermaid ` fences stop rendering as diagrams, code blocks fall back to plain text, and `DocsConfig::with_openapi()` disappears.
+The kit's default features are `web` + `mermaid` + `highlight` + `openapi`, plus one `lang-*` syntax-highlighting grammar each for bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript and yaml (Rust is always highlighted; `lang-tsx`, `lang-c-sharp` and `lang-cpp` are available but off). If you disable default features, re-enable `mermaid`, `highlight`, `openapi` and the `lang-*` features your docs need, or ` ```mermaid ` fences stop rendering as diagrams, code blocks fall back to plain text, and `DocsConfig::with_openapi()` disappears.
 
 ### 2. Set up `build.rs`
 

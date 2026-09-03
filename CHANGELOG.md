@@ -31,8 +31,8 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   language is a `lang-*` feature on both `dioxus-mdx` and `dioxus-docs-kit`.
   Default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`,
   `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`,
-  `lang-tsx`, `lang-typescript`, `lang-yaml`. Available but off by default:
-  `lang-c-sharp`, `lang-cpp` (plus `lang-rust`, a no-op alias).
+  `lang-typescript`, `lang-yaml`. Available but off by default:
+  `lang-c-sharp`, `lang-cpp`, `lang-tsx` (plus `lang-rust`, a no-op alias).
 - **`openapi` cargo feature** (on by default) on `dioxus-docs-kit` and
   `dioxus-mdx`. It gates spec *parsing* only: `parse_openapi`, `OpenApiError`,
   inline `<OpenAPI>…</OpenAPI>` blocks and `DocsConfig::with_openapi`. With it
@@ -49,11 +49,15 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Changed
 
-- **BREAKING: the C# and C++ grammars are no longer compiled by default.** Their
-  tree-sitter tables were ~8 MB of the bundle; dropping them took the example
+- **BREAKING: the C#, C++ and TSX grammars are no longer compiled by default.**
+  The C# and C++ tree-sitter tables were ~8 MB of the bundle; dropping them took the example
   site's release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB → 6.3 MB).
-  Fences in those languages render as plain text unless `lang-c-sharp` /
-  `lang-cpp` is enabled.
+  TSX (1.5 MB, React-only) went next. Fences in those languages render as plain
+  text unless `lang-c-sharp` / `lang-cpp` / `lang-tsx` is enabled.
+- The example site enables only the grammars its own docs fence (bash, css,
+  json, python, typescript) instead of the kit default, as a worked example of
+  the trimming migration below. Its release wasm is 7.2 MB raw / 1.4 MB brotli,
+  down from 25.1 MB uncompressed on the wire before this release.
 - **BREAKING: the workspace `dioxus` dependency is `default-features = false`.**
   `dioxus-mdx` and `dioxus-docs-kit` request only `lib` (+ `router` on the kit),
   so they no longer force `launch`, `logger` or `devtools` onto consumers through
@@ -72,11 +76,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Migration
 
-- **C# / C++ code blocks.** Add the features back, otherwise those blocks render
-  as plain text:
+- **C# / C++ / TSX code blocks.** Add the features back, otherwise those blocks
+  render as plain text:
 
   ```toml
-  dioxus-docs-kit = { version = "0.7", features = ["lang-c-sharp", "lang-cpp"] }
+  dioxus-docs-kit = { version = "0.7", features = ["lang-c-sharp", "lang-cpp", "lang-tsx"] }
   ```
 
 - **Trimming further.** Ship only what you actually fence:
