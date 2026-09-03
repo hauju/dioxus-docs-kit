@@ -351,6 +351,7 @@ mod tests {
 
     const INTRO: &str = "---\ntitle: Intro\n---\n\nWelcome.\n";
 
+    #[cfg(feature = "openapi")]
     const SPEC: &str = r#"
 openapi: "3.0.0"
 info:
@@ -368,14 +369,14 @@ paths:
 
     fn registry() -> &'static DocsRegistry {
         let map = HashMap::from([("getting-started/intro", INTRO)]);
-        Box::leak(Box::new(
-            DocsConfig::new(NAV, map)
-                .with_openapi("api-reference", SPEC)
-                .build(),
-        ))
+        let config = DocsConfig::new(NAV, map);
+        #[cfg(feature = "openapi")]
+        let config = config.with_openapi("api-reference", SPEC);
+        Box::leak(Box::new(config.build()))
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn initial_tab_seeds_api_pages_to_their_own_tab() {
         // The regression: this used to seed tabs[0] ("Docs") and was only
         // corrected by an effect, which never runs during SSR - so crawlers got

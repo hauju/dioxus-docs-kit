@@ -1,6 +1,21 @@
 //! YAML frontmatter extraction from MDX files.
 
 use crate::parser::types::DocFrontmatter;
+use crate::parser::yaml_lite::{YamlLiteError, parse_yaml_lite};
+
+/// Build a [`DocFrontmatter`] from a frontmatter block.
+///
+/// Every field is optional, so only an unsupported YAML shape (see
+/// [`parse_yaml_lite`]) or a wrongly typed field is an error.
+fn parse_doc_frontmatter(yaml: &str) -> Result<DocFrontmatter, YamlLiteError> {
+    let map = parse_yaml_lite(yaml)?;
+    Ok(DocFrontmatter {
+        title: map.optional_str("title")?.unwrap_or_default(),
+        description: map.optional_str("description")?,
+        sidebar_title: map.optional_str("sidebarTitle")?,
+        icon: map.optional_str("icon")?,
+    })
+}
 
 /// Extract YAML frontmatter from MDX content.
 ///
@@ -20,7 +35,7 @@ pub fn extract_frontmatter(content: &str) -> (DocFrontmatter, &str) {
         let remaining = &after_first_delim[end_idx + 4..].trim_start();
 
         // Parse YAML frontmatter
-        match serde_yaml::from_str(yaml_content) {
+        match parse_doc_frontmatter(yaml_content) {
             Ok(fm) => (fm, remaining),
             Err(e) => {
                 tracing::warn!("Failed to parse frontmatter: {e}");
@@ -98,6 +113,27 @@ title: [unclosed
 ---
 
 Content"#;
+
+        let (fm, remaining) = extract_frontmatter(content);
+        assert_eq!(fm.title, "");
+        assert!(remaining.starts_with("Content"));
+    }
+
+    #[test]
+    fn test_quoted_values_with_escapes_and_comments() {
+        let content = "---\n# page metadata\ntitle: \"A \\\"quoted\\\" title\"\ndescription: 'it''s fine'\nicon: book-open # lucide name\n---\n\nContent";
+
+        let (fm, remaining) = extract_frontmatter(content);
+        assert_eq!(fm.title, "A \"quoted\" title");
+        assert_eq!(fm.description, Some("it's fine".to_string()));
+        assert_eq!(fm.icon, Some("book-open".to_string()));
+        assert!(remaining.starts_with("Content"));
+    }
+
+    #[test]
+    fn test_unsupported_shape_falls_back_to_default_and_strips_block() {
+        // A nested mapping is outside the supported subset.
+        let content = "---\ntitle: Test\nauthor:\n  name: Jane\n---\n\nContent";
 
         let (fm, remaining) = extract_frontmatter(content);
         assert_eq!(fm.title, "");

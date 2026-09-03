@@ -11,6 +11,7 @@ use super::code_group::{
     try_parse_code_group, try_parse_request_example, try_parse_response_example,
 };
 use super::fields::{try_parse_expandable, try_parse_param_field, try_parse_response_field};
+#[cfg(feature = "openapi")]
 use super::openapi_tag::try_parse_openapi;
 use super::steps::try_parse_steps;
 use super::tabs::try_parse_tabs;
@@ -18,6 +19,14 @@ use super::update::try_parse_update;
 use super::utils::find_fenced_blocks;
 use crate::parser::frontmatter::extract_frontmatter;
 use crate::parser::types::*;
+
+/// Without the `openapi` feature there is no spec parser, so an `<OpenAPI>`
+/// block takes the same path as any other unrecognised tag: it falls through to
+/// the markdown branch and its body renders as text.
+#[cfg(not(feature = "openapi"))]
+fn try_parse_openapi(_content: &str) -> Option<(DocNode, &str)> {
+    None
+}
 
 static IMPORT_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^import\s+.*?;\s*\n?").unwrap());
@@ -632,5 +641,39 @@ After the diagram."#;
             .expect("expected Markdown");
         assert!(!md.contains("import Foo"), "got: {md:?}");
         assert!(md.contains("Body text."));
+    }
+
+    /// An `<OpenAPI>` block with a valid spec becomes an `OpenApi` node.
+    #[test]
+    #[cfg(feature = "openapi")]
+    fn openapi_block_parses_into_an_openapi_node() {
+        let content = "<OpenAPI>\nopenapi: \"3.0.0\"\ninfo:\n  title: Test API\n  version: \"1.0.0\"\npaths: {}\n</OpenAPI>\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+        assert!(
+            nodes.iter().any(|n| matches!(n, DocNode::OpenApi(_))),
+            "got: {nodes:?}"
+        );
+    }
+
+    /// Without the feature there is no spec parser, so the block takes the
+    /// unrecognised-tag path: it renders as markdown instead of panicking.
+    #[test]
+    #[cfg(not(feature = "openapi"))]
+    fn openapi_block_falls_back_to_markdown_without_the_feature() {
+        let content = "<OpenAPI>\nopenapi: \"3.0.0\"\ninfo:\n  title: Test API\n  version: \"1.0.0\"\npaths: {}\n</OpenAPI>\n\nAfter.\n";
+        let nodes = parse_mdx(content);
+        assert!(
+            !nodes.iter().any(|n| matches!(n, DocNode::OpenApi(_))),
+            "got: {nodes:?}"
+        );
+        let md: String = nodes
+            .iter()
+            .filter_map(|n| match n {
+                DocNode::Markdown(m) => Some(m.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(md.contains("title: Test API"), "got: {md:?}");
+        assert!(md.contains("After."), "got: {md:?}");
     }
 }

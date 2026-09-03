@@ -44,11 +44,12 @@ dioxus-docs-kit = { workspace = true }
 dioxus-docs-kit-build = { workspace = true }
 
 [features]
-default = ["web", "mermaid", "highlight"]
+default = ["web", "mermaid", "highlight", "openapi"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
 highlight = ["dioxus-docs-kit/highlight"]
+openapi = ["dioxus-docs-kit/openapi"]
 
 # `dx` does not build with the plain `release` profile: it derives one per
 # bundle format, so `dx bundle --web --release` compiles the wasm client with

@@ -1,5 +1,6 @@
 //! Error types for registry construction.
 
+#[cfg(feature = "openapi")]
 use dioxus_mdx::OpenApiError;
 
 /// Errors produced when building a [`DocsRegistry`](crate::DocsRegistry) or
@@ -10,7 +11,8 @@ pub enum DocsKitError {
     NavParse(serde_json::Error),
     /// `_blog.json` failed to parse.
     BlogManifestParse(serde_json::Error),
-    /// An OpenAPI spec failed to parse.
+    /// An OpenAPI spec failed to parse. Only present with the `openapi` feature.
+    #[cfg(feature = "openapi")]
     OpenApi {
         /// URL prefix the spec was registered under.
         prefix: String,
@@ -24,6 +26,7 @@ impl std::fmt::Display for DocsKitError {
         match self {
             Self::NavParse(e) => write!(f, "failed to parse _nav.json: {e}"),
             Self::BlogManifestParse(e) => write!(f, "failed to parse _blog.json: {e}"),
+            #[cfg(feature = "openapi")]
             Self::OpenApi { prefix, error } => write!(
                 f,
                 "failed to parse OpenAPI spec for prefix \"{prefix}\": {error}"
@@ -36,6 +39,7 @@ impl std::error::Error for DocsKitError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::NavParse(e) | Self::BlogManifestParse(e) => Some(e),
+            #[cfg(feature = "openapi")]
             Self::OpenApi { error, .. } => Some(error),
         }
     }

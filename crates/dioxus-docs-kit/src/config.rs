@@ -58,6 +58,7 @@ impl Default for CodeThemeConfig {
 ///
 /// ```rust,ignore
 /// let registry = DocsConfig::new(nav_json, content_map)
+///     // `.with_openapi()` needs the `openapi` feature (on by default)
 ///     .with_openapi("api-reference", spec_yaml)
 ///     .with_default_path("getting-started/introduction")
 ///     .build();
@@ -65,6 +66,7 @@ impl Default for CodeThemeConfig {
 pub struct DocsConfig {
     nav_json: String,
     content_map: HashMap<&'static str, &'static str>,
+    #[cfg(feature = "openapi")]
     openapi_specs: Vec<(String, String)>,
     default_path: Option<String>,
     api_group_name: Option<String>,
@@ -81,6 +83,7 @@ impl DocsConfig {
         Self {
             nav_json: nav_json.to_string(),
             content_map,
+            #[cfg(feature = "openapi")]
             openapi_specs: Vec::new(),
             default_path: None,
             api_group_name: None,
@@ -99,6 +102,10 @@ impl DocsConfig {
     /// matches [`Self::with_api_group_name`] (defaults to `"API Reference"`). The library
     /// dynamically injects API endpoints into that group's sidebar — do **not** list
     /// individual operation paths in the `"pages"` array of `_nav.json`.
+    ///
+    /// Only available with the `openapi` feature (default), which pulls in
+    /// `openapiv3` and `serde_yaml`.
+    #[cfg(feature = "openapi")]
     pub fn with_openapi(mut self, prefix: &str, yaml: &str) -> Self {
         self.openapi_specs
             .push((prefix.to_string(), yaml.to_string()));
@@ -202,6 +209,7 @@ impl DocsConfig {
         &self.content_map
     }
 
+    #[cfg(feature = "openapi")]
     pub(crate) fn openapi_specs(&self) -> &[(String, String)] {
         &self.openapi_specs
     }

@@ -563,7 +563,11 @@ fn validate_docs_frontmatter(path: &str, content: &str) {
         return; // an empty frontmatter block is valid
     }
     match serde_yaml::from_str::<serde_yaml::Value>(yaml) {
-        Ok(serde_yaml::Value::Mapping(_)) => {}
+        Ok(serde_yaml::Value::Mapping(map)) => {
+            for warning in unsupported_frontmatter_shapes(&map) {
+                println!("cargo:warning={path}: {warning}");
+            }
+        }
         // The runtime treats an unparseable leading block as page content and
         // still renders the page (a `---`-fenced paragraph is legal markdown),
         // so a hard build failure here would reject pages that work. Warn only.
@@ -574,6 +578,39 @@ fn validate_docs_frontmatter(path: &str, content: &str) {
             "cargo:warning={path}: leading --- block is not valid YAML ({e}) and will render as page content, not frontmatter"
         ),
     }
+}
+
+/// Report frontmatter shapes that are valid YAML but outside the subset the
+/// runtime parser (`dioxus_mdx::parse_yaml_lite`) understands: a flat mapping
+/// of scalars and scalar sequences.
+///
+/// Without this, a page can build cleanly and then silently lose its whole
+/// frontmatter block at runtime (no title, no sidebar entry).
+fn unsupported_frontmatter_shapes(map: &serde_yaml::Mapping) -> Vec<String> {
+    let mut warnings = Vec::new();
+    for (key, value) in map {
+        let key = key.as_str().unwrap_or("<non-string key>");
+        let problem = match value {
+            serde_yaml::Value::Mapping(_) => "is a nested mapping",
+            serde_yaml::Value::Sequence(items)
+                if items.iter().any(|item| {
+                    matches!(
+                        item,
+                        serde_yaml::Value::Mapping(_) | serde_yaml::Value::Sequence(_)
+                    )
+                }) =>
+            {
+                "has a non-scalar sequence item"
+            }
+            serde_yaml::Value::String(s) if s.contains('\n') => "spans multiple lines",
+            _ => continue,
+        };
+        warnings.push(format!(
+            "frontmatter key \"{key}\" {problem}, which the runtime parser rejects - \
+             the whole frontmatter block will be dropped at runtime"
+        ));
+    }
+    warnings
 }
 
 /// Blog frontmatter fields, mirroring
@@ -814,6 +851,43 @@ mod tests {
         validate_docs_frontmatter("x.mdx", "---\ntitle: [unclosed\n---\nbody");
         validate_docs_frontmatter("x.mdx", "---\n- a\n- b\n---\nbody");
         validate_docs_frontmatter("x.mdx", "---\nJust a fenced paragraph.\n---\nbody");
+    }
+
+    fn shape_warnings(yaml: &str) -> Vec<String> {
+        let map: serde_yaml::Mapping = serde_yaml::from_str(yaml).expect("valid YAML mapping");
+        unsupported_frontmatter_shapes(&map)
+    }
+
+    #[test]
+    fn runtime_supported_frontmatter_shapes_warn_about_nothing() {
+        assert!(
+            shape_warnings(
+                "title: Hi\ndescription: ~\ntags: [a, b]\nlist:\n  - one\ndraft: true\ncount: 3"
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn frontmatter_shapes_the_runtime_rejects_warn() {
+        // Nested mapping.
+        let warnings = shape_warnings("title: Hi\nauthor:\n  name: Jane");
+        assert_eq!(warnings.len(), 1, "got: {warnings:?}");
+        assert!(warnings[0].contains("\"author\""), "got: {warnings:?}");
+        assert!(warnings[0].contains("nested mapping"), "got: {warnings:?}");
+
+        // Non-scalar sequence item.
+        let warnings = shape_warnings("tags:\n  - name: rust");
+        assert_eq!(warnings.len(), 1, "got: {warnings:?}");
+        assert!(
+            warnings[0].contains("non-scalar sequence item"),
+            "got: {warnings:?}"
+        );
+
+        // Multi-line (block) scalar.
+        let warnings = shape_warnings("description: |\n  line one\n  line two");
+        assert_eq!(warnings.len(), 1, "got: {warnings:?}");
+        assert!(warnings[0].contains("multiple lines"), "got: {warnings:?}");
     }
 
     #[test]

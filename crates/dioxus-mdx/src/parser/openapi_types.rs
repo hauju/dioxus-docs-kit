@@ -556,8 +556,11 @@ impl SchemaDefinition {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // The fixtures below are built by parsing a spec, which needs `openapi`.
+    #[cfg(feature = "openapi")]
     use crate::parser::openapi_parser::parse_openapi;
 
+    #[cfg(feature = "openapi")]
     const SPEC: &str = r#"
 openapi: "3.0.0"
 info:
@@ -597,11 +600,13 @@ paths:
           description: OK
 "#;
 
+    #[cfg(feature = "openapi")]
     fn find_op<'a>(spec: &'a OpenApiSpec, path: &str) -> &'a ApiOperation {
         spec.operations.iter().find(|op| op.path == path).unwrap()
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn slug_kebab_cases_operation_id() {
         let spec = parse_openapi(SPEC).unwrap();
         assert_eq!(
@@ -611,12 +616,14 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn slug_falls_back_to_method_path() {
         let spec = parse_openapi(SPEC).unwrap();
         assert_eq!(find_op(&spec, "/health").slug(), "get-health");
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn generate_curl_includes_method_url_headers_and_body() {
         let spec = parse_openapi(SPEC).unwrap();
         let curl = find_op(&spec, "/users/{id}/posts").generate_curl("https://api.example.com/");
@@ -630,6 +637,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn generate_curl_omits_method_for_get() {
         let spec = parse_openapi(SPEC).unwrap();
         let curl = find_op(&spec, "/health").generate_curl("https://api.example.com");

@@ -1081,7 +1081,6 @@ dependencies = [
  "gloo-timers",
  "serde",
  "serde_json",
- "serde_yaml",
  "tracing",
 ]
 
@@ -1374,7 +1373,6 @@ dependencies = [
  "markdown",
  "openapiv3",
  "regex",
- "serde",
  "serde_json",
  "serde_yaml",
  "tracing",
