@@ -16,22 +16,7 @@ readme = "README.md"
 [dependencies]
 dioxus = { workspace = true, features = ["lib"] }
 dioxus-free-icons = { workspace = true }
-dioxus-code = { workspace = true, optional = true, features = [
-    "lang-bash",
-    "lang-c-sharp",
-    "lang-cpp",
-    "lang-css",
-    "lang-dockerfile",
-    "lang-html",
-    "lang-javascript",
-    "lang-json",
-    "lang-markdown",
-    "lang-python",
-    "lang-tsx",
-    "lang-toml",
-    "lang-typescript",
-    "lang-yaml",
-] }
+dioxus-code = { workspace = true, optional = true }
 
 serde_json = { workspace = true }
 serde_yaml = { workspace = true, optional = true }
@@ -44,12 +29,60 @@ openapiv3 = { version = "2.0", optional = true }
 gloo-timers = { workspace = true }
 
 [features]
-default = ["web", "mermaid", "highlight", "openapi"]
+default = [
+    "web",
+    "mermaid",
+    "highlight",
+    "openapi",
+    "lang-bash",
+    "lang-css",
+    "lang-dockerfile",
+    "lang-html",
+    "lang-javascript",
+    "lang-json",
+    "lang-markdown",
+    "lang-python",
+    "lang-tsx",
+    "lang-toml",
+    "lang-typescript",
+    "lang-yaml",
+]
 web = ["dioxus/web"]
 mermaid = []
 highlight = ["dep:dioxus-code"]
 openapi = ["dep:openapiv3", "dep:serde_yaml"]
 
+# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
+# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
+# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
+# your fences actually use: dropping just the C# and C++ grammars took this
+# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
+# compiled in renders as plain text.
+#
+# For a language not listed here, depend on `dioxus-code` directly with its
+# `lang-*` flag; cargo unifies the feature into this crate's copy of the
+# dependency and `Language::from_slug` picks the grammar up:
+#   dioxus-code = { version = "0.1", default-features = false, features = [
+#       "runtime", "lang-go",
+#   ] }
+lang-rust = ["highlight"]
+lang-bash = ["highlight", "dioxus-code/lang-bash"]
+lang-c-sharp = ["highlight", "dioxus-code/lang-c-sharp"]
+lang-cpp = ["highlight", "dioxus-code/lang-cpp"]
+lang-css = ["highlight", "dioxus-code/lang-css"]
+lang-dockerfile = ["highlight", "dioxus-code/lang-dockerfile"]
+lang-html = ["highlight", "dioxus-code/lang-html"]
+lang-javascript = ["highlight", "dioxus-code/lang-javascript"]
+lang-json = ["highlight", "dioxus-code/lang-json"]
+lang-markdown = ["highlight", "dioxus-code/lang-markdown"]
+lang-python = ["highlight", "dioxus-code/lang-python"]
+lang-toml = ["highlight", "dioxus-code/lang-toml"]
+lang-tsx = ["highlight", "dioxus-code/lang-tsx"]
+lang-typescript = ["highlight", "dioxus-code/lang-typescript"]
+lang-yaml = ["highlight", "dioxus-code/lang-yaml"]
+
 [package.metadata.docs.rs]
-# Document the highlight/mermaid code paths, not just the default build.
-all-features = true
+# The default build already documents the highlight/mermaid code paths.
+# Deliberately not `all-features`: that would compile every `lang-*`
+# tree-sitter grammar just to render the docs.
+features = ["web", "mermaid", "highlight"]

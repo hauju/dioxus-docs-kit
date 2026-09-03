@@ -26,14 +26,61 @@ tracing = { workspace = true }
 gloo-timers = { workspace = true }
 
 [features]
-default = ["web", "mermaid", "highlight", "openapi"]
+default = [
+    "web",
+    "mermaid",
+    "highlight",
+    "openapi",
+    "lang-bash",
+    "lang-css",
+    "lang-dockerfile",
+    "lang-html",
+    "lang-javascript",
+    "lang-json",
+    "lang-markdown",
+    "lang-python",
+    "lang-tsx",
+    "lang-toml",
+    "lang-typescript",
+    "lang-yaml",
+]
 web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
 openapi = ["dioxus-mdx/openapi"]
 
+# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
+# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
+# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
+# your fences actually use: dropping just the C# and C++ grammars took this
+# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
+# compiled in renders as plain text.
+#
+# For a language not listed here, depend on `dioxus-code` directly with its
+# `lang-*` flag; cargo unifies the feature into this crate's copy of the
+# dependency and `Language::from_slug` picks the grammar up:
+#   dioxus-code = { version = "0.1", default-features = false, features = [
+#       "runtime", "lang-go",
+#   ] }
+lang-rust = ["highlight", "dioxus-mdx/lang-rust"]
+lang-bash = ["highlight", "dioxus-mdx/lang-bash"]
+lang-c-sharp = ["highlight", "dioxus-mdx/lang-c-sharp"]
+lang-cpp = ["highlight", "dioxus-mdx/lang-cpp"]
+lang-css = ["highlight", "dioxus-mdx/lang-css"]
+lang-dockerfile = ["highlight", "dioxus-mdx/lang-dockerfile"]
+lang-html = ["highlight", "dioxus-mdx/lang-html"]
+lang-javascript = ["highlight", "dioxus-mdx/lang-javascript"]
+lang-json = ["highlight", "dioxus-mdx/lang-json"]
+lang-markdown = ["highlight", "dioxus-mdx/lang-markdown"]
+lang-python = ["highlight", "dioxus-mdx/lang-python"]
+lang-toml = ["highlight", "dioxus-mdx/lang-toml"]
+lang-tsx = ["highlight", "dioxus-mdx/lang-tsx"]
+lang-typescript = ["highlight", "dioxus-mdx/lang-typescript"]
+lang-yaml = ["highlight", "dioxus-mdx/lang-yaml"]
+
 [package.metadata.docs.rs]
-# Without this the `server` module (SeoRouter) is absent from docs.rs -
-# it 404'd on 0.5.0.
-all-features = true
+# Without `server` the `SeoRouter` module is absent from docs.rs - it 404'd on
+# 0.5.0. Deliberately not `all-features`: that would compile every `lang-*`
+# tree-sitter grammar just to render the docs.
+features = ["server"]

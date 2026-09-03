@@ -179,7 +179,12 @@ struct HighlightedCodeProps {
 #[cfg(feature = "highlight")]
 #[component]
 fn HighlightedCode(props: HighlightedCodeProps) -> Element {
-    let language = code_language(props.language.as_deref(), props.filename.as_deref());
+    // No grammar for this fence in this build - either the language is unknown
+    // or its `lang-*` feature is off. Render plain text rather than coloring
+    // the block with some unrelated grammar.
+    let Some(language) = code_language(props.language.as_deref(), props.filename.as_deref()) else {
+        return plain_code_block(&props.code);
+    };
     let theme = match try_use_context::<CodeThemeOverride>() {
         Some(CodeThemeOverride(theme)) => theme(),
         None => CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT),
@@ -206,12 +211,12 @@ fn HighlightedCode(props: HighlightedCodeProps) -> Element {
 }
 
 /// Render a `<pre class="dxc"><code>` block containing the code as an escaped
-/// plain-text node, used when syntax highlighting is disabled.
+/// plain-text node, used whenever no grammar is available: the `highlight`
+/// feature is off, or the fence's `lang-*` feature is not enabled.
 ///
 /// Without the `highlight` feature `dioxus-code`'s stylesheet is not linked, so its
 /// base `.dxc` layout (padding, `overflow: auto`, monospace font) is inlined here to
 /// keep scrolling and spacing intact.
-#[cfg(not(feature = "highlight"))]
 pub(crate) fn plain_code_block(code: &str) -> Element {
     rsx! {
         pre {
@@ -228,32 +233,52 @@ pub(crate) fn plain_code_block(code: &str) -> Element {
     }
 }
 
+/// Resolve a fence's language to a grammar compiled into this build.
+///
+/// Returns `None` when the language is unknown *or* when its `lang-*` feature is
+/// disabled — [`Language`]'s variants are gated by the same features, so an
+/// alias for a grammar that was not compiled in simply falls through to
+/// [`Language::from_slug`], which also returns `None` for it.
 #[cfg(feature = "highlight")]
-pub(crate) fn code_language(language: Option<&str>, filename: Option<&str>) -> Language {
+pub(crate) fn code_language(language: Option<&str>, filename: Option<&str>) -> Option<Language> {
     language
         .and_then(language_from_alias)
         .or_else(|| filename.and_then(Language::detect))
         .or_else(|| language.and_then(Language::detect))
-        .unwrap_or(Language::Markdown)
 }
 
 #[cfg(feature = "highlight")]
 fn language_from_alias(language: &str) -> Option<Language> {
     let normalized = language.trim().to_ascii_lowercase();
     match normalized.as_str() {
+        #[cfg(feature = "lang-bash")]
         "bash" | "sh" | "shell" | "zsh" | "console" | "terminal" => Some(Language::Bash),
+        #[cfg(feature = "lang-cpp")]
         "c++" | "cc" | "cxx" | "hpp" => Some(Language::Cpp),
+        #[cfg(feature = "lang-c-sharp")]
         "c#" | "cs" => Some(Language::CSharp),
+        #[cfg(feature = "lang-dockerfile")]
         "docker" | "dockerfile" | "containerfile" => Some(Language::Dockerfile),
+        #[cfg(feature = "lang-html")]
         "html" | "htm" => Some(Language::Html),
+        #[cfg(feature = "lang-javascript")]
         "js" | "javascript" | "jsx" | "mjs" | "cjs" => Some(Language::JavaScript),
+        #[cfg(feature = "lang-json")]
         "json" | "jsonc" => Some(Language::Json),
+        #[cfg(feature = "lang-markdown")]
         "markdown" | "md" | "mdx" => Some(Language::Markdown),
+        #[cfg(feature = "lang-python")]
         "py" | "python" => Some(Language::Python),
+        // Rust needs no `lang-*` feature: `dioxus-code`'s `runtime` always
+        // compiles it, so `Language::Rust` is never gated out.
         "rs" | "rust" => Some(Language::Rust),
+        #[cfg(feature = "lang-typescript")]
         "ts" | "typescript" => Some(Language::TypeScript),
+        #[cfg(feature = "lang-tsx")]
         "tsx" => Some(Language::Tsx),
+        #[cfg(feature = "lang-toml")]
         "toml" => Some(Language::Toml),
+        #[cfg(feature = "lang-yaml")]
         "yaml" | "yml" => Some(Language::Yaml),
         other => Language::from_slug(other),
     }
@@ -302,5 +327,51 @@ fn CopyButton(props: CopyButtonProps) -> Element {
                 Icon { class: "size-4", icon: LdCopy }
             }
         }
+    }
+}
+
+#[cfg(all(test, feature = "highlight"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rust_needs_no_lang_feature() {
+        assert_eq!(code_language(Some("rs"), None), Some(Language::Rust));
+    }
+
+    #[test]
+    fn unknown_language_has_no_grammar() {
+        assert_eq!(code_language(Some("brainfuck"), None), None);
+    }
+
+    /// A fence with no language and no filename has nothing to detect from, so
+    /// `HighlightedCode` renders it as plain text instead of guessing a grammar.
+    #[test]
+    fn bare_fence_has_no_grammar() {
+        assert_eq!(code_language(None, None), None);
+    }
+
+    /// Languages whose `lang-*` feature is off resolve to `None`, which routes
+    /// the block through `plain_code_block` rather than panicking or coloring
+    /// it with an unrelated grammar. C++ and C# are excluded from the default
+    /// features because their grammars dominate the wasm bundle.
+    #[test]
+    #[cfg(not(feature = "lang-cpp"))]
+    fn disabled_grammar_falls_back_to_plain_text() {
+        assert_eq!(code_language(Some("c++"), None), None);
+        assert_eq!(code_language(Some("cpp"), None), None);
+    }
+
+    #[test]
+    #[cfg(not(feature = "lang-c-sharp"))]
+    fn disabled_c_sharp_grammar_falls_back_to_plain_text() {
+        assert_eq!(code_language(Some("c#"), None), None);
+        assert_eq!(code_language(Some("cs"), None), None);
+    }
+
+    #[test]
+    #[cfg(feature = "lang-python")]
+    fn enabled_grammar_resolves() {
+        assert_eq!(code_language(Some("py"), None), Some(Language::Python));
     }
 }

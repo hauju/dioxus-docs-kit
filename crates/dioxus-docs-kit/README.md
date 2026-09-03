@@ -288,6 +288,7 @@ community contribution.
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 - `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
 - `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain (or wasm `stderr` shim) is needed and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `dioxus-code` re-exports and `DocsConfig::with_code_theme[s]`.
+- `lang-*` — one tree-sitter grammar each, on top of `highlight`. Enabled by default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-tsx`, `lang-typescript`, `lang-yaml`. Also available: `lang-rust` (a no-op — Rust always highlights), `lang-c-sharp`, `lang-cpp`. Any other language goes through `dioxus-code` directly; see [Syntax Highlighting](#syntax-highlighting).
 - `openapi` (default) — renders API reference pages from OpenAPI specs. Required by `DocsConfig::with_openapi()`, which is absent without it. Disable (`default-features = false`) to drop `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`) from the build; docs pages, blog and frontmatter are unaffected.
 - `server` — Axum route builders for crawler-facing endpoints
 
@@ -306,25 +307,41 @@ dioxus::server::serve(|| async {
 
 ## Syntax Highlighting
 
-Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code). The kit ships highlighting for a common set of languages out of the box:
+Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code). Every language is a separate tree-sitter grammar compiled into your binary, so each one sits behind its own `lang-*` feature. Enabled by default:
 
-`bash`, `c#`, `c++`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `tsx`, `typescript`, `yaml`
+`bash`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `tsx`, `typescript`, `yaml`
 
-To add another language (e.g. Go, Zig, Kotlin), depend on `dioxus-code` directly with its `lang-*` feature flag — Cargo unifies it into the kit's transitive dependency, so no kit changes are needed:
+Rust needs no feature of its own — `dioxus-code`'s `runtime` always compiles it, so `highlight` alone highlights Rust.
+
+`lang-c-sharp` and `lang-cpp` exist too but are deliberately **off** by default: dropping those two grammars cut this repo's own release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB to 6.3 MB). Turn them back on if your docs fence C# or C++:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.5"
-dioxus-code = { version = "0.1", default-features = false, features = ["lang-go", "lang-zig"] }
+dioxus-docs-kit = { version = "0.6", features = ["lang-c-sharp", "lang-cpp"] }
 ```
 
-For everything dioxus-code supports in one go:
+To trim the set down to what your docs actually fence:
 
 ```toml
-dioxus-code = { version = "0.1", default-features = false, features = ["all-languages"] }
+[dependencies]
+dioxus-docs-kit = { version = "0.6", default-features = false, features = [
+    "web", "mermaid", "highlight", "lang-bash", "lang-json", "lang-toml",
+] }
 ```
 
-See the [dioxus-code feature list](https://github.com/DioxusLabs/dioxus-code/blob/main/Cargo.toml) for every available `lang-*` flag.
+### Any other language
+
+The kit carries `lang-*` features only for the languages above. For anything else `dioxus-code` supports — Go, Zig, Kotlin, SQL, and ~90 more — add `dioxus-code` to your own `Cargo.toml` with the grammar you want. Cargo unifies that feature into the same `dioxus-code` the kit already depends on, so `Language::from_slug` (which the kit uses to resolve a fence) is compiled with the union of the features and picks the grammar up. No kit changes needed:
+
+```toml
+[dependencies]
+dioxus-docs-kit = "0.6"
+dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }
+```
+
+That route matches on `dioxus-code`'s canonical language slug, so use it in the fence (` ```go `). The friendly aliases (` ```c++ `, ` ```yml `, ` ```sh `) only exist for the languages the kit has its own feature for. See the [dioxus-code feature list](https://github.com/DioxusLabs/dioxus-code/blob/main/Cargo.toml) for every available flag.
+
+A fence whose grammar is not compiled into the build renders as plain, uncolored text in the same markup — it does not fail or fall back to an unrelated grammar.
 
 ## License
 

@@ -22,9 +22,14 @@ enum SampleLang {
 /// system theme (endpoint pages don't follow the site theme toggle).
 #[cfg(feature = "highlight")]
 fn code_sample(code: String, lang: SampleLang) -> Element {
-    let language = match lang {
-        SampleLang::Bash => Language::Bash,
-        SampleLang::Json => Language::Json,
+    // `from_slug` returns `None` when the grammar's `lang-*` feature is off, so
+    // the sample degrades to plain text instead of failing to compile.
+    let slug = match lang {
+        SampleLang::Bash => "bash",
+        SampleLang::Json => "json",
+    };
+    let Some(language) = Language::from_slug(slug) else {
+        return crate::components::code::plain_code_block(&code);
     };
     let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
     rsx! {

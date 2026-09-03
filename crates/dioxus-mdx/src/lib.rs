@@ -74,7 +74,16 @@
 //!
 //! - `web` (default): Enables web-specific features like clipboard copy
 //! - `mermaid` (default): Renders ` ```mermaid ` fences as diagrams
-//! - `highlight` (default): Syntax-highlights code blocks via `dioxus-code`
+//! - `highlight` (default): Syntax highlighting via `dioxus-code`
+//! - `lang-*`: One tree-sitter grammar each. `highlight` alone highlights only
+//!   Rust; the default set adds `lang-bash`, `lang-css`, `lang-dockerfile`,
+//!   `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`,
+//!   `lang-python`, `lang-toml`, `lang-tsx`, `lang-typescript` and `lang-yaml`.
+//!   `lang-c-sharp` and `lang-cpp` exist but are off by default. For any other
+//!   language, depend on `dioxus-code` directly with its `lang-*` flag
+//!   (`features = ["runtime", "lang-go"]`); cargo unifies it into the copy this
+//!   crate uses, so `Language::from_slug` resolves the grammar.
+//!   A fence whose grammar is not compiled in renders as plain text.
 //! - `openapi` (default): Parses OpenAPI specs — `parse_openapi` and inline
 //!   `<OpenAPI>…</OpenAPI>` blocks. Turning it off drops `openapiv3` and
 //!   `serde_yaml` from the build; the `OpenApiSpec` types and the viewer
