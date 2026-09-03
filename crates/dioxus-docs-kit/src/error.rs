@@ -6,6 +6,7 @@ use dioxus_mdx::OpenApiError;
 /// Errors produced when building a [`DocsRegistry`](crate::DocsRegistry) or
 /// [`BlogRegistry`](crate::blog::BlogRegistry) from configuration.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum DocsKitError {
     /// `_nav.json` failed to parse.
     NavParse(serde_json::Error),

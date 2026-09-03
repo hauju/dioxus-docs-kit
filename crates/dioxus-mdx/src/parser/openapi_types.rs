@@ -51,6 +51,7 @@ pub struct ApiTag {
 
 /// HTTP method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum HttpMethod {
     Get,
     Post,
@@ -264,6 +265,7 @@ fn slugify_operation_id(id: &str) -> String {
 
 /// Parameter location.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParameterLocation {
     Path,
     Query,
@@ -371,6 +373,7 @@ impl ApiResponse {
 
 /// Schema type.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum SchemaType {
     String,
     Number,

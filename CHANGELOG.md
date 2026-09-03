@@ -75,7 +75,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   inside the same `<pre class="dxc">` markup. Previously any unresolved language
   (including a bare fence) was highlighted with the Markdown grammar.
 - docs.rs metadata uses explicit feature lists instead of `all-features`.
-
+- **BREAKING: every public enum is now `#[non_exhaustive]`** — `DocNode`,
+  `CalloutType`, `ParamLocation`, `YamlValue`, `HttpMethod`, `ParameterLocation`,
+  `SchemaType`, `OpenApiError` in `dioxus-mdx`; `CodeThemeConfig`, `DocsKitError`,
+  `DocsVariant` in `dioxus-docs-kit`. Adding a variant (a new component, HTTP
+  method, error kind, theme preset) is no longer a breaking change.
 ### Migration
 
 - **C# / C++ / TSX code blocks.** Add the features back, otherwise those blocks
@@ -120,6 +124,8 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 - **`default-features = false` consumers** must add `"openapi"` to keep
   `DocsConfig::with_openapi` and `<OpenAPI>` blocks working.
+- **Exhaustive `match`es** on any of the enums listed above need a `_ =>` arm
+  now that they are `#[non_exhaustive]`.
 - **Bundling your own site.** Build with
   `dx bundle --web --release --debug-symbols false`; without the flag `wasm-opt`
   aborts on DWARF and `dx` ships the unoptimized wasm. Copy `[profile.wasm-release]`
