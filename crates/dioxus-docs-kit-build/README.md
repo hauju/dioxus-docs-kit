@@ -8,7 +8,7 @@ Add it as a build dependency:
 
 ```toml
 [build-dependencies]
-dioxus-docs-kit-build = "0.5"
+dioxus-docs-kit-build = "0.7"
 ```
 
 Create a `build.rs`:

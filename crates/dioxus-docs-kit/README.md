@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.5"
+dioxus-docs-kit = "0.7"
 ```
 
 ### 1. Build a Registry
@@ -313,19 +313,19 @@ Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code)
 
 Rust needs no feature of its own — `dioxus-code`'s `runtime` always compiles it, so `highlight` alone highlights Rust.
 
-`lang-c-sharp` and `lang-cpp` exist too but are deliberately **off** by default: dropping those two grammars cut this repo's own release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB to 6.3 MB). Turn them back on if your docs fence C# or C++:
+`lang-c-sharp`, `lang-cpp` and `lang-tsx` exist too but are deliberately **off** by default: dropping the C# and C++ grammars cut this repo's own release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB to 6.3 MB), and TSX (1.5 MB, React-only) followed. Turn them back on if your docs fence those languages:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { version = "0.6", features = ["lang-c-sharp", "lang-cpp"] }
+dioxus-docs-kit = { version = "0.7", features = ["lang-c-sharp", "lang-cpp", "lang-tsx"] }
 ```
 
 To trim the set down to what your docs actually fence:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { version = "0.6", default-features = false, features = [
-    "web", "mermaid", "highlight", "lang-bash", "lang-json", "lang-toml",
+dioxus-docs-kit = { version = "0.7", default-features = false, features = [
+    "web", "mermaid", "highlight", "openapi", "lang-bash", "lang-json", "lang-toml",
 ] }
 ```
 
@@ -335,13 +335,26 @@ The kit carries `lang-*` features only for the languages above. For anything els
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.6"
+dioxus-docs-kit = "0.7"
 dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }
 ```
 
 That route matches on `dioxus-code`'s canonical language slug, so use it in the fence (` ```go `). The friendly aliases (` ```c++ `, ` ```yml `, ` ```sh `) only exist for the languages the kit has its own feature for. See the [dioxus-code feature list](https://github.com/DioxusLabs/dioxus-code/blob/main/Cargo.toml) for every available flag.
 
 A fence whose grammar is not compiled into the build renders as plain, uncolored text in the same markup — it does not fail or fall back to an unrelated grammar.
+
+## Production build
+
+Bundle with debug symbols off:
+
+```sh
+dx bundle --web --release --debug-symbols false
+```
+
+`dx` keeps DWARF by default and `wasm-opt` aborts on it ("compile unit size was incorrect"), after which `dx` silently ships the *unoptimized* wasm-bindgen output — for this repo's own site that was 25 MB instead of 7 MB. Two more things worth copying from this repo's root `Cargo.toml` and CI workflow:
+
+- `[profile.wasm-release]` / `[profile.server-release]` — the profiles `dx` actually builds with (`opt-level = "z"`, fat LTO, `panic = "abort"` for the wasm; `strip = true` for the server).
+- Brotli sidecars: write a `.br` next to every `.wasm`/`.js`/`.css` under the bundle's `public/` directory (`brotli -q 11 -k`). `dioxus-server` serves them automatically with `content-encoding: br`, taking the wasm from ~7 MB to ~1.4 MB on the wire. `scripts/wasm-size.sh` in this repo reports both numbers and can gate CI on the raw size.
 
 ## License
 

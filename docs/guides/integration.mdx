@@ -22,15 +22,19 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
 
     ```toml
     [dependencies]
-    dioxus-docs-kit = { version = "0.5", default-features = false }
+    dioxus = { version = "0.7", features = ["router", "fullstack"] }
+    dioxus-docs-kit = "0.7"
 
     [build-dependencies]
-    dioxus-docs-kit-build = "0.5"
+    dioxus-docs-kit-build = "0.7"
 
     [features]
     default = ["web"]
     web = ["dioxus/web", "dioxus-docs-kit/web"]
+    server = ["dioxus/server", "dioxus-docs-kit/server"]
     ```
+
+    The kit's defaults bring `mermaid`, `highlight`, `openapi` and a common set of `lang-*` syntax-highlighting grammars. To ship less (for example only the grammars you actually fence), set `default-features = false` and list the features you need — see the crate README's *Syntax Highlighting* section.
   </Step>
 
   <Step title="Create the docs directory">
@@ -195,6 +199,15 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
         }
     }
     ```
+  </Step>
+  <Step title="Build for production">
+    Always bundle with debug symbols off:
+
+    ```bash
+    dx bundle --web --release --debug-symbols false
+    ```
+
+    `dx` keeps DWARF by default, `wasm-opt` aborts on it, and `dx` then silently ships the unoptimized wasm — this site was 25 MB instead of 7 MB until that flag was added. Add brotli sidecars (`.br` next to each `.wasm`/`.js`/`.css` in the bundle) and `dioxus-server` serves them as `content-encoding: br` automatically; the wasm then costs about 1.4 MB on the wire.
   </Step>
 </Steps>
 

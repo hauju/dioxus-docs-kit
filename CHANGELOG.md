@@ -16,13 +16,14 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   manifest defines the `wasm-release` / `server-release` profiles dx actually
   uses (`opt-level = "z"`, fat LTO, one codegen unit and `panic = "abort"` for
   the wasm; `strip = true` for the server). On its own this took the example
-  site's wasm from 25.1 MB to 18.2 MB.
+  site's wasm from 25.1 MB to 18.2 MB; with the grammar changes below the same
+  site now ships 7.2 MB raw / 1.4 MB brotli.
 
 ### Added
 
 - **Brotli sidecars and a size gate in CI.** The homepage workflow writes a
   `.br` file next to every `.wasm`/`.js`/`.css` in the bundle (`dioxus-server`
-  serves them with `content-encoding: br`, so the wasm costs ~2 MB on the wire
+  serves them with `content-encoding: br`, so the wasm costs 1.4 MB on the wire
   instead of 25 MB) and runs `scripts/wasm-size.sh` (`just size`), which reports
   raw and brotli sizes and fails when the raw wasm exceeds
   `WASM_SIZE_LIMIT_BYTES`.
@@ -50,8 +51,9 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 ### Changed
 
 - **BREAKING: the C#, C++ and TSX grammars are no longer compiled by default.**
-  The C# and C++ tree-sitter tables were ~8 MB of the bundle; dropping them took the example
-  site's release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB → 6.3 MB).
+  The C# and C++ tree-sitter tables were ~8 MB of the bundle; dropping them took
+  the example site's release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB →
+  6.3 MB).
   TSX (1.5 MB, React-only) went next. Fences in those languages render as plain
   text unless `lang-c-sharp` / `lang-cpp` / `lang-tsx` is enabled.
 - The example site enables only the grammars its own docs fence (bash, css,
@@ -106,8 +108,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   (` ```c++ `, ` ```yml `, ` ```sh `) only exist for the kit's own `lang-*`
   features.
 
-- **dioxus features.** If your binary relied on the kit for `launch`, `logger`
-  or `devtools`, request them on your own `dioxus` dependency:
+- **dioxus features.** Only relevant if you set `default-features = false` on
+  `dioxus` yourself: the kit no longer re-enables `launch`, `logger` and
+  `devtools` for you, so request them on your own `dioxus` dependency. The stock
+  `dioxus = { version = "0.7", features = ["router", "fullstack"] }` line keeps
+  dioxus's defaults and needs no change:
 
   ```toml
   dioxus = { version = "0.7", features = ["lib", "router", "fullstack", "launch", "devtools", "logger"] }
@@ -115,6 +120,12 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 - **`default-features = false` consumers** must add `"openapi"` to keep
   `DocsConfig::with_openapi` and `<OpenAPI>` blocks working.
+- **Bundling your own site.** Build with
+  `dx bundle --web --release --debug-symbols false`; without the flag `wasm-opt`
+  aborts on DWARF and `dx` ships the unoptimized wasm. Copy `[profile.wasm-release]`
+  from this repo's `Cargo.toml` and write `.br` sidecars into the bundle's
+  `public/` directory — `dioxus-server` serves them with `content-encoding: br`
+  automatically. See the kit README's "Production build" section.
 
 ## [0.6.1] — 2026-08-16
 
