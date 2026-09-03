@@ -19,3 +19,9 @@ script = []
 # Javascript code file
 # serve: [dev-server] only
 script = []
+
+# wasm-opt runs automatically on release web builds. `z` is the current dx
+# default; pin it so a future default change cannot silently grow the bundle.
+# Whether DWARF survives is controlled by `dx build --debug-symbols`, not here.
+[web.wasm_opt]
+level = "z"

@@ -10,6 +10,9 @@ env:
   CARGO_TERM_COLOR: always
   REGISTRY: dcr.oxidt.com
   IMAGE_NAME: oxidt/dioxus-docs-kit
+  # Fail the build job when the raw (uncompressed) wasm grows past this. Retune
+  # it deliberately when size work lands - see scripts/wasm-size.sh.
+  WASM_SIZE_LIMIT_BYTES: "20000000"
 
 # Cancel superseded runs on rapid pushes to the same ref.
 concurrency:
@@ -155,13 +158,30 @@ jobs:
           bun install --frozen-lockfile
           bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
 
+      # --debug-symbols false strips DWARF from the wasm. Without it wasm-opt is
+      # handed --debuginfo, aborts on the DWARF it cannot rewrite, and dx falls
+      # back to the *unoptimized* wasm-bindgen output.
       - name: Build
-        run: dx bundle --web --release
+        run: dx bundle --web --release --debug-symbols false
         env:
           # DOCS_SITE_URL is a repo Actions variable holding this site's public
           # origin (https://dioxus-docs-kit.oxidt.com). Read at COMPILE time by
           # option_env! — it must be on this build step, not Coolify's runtime env.
           DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
+
+      # dioxus-server serves each static file through
+      # `ServeFile::new(path).precompressed_br()`, so a `foo.wasm.br` sidecar is
+      # returned with `content-encoding: br` to clients that accept it. It never
+      # looks for gzip sidecars, so only brotli is worth writing.
+      - name: Pre-compress web assets with brotli
+        run: |
+          sudo apt-get update && sudo apt-get install -y brotli
+          find target/dx/dioxus-docs-kit-example/release/web/public \
+            -type f \( -name '*.wasm' -o -name '*.js' -o -name '*.css' \) \
+            -exec brotli -q 11 -f -k {} +
+
+      - name: Check bundle size
+        run: ./scripts/wasm-size.sh
 
       # Registry secrets are unavailable on fork PRs, so only set up Docker and
       # push the image on push events.
