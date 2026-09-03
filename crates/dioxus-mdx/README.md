@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-mdx = "0.5"
+dioxus-mdx = "0.7"
 ```
 
 Render MDX content in a component:

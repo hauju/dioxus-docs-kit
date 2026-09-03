@@ -181,7 +181,7 @@ Collapsible content sections:
     MDX combines the simplicity of Markdown with the power of custom components, making documentation both easy to write and feature-rich.
   </Accordion>
   <Accordion title="How does syntax highlighting work?">
-    Code blocks are parsed and highlighted using syntect for accurate, language-aware syntax highlighting.
+    Code blocks are highlighted by `dioxus-code`, which compiles tree-sitter grammars into the wasm. Each language sits behind a `lang-*` cargo feature so you only ship the grammars you fence; a block whose grammar is not compiled in renders as plain text.
   </Accordion>
 </AccordionGroup>
 

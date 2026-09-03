@@ -33,10 +33,10 @@ To add the kit to an **existing** Dioxus app instead, follow the
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = "0.6.1"
+dioxus-docs-kit = "0.7"
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.6.1"
+dioxus-docs-kit-build = "0.7"
 
 [features]
 default = ["web"]
@@ -192,6 +192,14 @@ Then in your `tailwind.css`:
 ```
 
 The safelist file includes a version comment at the top — check it periodically and re-copy when the crate updates.
+
+### 6. Build for production
+
+```sh
+dx bundle --web --release --debug-symbols false
+```
+
+Without `--debug-symbols false`, `wasm-opt` aborts on the DWARF `dx` keeps by default and `dx` silently ships the unoptimized wasm (25 MB instead of 7 MB for this site). Copy the `[profile.wasm-release]` section from this repo's `Cargo.toml` and write brotli sidecars into the bundle — details in the [kit README](crates/dioxus-docs-kit/README.md#production-build).
 
 ## Claude Code Skill
 
