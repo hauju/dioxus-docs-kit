@@ -113,6 +113,7 @@ and adapt to any DaisyUI theme.
 
 - `web` (default) — enables web-specific features like clipboard copy buttons on code blocks
 - `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain is needed for wasm and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `CodeTheme`, `Theme`, and `CodeThemeOverride` re-exports.
+- `openapi` (default) — parses OpenAPI specs: `parse_openapi()` and inline `<OpenAPI>…</OpenAPI>` blocks. Disable to drop `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`) from the build. The `OpenApiSpec` types and the viewer components (`OpenApiViewer`, `EndpointPage`, …) stay available — only spec parsing goes away, so an `<OpenAPI>` block falls through to the markdown branch and its body renders as text. Frontmatter parsing is unaffected: it uses the built-in `parse_yaml_lite` subset parser, not `serde_yaml`.
 
 ## License
 

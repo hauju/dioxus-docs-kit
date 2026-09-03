@@ -8,9 +8,10 @@ use crate::config::CodeThemeConfig;
 use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
 use crate::search::{Field, clean_markdown, search_lower};
+#[cfg(feature = "openapi")]
+use dioxus_mdx::parse_openapi;
 use dioxus_mdx::{
-    ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, parse_openapi,
-    slugify,
+    ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, slugify,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -246,7 +247,9 @@ impl DocsRegistry {
             .map(|(&path, &content)| (path, parse_document(content)))
             .collect();
 
-        // Parse OpenAPI specs
+        // Parse OpenAPI specs. Without the `openapi` feature no spec can be
+        // registered, so the rest of the API index simply sees an empty list.
+        #[cfg(feature = "openapi")]
         let openapi_specs: Vec<(String, OpenApiSpec)> = config
             .openapi_specs()
             .iter()
@@ -259,6 +262,8 @@ impl DocsRegistry {
                     })
             })
             .collect::<Result<_, _>>()?;
+        #[cfg(not(feature = "openapi"))]
+        let openapi_specs: Vec<(String, OpenApiSpec)> = Vec::new();
 
         // Determine default path
         let default_path = config
@@ -778,6 +783,7 @@ mod tests {
     // Multi-section fixture: intro text, then an h2 with a nested h3.
     const SECTIONS_DOC: &str = "---\ntitle: Widget Guide\ndescription: All about widgets\n---\n\nIntro paragraph about widgets.\n\n## Installation Steps\n\nRun the installer to set up widgets.\n\n### Advanced Setup\n\nConfigure the widget cache carefully.\n";
 
+    #[cfg(feature = "openapi")]
     const PETS_SPEC: &str = r#"
 openapi: "3.0.0"
 info:
@@ -811,6 +817,7 @@ paths:
           description: OK
 "#;
 
+    #[cfg(feature = "openapi")]
     const ADMIN_SPEC: &str = r#"
 openapi: "3.0.0"
 info:
@@ -838,10 +845,12 @@ paths:
     }
 
     fn registry() -> DocsRegistry {
-        DocsConfig::new(NAV, content_map())
+        let config = DocsConfig::new(NAV, content_map());
+        #[cfg(feature = "openapi")]
+        let config = config
             .with_openapi("api-reference", PETS_SPEC)
-            .with_openapi("admin-api", ADMIN_SPEC)
-            .build()
+            .with_openapi("admin-api", ADMIN_SPEC);
+        config.build()
     }
 
     #[test]
@@ -854,6 +863,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn try_build_reports_openapi_error_with_prefix() {
         let Err(err) = DocsConfig::new(NAV, content_map())
             .with_openapi("api-reference", "openapi: true")
@@ -965,6 +975,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn api_sidebar_entries_group_by_tag_with_prefix() {
         let reg = registry();
         let groups = reg.get_api_sidebar_entries();
@@ -989,6 +1000,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn operation_lookup_resolves_owning_spec() {
         let reg = registry();
 
@@ -1031,6 +1043,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn tab_for_path_covers_static_and_api_pages() {
         let reg = registry();
         assert_eq!(
@@ -1058,6 +1071,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn sitemap_includes_index_pages_and_api_endpoints() {
         let out = registry().generate_sitemap("https://example.com", "/docs");
         assert!(out.contains("<loc>https://example.com/docs</loc>"));
@@ -1072,6 +1086,7 @@ paths:
     }
 
     #[test]
+    #[cfg(feature = "openapi")]
     fn sidebar_title_resolves_api_summaries_and_frontmatter() {
         let reg = registry();
         assert_eq!(

@@ -1,4 +1,4 @@
-use dioxus_mdx::DocNode;
+use dioxus_mdx::{DocNode, YamlLiteError, parse_yaml_lite};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -23,26 +23,37 @@ pub struct Author {
 }
 
 /// Blog post frontmatter extracted from MDX files.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlogFrontmatter {
     pub title: String,
-    #[serde(default)]
     pub description: Option<String>,
     /// ISO 8601 date string, e.g. "2026-03-15"
     pub date: String,
     /// Author ID referencing `_blog.json` authors map
     pub author: String,
-    #[serde(default)]
     pub tags: Vec<String>,
-    /// Cover image path (relative to assets/)
-    #[serde(default, rename = "coverImage")]
+    /// Cover image path (relative to assets/), from the `coverImage` key
     pub cover_image: Option<String>,
     /// Set to true to hide from listing
-    #[serde(default)]
     pub draft: bool,
     /// Set to true to pin this post to the featured section
-    #[serde(default)]
     pub featured: bool,
+}
+
+impl BlogFrontmatter {
+    fn from_yaml(yaml: &str) -> Result<Self, YamlLiteError> {
+        let map = parse_yaml_lite(yaml)?;
+        Ok(Self {
+            title: map.require_str("title")?,
+            description: map.optional_str("description")?,
+            date: map.require_str("date")?,
+            author: map.require_str("author")?,
+            tags: map.optional_str_seq("tags")?,
+            cover_image: map.optional_str("coverImage")?,
+            draft: map.optional_bool("draft")?,
+            featured: map.optional_bool("featured")?,
+        })
+    }
 }
 
 /// A fully parsed blog post.
@@ -95,8 +106,8 @@ pub fn extract_blog_frontmatter(content: &str) -> Result<(BlogFrontmatter, &str)
     let yaml_content = after_first_delim[..end_idx].trim();
     let remaining = after_first_delim[end_idx + 4..].trim_start();
 
-    let fm: BlogFrontmatter =
-        serde_yaml::from_str(yaml_content).map_err(|e| format!("invalid frontmatter: {e}"))?;
+    let fm = BlogFrontmatter::from_yaml(yaml_content)
+        .map_err(|e| format!("invalid frontmatter: {e}"))?;
     Ok((fm, remaining))
 }
 
@@ -121,6 +132,38 @@ mod tests {
         assert_eq!(fm.tags, vec!["rust".to_string()]);
         assert!(!fm.draft);
         assert!(body.starts_with("Body text"));
+    }
+
+    #[test]
+    fn extracts_block_sequence_tags_booleans_and_comments() {
+        let content = "---\n# post metadata\ntitle: 'It''s fine'\ndate: \"2026-03-15\"\nauthor: jane\ntags:\n  - rust\n  - \"dioxus\"\ndraft: true\nfeatured: false\ncoverImage: /img/cover.png # relative to assets/\n---\n\nBody";
+        let (fm, body) = extract_blog_frontmatter(content).unwrap();
+        assert_eq!(fm.title, "It's fine");
+        assert_eq!(fm.tags, vec!["rust".to_string(), "dioxus".to_string()]);
+        assert!(fm.draft);
+        assert!(!fm.featured);
+        assert_eq!(fm.cover_image, Some("/img/cover.png".to_string()));
+        assert!(body.starts_with("Body"));
+    }
+
+    #[test]
+    fn unsupported_yaml_shape_errors() {
+        // A nested mapping is outside the supported frontmatter subset.
+        let err = extract_blog_frontmatter(
+            "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor:\n  name: jane\n---\nBody",
+        )
+        .unwrap_err();
+        assert!(err.contains("invalid frontmatter"), "got: {err}");
+    }
+
+    #[test]
+    fn wrongly_typed_field_errors() {
+        // `tags` must be a sequence, not a scalar.
+        let err = extract_blog_frontmatter(
+            "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\ntags: rust\n---\nBody",
+        )
+        .unwrap_err();
+        assert!(err.contains("tags"), "got: {err}");
     }
 
     #[test]

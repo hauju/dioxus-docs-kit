@@ -117,7 +117,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     });
     ```
 
-    To include an OpenAPI spec, chain `.with_openapi()`:
+    To include an OpenAPI spec, chain `.with_openapi()` (needs the `openapi` feature, on by default):
 
     ```rust
     DocsConfig::new(nav_json, content_map)

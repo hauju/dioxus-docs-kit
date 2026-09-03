@@ -102,7 +102,7 @@ Route enum (main.rs):
 - Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
-- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight"]`, plus `server` (SeoRouter/Axum routes)
+- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi"]`, plus `server` (SeoRouter/Axum routes). `openapi` gates `DocsConfig::with_openapi` + spec parsing (drops `openapiv3`/`serde_yaml` when off); frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
 - CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.3, Bun for Tailwind
 
 ---

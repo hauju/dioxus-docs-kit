@@ -20,18 +20,18 @@ dioxus-mdx = { workspace = true }
 dioxus-code = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 tracing = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { workspace = true }
 
 [features]
-default = ["web", "mermaid", "highlight"]
+default = ["web", "mermaid", "highlight", "openapi"]
 web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
+openapi = ["dioxus-mdx/openapi"]
 
 [package.metadata.docs.rs]
 # Without this the `server` module (SeoRouter) is absent from docs.rs -

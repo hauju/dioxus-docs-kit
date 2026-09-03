@@ -44,7 +44,7 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
 
-The kit's default features are `web` + `mermaid` + `highlight`; if you disable default features, re-enable `mermaid` and `highlight` too, or ` ```mermaid ` fences stop rendering as diagrams and code blocks lose syntax coloring.
+The kit's default features are `web` + `mermaid` + `highlight` + `openapi`; if you disable default features, re-enable `mermaid`, `highlight` and `openapi` too, or ` ```mermaid ` fences stop rendering as diagrams, code blocks lose syntax coloring, and `DocsConfig::with_openapi()` disappears.
 
 ### 2. Set up `build.rs`
 

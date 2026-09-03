@@ -73,6 +73,12 @@
 //! ## Features
 //!
 //! - `web` (default): Enables web-specific features like clipboard copy
+//! - `mermaid` (default): Renders ` ```mermaid ` fences as diagrams
+//! - `highlight` (default): Syntax-highlights code blocks via `dioxus-code`
+//! - `openapi` (default): Parses OpenAPI specs — `parse_openapi` and inline
+//!   `<OpenAPI>…</OpenAPI>` blocks. Turning it off drops `openapiv3` and
+//!   `serde_yaml` from the build; the `OpenApiSpec` types and the viewer
+//!   components stay, and an `<OpenAPI>` block renders as plain markdown.
 //!
 //! ## Custom Link Handling
 //!
@@ -103,12 +109,17 @@ pub use parser::{
     AccordionGroupNode, AccordionNode, ApiInfo, ApiOperation, ApiParameter, ApiRequestBody,
     ApiResponse, ApiServer, ApiTag, CalloutNode, CalloutType, CardGroupNode, CardNode,
     CodeBlockNode, CodeGroupNode, DocFrontmatter, DocNode, ExpandableNode, HttpMethod,
-    MediaTypeContent, OpenApiError, OpenApiNode, OpenApiSpec, ParamFieldNode, ParamLocation,
-    ParameterLocation, ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode,
-    SchemaDefinition, SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode,
-    extract_frontmatter, get_raw_markdown, parse_document, parse_mdx, parse_openapi,
+    MediaTypeContent, OpenApiNode, OpenApiSpec, ParamFieldNode, ParamLocation, ParameterLocation,
+    ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode, SchemaDefinition,
+    SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode, YamlLiteError, YamlMap,
+    YamlValue, extract_frontmatter, get_raw_markdown, parse_document, parse_mdx, parse_yaml_lite,
     strip_leading_h1,
 };
+
+// Spec parsing lives behind the `openapi` feature (default); the `OpenApiSpec`
+// types and the viewer components above are always available.
+#[cfg(feature = "openapi")]
+pub use parser::{OpenApiError, parse_openapi};
 
 // Re-export the syntax-highlighting theme types so consumers can build a
 // `CodeThemeOverride` without depending on `dioxus-code` directly. Only available

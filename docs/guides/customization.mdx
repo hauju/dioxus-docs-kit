@@ -171,6 +171,7 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 - The second argument is the OpenAPI YAML content
 - Endpoint slugs are derived from `operationId` values (camelCase → kebab-case)
 - Sidebar entries are generated automatically, grouped by tag
+- Needs the `openapi` cargo feature (on by default). Turning it off removes `.with_openapi()` and drops `openapiv3` + `serde_yaml` from the build
 
 <Note>
 You also need an `api-reference/overview` page in `_nav.json`. The individual endpoint pages are generated dynamically from the spec.

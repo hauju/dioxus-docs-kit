@@ -1,7 +1,5 @@
 //! Type definitions for parsed MDX documentation.
 
-use serde::Deserialize;
-
 use super::openapi_types::OpenApiSpec;
 
 /// Parsed documentation page with frontmatter and content.
@@ -16,20 +14,15 @@ pub struct ParsedDoc {
 }
 
 /// YAML frontmatter metadata from MDX files.
-#[derive(Debug, Clone, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DocFrontmatter {
     /// Page title (used in H1 and browser tab).
-    #[serde(default)]
     pub title: String,
     /// Short description (used in meta tags and previews).
-    #[serde(default)]
     pub description: Option<String>,
-    /// Sidebar title (shorter than main title).
-    #[serde(rename = "sidebarTitle")]
-    #[serde(default)]
+    /// Sidebar title (shorter than main title), from the `sidebarTitle` key.
     pub sidebar_title: Option<String>,
     /// Icon name (Lucide icon identifier).
-    #[serde(default)]
     pub icon: Option<String>,
 }
 

@@ -12,7 +12,9 @@ mod content;
 mod fields;
 mod frontmatter;
 mod heading;
+#[cfg(feature = "openapi")]
 mod openapi_parser;
+#[cfg(feature = "openapi")]
 mod openapi_tag;
 mod openapi_types;
 mod steps;
@@ -20,13 +22,16 @@ mod tabs;
 mod types;
 mod update;
 mod utils;
+pub mod yaml_lite;
 
 pub use content::{get_raw_markdown, parse_mdx};
 pub use frontmatter::extract_frontmatter;
 pub use heading::strip_leading_h1;
+#[cfg(feature = "openapi")]
 pub use openapi_parser::{OpenApiError, parse_openapi};
 pub use openapi_types::*;
 pub use types::*;
+pub use yaml_lite::{YamlLiteError, YamlMap, YamlValue, parse_yaml_lite};
 
 /// Parse a complete MDX document, extracting frontmatter and content.
 ///
