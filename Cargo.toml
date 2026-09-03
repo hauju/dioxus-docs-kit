@@ -15,7 +15,7 @@ repository = "https://github.com/hauju/dioxus-docs-kit"
 homepage = "https://github.com/hauju/dioxus-docs-kit"
 
 [workspace.dependencies]
-dioxus = "0.7.9"
+dioxus = { version = "0.7.9", default-features = false }
 dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 dioxus-code = { version = "0.1.2", default-features = false, features = ["runtime"] }
 dioxus-mdx = { version = "0.6.1", path = "crates/dioxus-mdx", default-features = false }
@@ -36,7 +36,17 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-dioxus = { workspace = true, features = ["router", "fullstack"] }
+# The workspace dependency sets `default-features = false` so the library
+# crates don't force `launch`/`logger`/`devtools` on their consumers; the
+# binary needs them itself (hot reload, `tracing` output in the console).
+dioxus = { workspace = true, features = [
+    "lib",
+    "router",
+    "fullstack",
+    "launch",
+    "devtools",
+    "logger",
+] }
 dioxus-free-icons = { workspace = true }
 dioxus-docs-kit = { workspace = true }
 
@@ -44,12 +54,58 @@ dioxus-docs-kit = { workspace = true }
 dioxus-docs-kit-build = { workspace = true }
 
 [features]
-default = ["web", "mermaid", "highlight", "openapi"]
+default = [
+    "web",
+    "mermaid",
+    "highlight",
+    "openapi",
+    "lang-bash",
+    "lang-css",
+    "lang-dockerfile",
+    "lang-html",
+    "lang-javascript",
+    "lang-json",
+    "lang-markdown",
+    "lang-python",
+    "lang-tsx",
+    "lang-toml",
+    "lang-typescript",
+    "lang-yaml",
+]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
 highlight = ["dioxus-docs-kit/highlight"]
 openapi = ["dioxus-docs-kit/openapi"]
+
+# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
+# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
+# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
+# your fences actually use: dropping just the C# and C++ grammars took this
+# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
+# compiled in renders as plain text.
+#
+# For a language not listed here, depend on `dioxus-code` directly with its
+# `lang-*` flag; cargo unifies the feature into this crate's copy of the
+# dependency and `Language::from_slug` picks the grammar up:
+#   dioxus-code = { version = "0.1", default-features = false, features = [
+#       "runtime", "lang-go",
+#   ] }
+lang-rust = ["highlight", "dioxus-docs-kit/lang-rust"]
+lang-bash = ["highlight", "dioxus-docs-kit/lang-bash"]
+lang-c-sharp = ["highlight", "dioxus-docs-kit/lang-c-sharp"]
+lang-cpp = ["highlight", "dioxus-docs-kit/lang-cpp"]
+lang-css = ["highlight", "dioxus-docs-kit/lang-css"]
+lang-dockerfile = ["highlight", "dioxus-docs-kit/lang-dockerfile"]
+lang-html = ["highlight", "dioxus-docs-kit/lang-html"]
+lang-javascript = ["highlight", "dioxus-docs-kit/lang-javascript"]
+lang-json = ["highlight", "dioxus-docs-kit/lang-json"]
+lang-markdown = ["highlight", "dioxus-docs-kit/lang-markdown"]
+lang-python = ["highlight", "dioxus-docs-kit/lang-python"]
+lang-toml = ["highlight", "dioxus-docs-kit/lang-toml"]
+lang-tsx = ["highlight", "dioxus-docs-kit/lang-tsx"]
+lang-typescript = ["highlight", "dioxus-docs-kit/lang-typescript"]
+lang-yaml = ["highlight", "dioxus-docs-kit/lang-yaml"]
 
 # `dx` does not build with the plain `release` profile: it derives one per
 # bundle format, so `dx bundle --web --release` compiles the wasm client with
