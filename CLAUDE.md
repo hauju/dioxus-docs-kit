@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```sh
 dx serve                    # Dev server with hot reload
 dx build --release          # Production build
-dx bundle --web --release   # Bundle for deployment
+dx bundle --web --release --debug-symbols false   # Bundle for deployment (without the flag wasm-opt aborts on DWARF and dx ships the unoptimized wasm)
 ```
 
 **Linting & testing (matches CI):**
@@ -102,7 +102,7 @@ Route enum (main.rs):
 - Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
-- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi"]`, plus `server` (SeoRouter/Axum routes). `openapi` gates `DocsConfig::with_openapi` + spec parsing (drops `openapiv3`/`serde_yaml` when off); frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
+- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi", lang-*]` where the default `lang-*` set is bash, css, dockerfile, html, javascript, json, markdown, python, toml, tsx, typescript, yaml (`lang-c-sharp`/`lang-cpp` exist but are off — their grammars were ~8 MB of wasm; Rust is always highlighted). Plus `server` (SeoRouter/Axum routes). `openapi` gates `DocsConfig::with_openapi` + spec parsing (drops `openapiv3`/`serde_yaml` when off); frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
 - CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.3, Bun for Tailwind
 
 ---
