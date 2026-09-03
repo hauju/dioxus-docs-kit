@@ -28,6 +28,7 @@ pub struct DocFrontmatter {
 
 /// A node in the parsed documentation tree.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum DocNode {
     /// Plain markdown content to be rendered as HTML.
     Markdown(String),
@@ -65,6 +66,7 @@ pub enum DocNode {
 
 /// Callout variant type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CalloutType {
     Tip,
     Note,
@@ -195,6 +197,7 @@ pub struct CodeGroupNode {
 
 /// Location of a parameter in an API request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParamLocation {
     Header,
     Path,

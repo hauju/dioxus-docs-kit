@@ -39,6 +39,7 @@ fn err(line: usize, message: impl std::fmt::Display) -> YamlLiteError {
 
 /// A value in a [`YamlMap`].
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum YamlValue {
     /// `key:` with nothing after it (and no sequence items following).
     Null,

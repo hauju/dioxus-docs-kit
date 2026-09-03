@@ -49,6 +49,7 @@ pub struct CurrentTheme(pub Signal<String>);
 /// in their own CSS to further tweak the look. The shipped `theme.css` applies
 /// width / type-scale differences out of the box.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DocsVariant {
     /// Default: wide margins, generous line-height, optimized for long-form prose.
     #[default]

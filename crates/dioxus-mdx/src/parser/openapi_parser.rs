@@ -13,6 +13,7 @@ use super::openapi_types::*;
 
 /// Error type for OpenAPI parsing.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum OpenApiError {
     /// YAML/JSON parsing failed.
     ParseError(String),

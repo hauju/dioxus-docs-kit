@@ -25,6 +25,7 @@ pub struct ThemeConfig {
 /// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
 #[cfg(feature = "highlight")]
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum CodeThemeConfig {
     /// Always use this one theme, regardless of the site's light/dark state.
     Fixed(Theme),
