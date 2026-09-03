@@ -2,7 +2,7 @@
 
 use std::sync::LazyLock;
 
-use regex::Regex;
+use crate::re::Regex;
 
 /// A fenced code block located by [`find_fenced_blocks`].
 pub(super) struct FencedBlock<'a> {

@@ -112,6 +112,7 @@
 
 pub mod components;
 pub mod parser;
+mod re;
 
 // Re-export parser types and functions
 pub use parser::{

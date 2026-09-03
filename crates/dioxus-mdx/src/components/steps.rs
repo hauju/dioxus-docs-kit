@@ -2,8 +2,8 @@
 
 use std::sync::LazyLock;
 
+use crate::re::Regex;
 use dioxus::prelude::*;
-use regex::Regex;
 
 use crate::components::DocNodeRenderer;
 use crate::parser::{DocNode, StepsNode};

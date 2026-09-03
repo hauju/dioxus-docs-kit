@@ -80,6 +80,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `SchemaType`, `OpenApiError` in `dioxus-mdx`; `CodeThemeConfig`, `DocsKitError`,
   `DocsVariant` in `dioxus-docs-kit`. Adding a variant (a new component, HTTP
   method, error kind, theme preset) is no longer a breaking change.
+- `dioxus-mdx` uses `regex-lite` instead of `regex` when `highlight` is off.
+  With highlighting on, `arborium-tree-sitter` links `regex` anyway, so the
+  crate keeps sharing it; without it, `regex`, `regex-automata`, `regex-syntax`
+  and `aho-corasick` (~440 KB of pre-wasm-opt code) leave the build.
+
 ### Migration
 
 - **C# / C++ / TSX code blocks.** Add the features back, otherwise those blocks

@@ -2,7 +2,7 @@
 
 use std::sync::LazyLock;
 
-use regex::Regex;
+use crate::re::Regex;
 
 use super::accordion::{try_parse_accordion_group, try_parse_standalone_accordion};
 use super::callout::try_parse_callout;
