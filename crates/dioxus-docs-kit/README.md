@@ -288,7 +288,7 @@ community contribution.
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 - `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
 - `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain (or wasm `stderr` shim) is needed and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `dioxus-code` re-exports and `DocsConfig::with_code_theme[s]`.
-- `lang-*` — one tree-sitter grammar each, on top of `highlight`. Enabled by default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-tsx`, `lang-typescript`, `lang-yaml`. Also available: `lang-rust` (a no-op — Rust always highlights), `lang-c-sharp`, `lang-cpp`. Any other language goes through `dioxus-code` directly; see [Syntax Highlighting](#syntax-highlighting).
+- `lang-*` — one tree-sitter grammar each, on top of `highlight`. Enabled by default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-typescript`, `lang-yaml`. Also available: `lang-rust` (a no-op — Rust always highlights), `lang-c-sharp`, `lang-cpp`, `lang-tsx`. Any other language goes through `dioxus-code` directly; see [Syntax Highlighting](#syntax-highlighting).
 - `openapi` (default) — renders API reference pages from OpenAPI specs. Required by `DocsConfig::with_openapi()`, which is absent without it. Disable (`default-features = false`) to drop `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`) from the build; docs pages, blog and frontmatter are unaffected.
 - `server` — Axum route builders for crawler-facing endpoints
 
@@ -309,7 +309,7 @@ dioxus::server::serve(|| async {
 
 Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code). Every language is a separate tree-sitter grammar compiled into your binary, so each one sits behind its own `lang-*` feature. Enabled by default:
 
-`bash`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `tsx`, `typescript`, `yaml`
+`bash`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `typescript`, `yaml`
 
 Rust needs no feature of its own — `dioxus-code`'s `runtime` always compiles it, so `highlight` alone highlights Rust.
 

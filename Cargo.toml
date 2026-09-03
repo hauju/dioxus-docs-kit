@@ -54,6 +54,8 @@ dioxus-docs-kit = { workspace = true }
 dioxus-docs-kit-build = { workspace = true }
 
 [features]
+# The example enables only the grammars `docs/` actually fences (plus bash and
+# json, which the generated API reference pages use) rather than the kit default.
 default = [
     "web",
     "mermaid",
@@ -61,16 +63,9 @@ default = [
     "openapi",
     "lang-bash",
     "lang-css",
-    "lang-dockerfile",
-    "lang-html",
-    "lang-javascript",
     "lang-json",
-    "lang-markdown",
     "lang-python",
-    "lang-tsx",
-    "lang-toml",
     "lang-typescript",
-    "lang-yaml",
 ]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]

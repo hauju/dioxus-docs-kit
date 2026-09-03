@@ -42,7 +42,6 @@ default = [
     "lang-json",
     "lang-markdown",
     "lang-python",
-    "lang-tsx",
     "lang-toml",
     "lang-typescript",
     "lang-yaml",
