@@ -32,6 +32,7 @@ pub(crate) struct SearchHit {
 /// Emits the stable `dk-search-*` classes for consumer CSS hooks.
 #[component]
 pub(crate) fn SearchModalShell(
+    id: &'static str,
     placeholder: &'static str,
     search: Callback<String, Vec<SearchHit>>,
     on_select: Callback<String>,
@@ -39,7 +40,9 @@ pub(crate) fn SearchModalShell(
     let super::docs_layout::SearchOpen(mut search_open) = use_context();
     let mut query = use_signal(String::new);
     let mut selected = use_signal(|| 0usize);
-    let dialog_id = use_hook(|| format!("dk-search-{}", dioxus::core::current_scope_id().0));
+    // A fixed id: scope ids can differ between the server and client render
+    // orders, and hydration never rewrites serialized attributes.
+    let dialog_id = id.to_string();
     let results_id = format!("{dialog_id}-results");
 
     let results = use_memo(move || search(query()));
@@ -202,7 +205,6 @@ pub(crate) fn SearchModalShell(
                     } else {
                         for (index, hit) in results.read().iter().enumerate() {
                             SearchResultRow {
-                                key: "{hit.target}",
                                 id: format!("{results_id}-{index}"),
                                 hit: hit.clone(),
                                 active: selected() == index,

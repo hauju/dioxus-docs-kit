@@ -48,7 +48,11 @@ impl HeadTag {
 /// Dioxus 0.7 head components insert once and do not remove on unmount.
 /// Keep their initial props for SSR/hydration; own updates and cleanup on the client.
 #[component]
-pub(crate) fn ManagedPageHead(title: String, tags: Vec<HeadTag>) -> Element {
+pub(crate) fn ManagedPageHead(
+    title: String,
+    tags: Vec<HeadTag>,
+    #[props(default = true)] set_title: bool,
+) -> Element {
     let initial = use_hook(|| tags.clone());
     let owner = dioxus::core::current_scope_id().0;
     use_effect(use_reactive!(|tags| {
@@ -93,7 +97,9 @@ pub(crate) fn ManagedPageHead(title: String, tags: Vec<HeadTag>) -> Element {
         ));
     });
     rsx! {
-        document::Title { "{title}" }
+        if set_title {
+            document::Title { "{title}" }
+        }
         for (index, tag) in initial.iter().enumerate() {
             match tag.tag {
                 "meta" => rsx! { document::Meta {
@@ -113,9 +119,10 @@ pub(crate) fn ManagedPageHead(title: String, tags: Vec<HeadTag>) -> Element {
 }
 
 /// Not-found responses always carry noindex, even when automatic page metadata
-/// is disabled. Setting the status during render also covers direct SSR loads.
+/// is disabled (the title is then left to the consumer). Setting the status
+/// during render also covers direct SSR loads.
 #[component]
-pub(crate) fn NotFoundMeta(title: String) -> Element {
+pub(crate) fn NotFoundMeta(title: String, auto_meta: bool) -> Element {
     #[cfg(feature = "server")]
     if let Some(mut context) = dioxus_fullstack_core::FullstackContext::current() {
         context.set_current_http_status(dioxus_fullstack_core::HttpError::new(
@@ -123,5 +130,11 @@ pub(crate) fn NotFoundMeta(title: String) -> Element {
             title.clone(),
         ));
     }
-    rsx! { ManagedPageHead { title, tags: vec![HeadTag::meta("name", "robots", "noindex")] } }
+    rsx! {
+        ManagedPageHead {
+            title,
+            tags: vec![HeadTag::meta("name", "robots", "noindex")],
+            set_title: auto_meta,
+        }
+    }
 }

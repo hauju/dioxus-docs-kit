@@ -336,7 +336,7 @@ fn BlogCategoryPaginated(slug: String, page: usize) -> Element {
 }
 ```
 
-In `MyBlogLayout`, derive the current category from the route alongside `current_slug`. Pass it to `BlogContext` to highlight the active category and close the mobile drawer after navigation:
+In `MyBlogLayout`, derive the current category from the route alongside `current_slug` and pass it to `BlogContext`. This is required once `with_category_base_path` is set: it highlights the active category and closes the mobile drawer after category navigation.
 
 ```rust
 let current_category = use_memo(use_reactive!(|route| match route {
