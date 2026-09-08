@@ -27,10 +27,6 @@ To add the kit to an **existing** Dioxus app instead, follow the
 
 ## Integration Guide
 
-The `0.7` examples below target the upcoming release on this branch. The
-workspace is still versioned `0.6.1`; when integrating these unreleased APIs,
-use a git dependency pinned to a commit from this branch for both kit crates.
-
 ### 1. Add dependencies
 
 ```toml
