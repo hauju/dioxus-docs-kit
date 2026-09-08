@@ -5,6 +5,7 @@ Start `dx serve --port 18479 --open false`, then run:
     python3 scripts/browser-smoke.py http://127.0.0.1:18479
 """
 
+import atexit
 import json
 import secrets
 import subprocess
@@ -16,6 +17,17 @@ from html.parser import HTMLParser
 
 origin = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:18479").rstrip("/")
 session = "docs-kit-smoke-" + secrets.token_hex(4)
+
+
+def close_session():
+    # Otherwise every run leaves a browser daemon and its Chromium processes behind.
+    try:
+        subprocess.run(["agent-browser", "--session", session, "close"], capture_output=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+atexit.register(close_session)
 
 
 def browser(*args):
