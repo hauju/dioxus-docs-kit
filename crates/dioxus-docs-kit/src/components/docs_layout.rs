@@ -327,6 +327,9 @@ pub fn SearchButton(search_open: Signal<bool>) -> Element {
     rsx! {
         button {
             class: "dk-search-trigger btn btn-ghost btn-sm gap-2",
+            r#type: "button",
+            aria_label: "Search",
+            aria_haspopup: "dialog",
             onclick: move |_| search_open.set(true),
             Icon { class: "size-4", icon: LdSearch }
             span { class: "hidden sm:inline text-base-content/60 text-sm", "Search" }

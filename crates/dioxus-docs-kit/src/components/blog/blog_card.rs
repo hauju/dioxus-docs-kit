@@ -17,12 +17,11 @@ pub fn BlogCard(post: BlogPost) -> Element {
     let date_display = registry.format_date(&post.frontmatter.date);
 
     rsx! {
-        Link {
-            to: NavigationTarget::Internal(href),
+        article {
             class: "group flex flex-col rounded-xl border border-base-300 bg-base-200/30 hover:border-primary/30 hover:shadow-lg transition-all duration-200 overflow-hidden",
 
             if let Some(ref cover) = post.frontmatter.cover_image {
-                div { class: "aspect-video overflow-hidden bg-base-300",
+                Link { to: NavigationTarget::Internal(href.clone()), class: "aspect-video overflow-hidden bg-base-300",
                     img {
                         src: "{cover}",
                         alt: "{post.frontmatter.title}",
@@ -35,7 +34,11 @@ pub fn BlogCard(post: BlogPost) -> Element {
                 if !post.frontmatter.tags.is_empty() {
                     div { class: "flex flex-wrap gap-1.5",
                         for tag in post.frontmatter.tags.iter().take(3) {
-                            span { class: "badge badge-sm badge-outline", "{tag}" }
+                            if let Some(url) = registry.category_url_for_tag(tag) {
+                                Link { to: NavigationTarget::Internal(url), class: "badge badge-sm badge-outline hover:badge-primary", "{tag}" }
+                            } else {
+                                span { class: "badge badge-sm badge-outline", "{tag}" }
+                            }
                         }
                         if post.frontmatter.tags.len() > 3 {
                             span { class: "badge badge-sm badge-ghost",
@@ -46,7 +49,7 @@ pub fn BlogCard(post: BlogPost) -> Element {
                 }
 
                 h2 { class: "text-lg font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-2",
-                    "{post.frontmatter.title}"
+                    Link { to: NavigationTarget::Internal(href.clone()), "{post.frontmatter.title}" }
                 }
 
                 if let Some(ref desc) = post.frontmatter.description {

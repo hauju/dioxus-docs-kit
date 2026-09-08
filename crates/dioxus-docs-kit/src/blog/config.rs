@@ -20,6 +20,7 @@ pub struct BlogConfig {
     posts_per_page: usize,
     date_format: String,
     theme: Option<ThemeConfig>,
+    category_base_path: Option<String>,
 }
 
 impl BlogConfig {
@@ -31,6 +32,7 @@ impl BlogConfig {
             posts_per_page: 9,
             date_format: "%B %d, %Y".to_string(),
             theme: None,
+            category_base_path: None,
         }
     }
 
@@ -38,6 +40,21 @@ impl BlogConfig {
     pub fn with_posts_per_page(mut self, n: usize) -> Self {
         self.posts_per_page = n;
         self
+    }
+
+    /// Enable linkable tag categories under a root-relative path.
+    ///
+    /// Register routes for `{base}/:slug` and `{base}/:slug/page/:page`
+    /// rendering [`crate::BlogCategoryPage`] (page numbers start at one).
+    /// With this unset, existing tag buttons retain their local filtering behavior
+    /// and no category URLs are emitted into the sitemap.
+    pub fn with_category_base_path(mut self, path: &str) -> Self {
+        self.category_base_path = Some(path.trim_end_matches('/').to_string());
+        self
+    }
+
+    pub(crate) fn category_base_path(&self) -> Option<&str> {
+        self.category_base_path.as_deref()
     }
 
     /// Set the date display format (default: "%B %d, %Y").

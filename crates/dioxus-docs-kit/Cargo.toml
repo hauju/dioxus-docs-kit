@@ -18,6 +18,7 @@ dioxus = { workspace = true, features = ["lib", "router"] }
 dioxus-free-icons = { workspace = true }
 dioxus-mdx = { workspace = true }
 dioxus-code = { workspace = true, optional = true }
+dioxus-fullstack-core = { version = "0.7.10", optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
@@ -44,7 +45,7 @@ default = [
     "lang-yaml",
 ]
 web = ["dioxus/web", "dioxus-mdx/web"]
-server = ["dioxus/server"]
+server = ["dioxus/server", "dep:dioxus-fullstack-core"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
 openapi = ["dioxus-mdx/openapi"]

@@ -63,8 +63,10 @@ pub fn BlogPostView(slug: String) -> Element {
                         if !post.frontmatter.tags.is_empty() {
                             div { class: "flex flex-wrap gap-1.5 mb-4",
                                 for tag in post.frontmatter.tags.iter() {
-                                    span { class: "badge badge-sm badge-outline badge-primary font-medium",
-                                        "{tag}"
+                                    if let Some(href) = registry.category_url_for_tag(tag) {
+                                        Link { to: NavigationTarget::Internal(href), class: "badge badge-sm badge-outline badge-primary font-medium", "{tag}" }
+                                    } else {
+                                        span { class: "badge badge-sm badge-outline badge-primary font-medium", "{tag}" }
                                     }
                                 }
                             }

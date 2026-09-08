@@ -12,6 +12,8 @@ pub enum DocsKitError {
     NavParse(serde_json::Error),
     /// `_blog.json` failed to parse.
     BlogManifestParse(serde_json::Error),
+    /// Invalid blog configuration (for example, ambiguous category slugs).
+    BlogConfig(String),
     /// An OpenAPI spec failed to parse. Only present with the `openapi` feature.
     #[cfg(feature = "openapi")]
     OpenApi {
@@ -27,6 +29,7 @@ impl std::fmt::Display for DocsKitError {
         match self {
             Self::NavParse(e) => write!(f, "failed to parse _nav.json: {e}"),
             Self::BlogManifestParse(e) => write!(f, "failed to parse _blog.json: {e}"),
+            Self::BlogConfig(message) => write!(f, "invalid blog configuration: {message}"),
             #[cfg(feature = "openapi")]
             Self::OpenApi { prefix, error } => write!(
                 f,
@@ -40,6 +43,7 @@ impl std::error::Error for DocsKitError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::NavParse(e) | Self::BlogManifestParse(e) => Some(e),
+            Self::BlogConfig(_) => None,
             #[cfg(feature = "openapi")]
             Self::OpenApi { error, .. } => Some(error),
         }

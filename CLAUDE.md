@@ -103,7 +103,7 @@ Route enum (main.rs):
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
 - Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi", lang-*]` where the default `lang-*` set is bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript, yaml (`lang-c-sharp`/`lang-cpp`/`lang-tsx` exist but are off — C#+C++ were ~8 MB of wasm, TSX 1.5 MB; Rust is always highlighted). The example app's own `default` list is trimmed to what `docs/` fences: bash, css, json, python, typescript. Plus `server` (SeoRouter/Axum routes). `openapi` gates `DocsConfig::with_openapi` + spec parsing (drops `openapiv3`/`serde_yaml` when off); frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
-- CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.3, Bun for Tailwind
+- CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.10, Bun for Tailwind
 
 ---
 

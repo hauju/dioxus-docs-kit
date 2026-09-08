@@ -27,6 +27,10 @@ To add the kit to an **existing** Dioxus app instead, follow the
 
 ## Integration Guide
 
+The `0.7` examples below target the upcoming release on this branch. The
+workspace is still versioned `0.6.1`; when integrating these unreleased APIs,
+use a git dependency pinned to a commit from this branch for both kit crates.
+
 ### 1. Add dependencies
 
 ```toml
@@ -83,8 +87,8 @@ In `src/main.rs`:
 ```rust
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry,
-    SearchButton, use_docs_providers,
+    DocsConfig, DocsLayout, DocsPageContent, DocsRegistry,
+    SearchButton, use_docs_context, use_docs_providers,
 };
 use std::sync::LazyLock;
 
@@ -93,7 +97,7 @@ dioxus_docs_kit::doc_content_map!();
 
 // Build the registry (parses all docs, builds search index)
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
+    DocsConfig::new(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/_nav.json")), doc_content_map())
         .with_default_path("getting-started/introduction")
         .with_theme_toggle("light", "dark", "dark")
         // Optional: .with_openapi("api-reference", include_str!("../docs/api-reference/spec.yaml"))
@@ -102,10 +106,23 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 enum Route {
+    #[redirect("/", || Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] })]
     #[layout(MyDocsLayout)]
         #[redirect("/docs", || Route::DocsPage { slug: vec!["getting-started".into(), "introduction".into()] })]
         #[route("/docs/:..slug")]
         DocsPage { slug: Vec<String> },
+}
+
+fn main() {
+    dioxus::launch(App);
+}
+
+#[component]
+fn App() -> Element {
+    rsx! {
+        document::Stylesheet { href: dioxus_docs_kit::DOCS_KIT_CSS }
+        Router::<Route> {}
+    }
 }
 
 /// Layout wrapper — wires DocsContext + DocsRegistry into the library
@@ -116,7 +133,6 @@ fn MyDocsLayout() -> Element {
 
     let current_path = match route {
         Route::DocsPage { slug } => slug.join("/"),
-        _ => String::new(),
     };
 
     // `use_docs_context` rewraps the path reactively for you. Building the

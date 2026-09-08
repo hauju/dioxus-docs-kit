@@ -7,6 +7,23 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ## [Unreleased]
 
+- Add opt-in blog category pages backed by published tags, optional topic metadata, linked badges and navigation, URL pagination, canonical/social metadata, sitemap entries, and server-rendered 404 responses for invalid pages.
+
+### Reliability
+
+- Upgrade Dioxus and the CI Dioxus CLI to 0.7.10.
+- Compile the README integration example as a test; fix its missing hook import
+  and add a complete app entry point and root redirect.
+- Add opt-in strict docs/blog build validation for missing and duplicate pages.
+  Docs strict mode also rejects detected broken internal links/anchors and
+  unsupported frontmatter. The example site now enables strict validation.
+- Use a native modal dialog for docs/blog search, with accessible labels,
+  explicit Tab wrapping, focus restoration, and arrow-key result selection.
+  Enter opens the selected result; Escape closes from any dialog control.
+- Run Chromium search smoke checks against the production bundle in CI.
+  Locally, run `just browser-test` against a preview on port 18479.
+- Supply the missing system build tools for the optional Local CI Docker runner.
+
 ### Fixed
 
 - **The production web bundle shipped unoptimized.** `dx bundle --web --release`

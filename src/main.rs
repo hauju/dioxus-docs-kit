@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_docs_kit::{
-    BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry, BlogThemeToggle,
-    Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent, DocsRegistry, Language,
-    SearchButton, SearchModal, SourceCode, Theme, ThemeToggle, use_blog_providers,
-    use_docs_context, use_docs_providers,
+    BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
+    BlogThemeToggle, Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
+    DocsRegistry, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
+    use_blog_providers, use_docs_context, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
@@ -42,6 +42,7 @@ dioxus_docs_kit::blog_content_map!();
 static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
     BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
         .with_posts_per_page(9)
+        .with_category_base_path("/blog/categories")
         .with_theme_toggle("light", "dark", "dark")
         .build()
 });
@@ -65,6 +66,10 @@ enum Route {
     #[layout(MyBlogLayout)]
         #[route("/blog")]
         BlogIndex {},
+        #[route("/blog/categories/:slug")]
+        BlogCategory { slug: String },
+        #[route("/blog/categories/:slug/page/:page")]
+        BlogCategoryPaginated { slug: String, page: usize },
         #[route("/blog/:slug")]
         BlogPage { slug: String },
 }
@@ -429,6 +434,11 @@ fn MyBlogLayout() -> Element {
         _ => String::new(),
     }));
 
+    let current_category = use_memo(use_reactive!(|route| match route {
+        Route::BlogCategory { slug } | Route::BlogCategoryPaginated { slug, .. } => slug,
+        _ => String::new(),
+    }));
+
     let blog_ctx = BlogContext::new(
         current_slug,
         "/blog",
@@ -441,7 +451,8 @@ fn MyBlogLayout() -> Element {
         }),
     )
     .with_site_url(SITE_URL)
-    .with_markdown_alternate(true);
+    .with_markdown_alternate(true)
+    .with_current_category(current_category);
 
     let providers = use_blog_providers(&BLOG, blog_ctx);
 
@@ -854,4 +865,14 @@ fn LandingFooter() -> Element {
             }
         }
     }
+}
+
+#[component]
+fn BlogCategory(slug: String) -> Element {
+    rsx! { BlogCategoryPage { slug } }
+}
+
+#[component]
+fn BlogCategoryPaginated(slug: String, page: usize) -> Element {
+    rsx! { BlogCategoryPage { slug, page } }
 }

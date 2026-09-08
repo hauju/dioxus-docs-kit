@@ -151,7 +151,7 @@ jobs:
       - name: Install Dioxus CLI
         uses: taiki-e/install-action@v2
         with:
-          tool: dioxus-cli@0.7.3
+          tool: dioxus-cli@0.7.10
 
       - name: Generate Tailwind CSS
         run: |
@@ -182,6 +182,36 @@ jobs:
 
       - name: Check bundle size
         run: ./scripts/wasm-size.sh
+
+      - name: Set up Node for browser checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser smoke runner
+        run: |
+          npm install --global agent-browser@0.23.4
+          agent-browser install --with-deps
+
+      - name: Check search in the bundled site
+        run: |
+          cd target/dx/dioxus-docs-kit-example/release/web
+          IP=127.0.0.1 PORT=18479 ./dioxus-docs-kit-example > "$RUNNER_TEMP/docs-kit-server.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:18479/docs/getting-started/introduction > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat "$RUNNER_TEMP/docs-kit-server.log"
+            exit 1
+          fi
+          python3 "$GITHUB_WORKSPACE/scripts/browser-smoke.py" http://127.0.0.1:18479
 
       # Registry secrets are unavailable on fork PRs, so only set up Docker and
       # push the image on push events.

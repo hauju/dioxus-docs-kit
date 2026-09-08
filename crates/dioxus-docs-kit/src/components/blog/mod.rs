@@ -4,6 +4,8 @@ mod blog_layout;
 mod blog_list;
 mod blog_meta;
 mod blog_post;
+mod category_page;
+mod managed_head;
 mod mobile_drawer;
 mod post_nav;
 mod progress_bar;
@@ -27,3 +29,5 @@ pub use related_posts::RelatedPosts;
 pub use search_modal::BlogSearchModal;
 pub use tag_filter::TagFilter;
 pub use theme_toggle::BlogThemeToggle;
+
+pub use category_page::BlogCategoryPage;

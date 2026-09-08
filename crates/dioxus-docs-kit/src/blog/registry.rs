@@ -2,7 +2,7 @@
 
 use crate::blog::config::BlogConfig;
 use crate::blog::types::{
-    Author, BlogManifest, BlogPost, BlogSearchEntry, calculate_reading_time,
+    Author, BlogCategory, BlogManifest, BlogPost, BlogSearchEntry, calculate_reading_time,
     extract_blog_frontmatter,
 };
 use crate::components::seo::xml_escape;
@@ -21,6 +21,8 @@ pub struct BlogRegistry {
     authors: HashMap<String, Author>,
     /// All unique tags across all posts, sorted alphabetically.
     all_tags: Vec<String>,
+    categories: Vec<BlogCategory>,
+    category_base_path: Option<String>,
     /// Prebuilt search index.
     search_index: Vec<BlogSearchEntry>,
     /// Indices into `posts` for featured posts, preserving date order.
@@ -37,6 +39,14 @@ impl BlogRegistry {
     pub(crate) fn try_from_config(config: BlogConfig) -> Result<Self, DocsKitError> {
         let manifest: BlogManifest = serde_json::from_str(config.manifest_json())
             .map_err(DocsKitError::BlogManifestParse)?;
+        if config.posts_per_page() == 0 {
+            return Err(DocsKitError::BlogConfig(
+                "posts_per_page must be greater than zero".into(),
+            ));
+        }
+        if let Some(path) = config.category_base_path() {
+            super::categories::validate_base_path(path)?;
+        }
 
         let mut posts: Vec<BlogPost> = config
             .content_map()
@@ -72,7 +82,12 @@ impl BlogRegistry {
             })
             .collect();
 
-        posts.sort_by(|a, b| b.frontmatter.date.cmp(&a.frontmatter.date));
+        posts.sort_by(|a, b| {
+            b.frontmatter
+                .date
+                .cmp(&a.frontmatter.date)
+                .then_with(|| a.slug.cmp(&b.slug))
+        });
 
         let mut tag_set: Vec<String> = posts
             .iter()
@@ -80,6 +95,13 @@ impl BlogRegistry {
             .collect();
         tag_set.sort();
         tag_set.dedup();
+
+        let categories = if config.category_base_path().is_some() {
+            super::categories::build_categories(&tag_set, &manifest.categories)?
+        } else {
+            Vec::new()
+        };
+        let category_base_path = config.category_base_path().map(str::to_string);
 
         let featured_indices: Vec<usize> = posts
             .iter()
@@ -98,6 +120,8 @@ impl BlogRegistry {
             posts,
             authors: manifest.authors,
             all_tags: tag_set,
+            categories,
+            category_base_path,
             featured_indices,
             search_index,
             posts_per_page,
@@ -134,6 +158,53 @@ impl BlogRegistry {
             .iter()
             .filter(|p| p.frontmatter.tags.iter().any(|t| t == tag))
             .collect()
+    }
+
+    /// Published categories, in tag order. Empty when category routes are disabled.
+    pub fn categories(&self) -> &[BlogCategory] {
+        &self.categories
+    }
+
+    pub fn category_base_path(&self) -> Option<&str> {
+        self.category_base_path.as_deref()
+    }
+
+    pub fn get_category(&self, slug: &str) -> Option<&BlogCategory> {
+        self.categories
+            .iter()
+            .find(|category| category.slug == slug)
+    }
+
+    pub fn category_for_tag(&self, tag: &str) -> Option<&BlogCategory> {
+        self.categories.iter().find(|category| category.tag == tag)
+    }
+
+    /// Category pagination uses one-based page numbers and includes featured posts.
+    /// Unknown categories and out-of-range pages return `None` (including page zero).
+    pub fn category_posts_page(&self, slug: &str, page: usize) -> Option<Vec<&BlogPost>> {
+        let category = self.get_category(slug)?;
+        if page == 0 || page > self.total_pages_for_tag(&category.tag) {
+            return None;
+        }
+        Some(self.posts_page_by_tag(&category.tag, page - 1))
+    }
+
+    /// Canonical root-relative URL; page one has no pagination suffix.
+    pub fn category_url(&self, slug: &str, page: usize) -> Option<String> {
+        let category = self.get_category(slug)?;
+        let base = self.category_base_path()?;
+        if page == 0 || page > self.total_pages_for_tag(&category.tag) {
+            return None;
+        }
+        Some(if page == 1 {
+            format!("{base}/{}", category.slug)
+        } else {
+            format!("{base}/{}/page/{page}", category.slug)
+        })
+    }
+
+    pub fn category_url_for_tag(&self, tag: &str) -> Option<String> {
+        self.category_url(&self.category_for_tag(tag)?.slug, 1)
     }
 
     /// Get a page of non-featured posts for the main blog index.
@@ -378,7 +449,7 @@ impl BlogRegistry {
 
     // ── Sitemap ──────────────────────────────────────────────────────────
 
-    /// Generate a sitemap.xml for all blog posts.
+    /// Generate a sitemap.xml for posts and enabled category pages.
     pub fn generate_sitemap(&self, site_url: &str, blog_path: &str) -> String {
         let mut xml = String::from(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -400,6 +471,17 @@ impl BlogRegistry {
             ));
         }
 
+        for category in &self.categories {
+            for page in 1..=self.total_pages_for_tag(&category.tag) {
+                if let Some(path) = self.category_url(&category.slug, page) {
+                    let loc =
+                        xml_escape(&crate::components::seo::join_site_url(site_url, &path, ""));
+                    xml.push_str(&format!(
+                        "<url>\n<loc>{loc}</loc>\n<changefreq>weekly</changefreq>\n</url>\n"
+                    ));
+                }
+            }
+        }
         xml.push_str("</urlset>\n");
         xml
     }
@@ -541,6 +623,102 @@ Misc
         BlogConfig::new(manifest, content_map)
             .with_posts_per_page(posts_per_page)
             .build()
+    }
+
+    fn category_config() -> BlogConfig {
+        BlogConfig::new(r#"{"authors":{}, "posts":[], "categories":{
+            "Rust": {"slug":"rust-lang", "title":"Rust programming", "description":"Learn Rust.", "image":"/rust.png"},
+            "unused": {"title":"Unused"}
+        }}"#, HashMap::from([
+            ("a", "---\ntitle: A\ndate: '2026-01-02'\nauthor: a\ntags: [Rust]\nfeatured: true\n---\nA"),
+            ("b", "---\ntitle: B\ndate: '2026-01-02'\nauthor: a\ntags: [Rust, Web]\n---\nB"),
+            ("c", "---\ntitle: C\ndate: '2026-01-01'\nauthor: a\ntags: [Rust]\n---\nC"),
+            ("draft", "---\ntitle: Draft\ndate: '2026-01-03'\nauthor: a\ntags: [Rust, Secret]\ndraft: true\n---\nDraft"),
+        ]))
+        .with_category_base_path("/topics/")
+        .with_posts_per_page(2)
+    }
+
+    #[test]
+    fn categories_use_published_tags_and_optional_metadata() {
+        let registry = category_config().build();
+        assert_eq!(registry.categories().len(), 2);
+        let rust = registry.get_category("rust-lang").unwrap();
+        assert_eq!(rust.title, "Rust programming");
+        assert_eq!(rust.description, "Learn Rust.");
+        assert_eq!(rust.image.as_deref(), Some("/rust.png"));
+        assert_eq!(registry.category_for_tag("Rust"), Some(rust));
+        assert!(registry.get_category("secret").is_none());
+        assert!(registry.get_category("unused").is_none());
+        assert_eq!(
+            registry.get_category("web").unwrap().description,
+            "Browse articles about Web."
+        );
+    }
+
+    #[test]
+    fn category_pages_include_featured_and_have_stable_order() {
+        let registry = category_config().build();
+        let slugs = |page| {
+            registry
+                .category_posts_page("rust-lang", page)
+                .unwrap()
+                .iter()
+                .map(|post| post.slug.clone())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(slugs(1), ["a", "b"]);
+        assert_eq!(slugs(2), ["c"]);
+        for page in [0, 3, usize::MAX] {
+            assert!(registry.category_posts_page("rust-lang", page).is_none());
+            assert!(registry.category_url("rust-lang", page).is_none());
+        }
+        assert!(registry.category_posts_page("missing", 1).is_none());
+        assert_eq!(
+            registry.category_url_for_tag("Rust").as_deref(),
+            Some("/topics/rust-lang")
+        );
+        assert_eq!(
+            registry.category_url("rust-lang", 2).as_deref(),
+            Some("/topics/rust-lang/page/2")
+        );
+    }
+
+    #[test]
+    fn sitemap_contains_only_valid_category_pages() {
+        let registry = category_config().build();
+        let xml = registry.generate_sitemap("https://example.com", "/blog");
+        for path in [
+            "/topics/rust-lang",
+            "/topics/rust-lang/page/2",
+            "/topics/web",
+        ] {
+            assert_eq!(
+                xml.matches(&format!("<loc>https://example.com{path}</loc>"))
+                    .count(),
+                1
+            );
+        }
+        assert!(!xml.contains("/page/1"));
+        assert!(!xml.contains("/page/3"));
+        assert!(!xml.contains("secret"));
+        assert!(!xml.contains("unused"));
+    }
+
+    #[test]
+    fn category_routes_are_opt_in_and_zero_page_size_is_rejected() {
+        let registry = build_registry(2);
+        assert!(registry.categories().is_empty());
+        assert!(registry.category_url_for_tag("rust").is_none());
+        assert!(
+            !registry
+                .generate_sitemap("https://example.com", "/blog")
+                .contains("/categories/")
+        );
+        assert!(matches!(
+            category_config().with_posts_per_page(0).try_build(),
+            Err(DocsKitError::BlogConfig(_))
+        ));
     }
 
     #[test]
