@@ -3,7 +3,9 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
-<Update label="v0.7.0" description="Unreleased">
+<Update label="v0.7.0" description="September 2026">
+- **Blog categories**: opt-in category pages backed by published tags, with topic metadata, linked badges, URL pagination, canonical/social metadata, sitemap entries and server-rendered 404s
+- **Hardening**: opt-in strict docs/blog build validation (missing/duplicate pages, broken internal links, unsupported frontmatter), an accessible native search dialog with keyboard navigation, page metadata kept current across client navigation, and HTTP 404 + noindex for missing docs and posts when server rendering
 - **Breaking — grammars are per-language features**: `highlight` alone compiles only Rust; `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-typescript` and `lang-yaml` are on by default, while `lang-c-sharp`, `lang-cpp` and `lang-tsx` are off. A fence without a compiled grammar renders as plain text
 - **Breaking — `openapi` feature**: spec parsing (`with_openapi()`, `<OpenAPI>` blocks) sits behind an on-by-default feature; `default-features = false` builds must add it
 - **Breaking — no leaked dioxus features**: the kit no longer enables `launch`, `logger` or `devtools` on your `dioxus` dependency, and `DocFrontmatter` / `BlogFrontmatter` no longer derive `Deserialize`

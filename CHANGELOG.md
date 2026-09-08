@@ -5,9 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
-## [Unreleased]
-
-- Add opt-in blog category pages backed by published tags, optional topic metadata, linked badges and navigation, URL pagination, canonical/social metadata, sitemap entries, and server-rendered 404 responses for invalid pages.
+## [0.7.0] — 2026-09-08
 
 ### Reliability
 
@@ -30,7 +28,6 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   canonical URLs, Markdown alternates, and structured data when leaving a page.
 - Return HTTP 404 with noindex for missing documentation and blog posts when
   server rendering, sharing the same behavior as missing category pages.
-
 - **The production web bundle shipped unoptimized.** `dx bundle --web --release`
   keeps DWARF by default, which makes wasm-opt abort ("compile unit size was
   incorrect") and dx silently fall back to the raw wasm-bindgen output. The
@@ -43,6 +40,10 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Added
 
+- **Opt-in blog category pages** backed by published tags, with optional topic
+  metadata, linked badges and navigation, URL pagination, canonical/social
+  metadata, sitemap entries, and server-rendered 404 responses for invalid
+  pages.
 - **Brotli sidecars and a size gate in CI.** The homepage workflow writes a
   `.br` file next to every `.wasm`/`.js`/`.css` in the bundle (`dioxus-server`
   serves them with `content-encoding: br`, so the wasm costs 1.4 MB on the wire
@@ -72,6 +73,8 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Changed
 
+- Blog posts without a cover image emit `twitter:card` `summary` instead of
+  `summary_large_image`.
 - **BREAKING: the C#, C++ and TSX grammars are no longer compiled by default.**
   The C# and C++ tree-sitter tables were ~8 MB of the bundle; dropping them took
   the example site's release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB →
