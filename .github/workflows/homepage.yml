@@ -196,7 +196,7 @@ jobs:
       - name: Check search in the bundled site
         run: |
           cd target/dx/dioxus-docs-kit-example/release/web
-          IP=127.0.0.1 PORT=18479 ./dioxus-docs-kit-example > "$RUNNER_TEMP/docs-kit-server.log" 2>&1 &
+          IP=127.0.0.1 PORT=18479 ./server > "$RUNNER_TEMP/docs-kit-server.log" 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           ready=false
