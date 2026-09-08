@@ -155,6 +155,8 @@ pub fn generate_content_map_with_validation(nav_json_path: &str, mode: Validatio
 #[derive(Deserialize)]
 struct BlogManifest {
     posts: Vec<String>,
+    #[serde(default)]
+    categories: HashMap<String, serde_json::Value>,
 }
 
 /// Generates `blog_content_generated.rs` in `OUT_DIR` from a `_blog.json` file.
@@ -211,6 +213,7 @@ pub fn generate_blog_content_map_with_validation(manifest_path: &str, mode: Vali
 
     let mut seen = HashSet::new();
     let mut malformed = Vec::new();
+    let mut tags = HashSet::new();
     for slug in &manifest.posts {
         if !seen.insert(slug) {
             diagnostics.push(format!("{manifest_path}: duplicate post \"{slug}\""));
@@ -223,15 +226,21 @@ pub fn generate_blog_content_map_with_validation(manifest_path: &str, mode: Vali
         // silently vanish from the site at runtime — after every other
         // diagnostic has been reported.
         let full_path = include_path(&manifest_dir, &mdx_path);
-        if let Ok(content) = fs::read_to_string(&full_path)
-            && let Err(message) = validate_blog_frontmatter(&mdx_path, &content)
-        {
-            malformed.push(message);
+        if let Ok(content) = fs::read_to_string(&full_path) {
+            match validate_blog_frontmatter(&mdx_path, &content) {
+                Ok(frontmatter) => tags.extend(frontmatter.tags),
+                Err(message) => malformed.push(message),
+            }
         }
     }
 
     code.push_str("    map\n}\n");
 
+    for key in unknown_category_keys(&manifest.categories, &tags) {
+        diagnostics.push(format!(
+            "{manifest_path}: category {key:?} matches no post tag (tags are compared exactly), so its title, description and slug are never used"
+        ));
+    }
     diagnostics.extend(malformed.iter().cloned());
     report_diagnostics(&diagnostics, mode);
     assert!(
@@ -689,7 +698,7 @@ fn unsupported_frontmatter_shapes(map: &serde_yaml::Mapping) -> Vec<String> {
 /// present-but-wrong-typed optional field (e.g. `tags: rust` instead of a
 /// sequence) is a hard deserialize error at runtime that silently drops the
 /// post, so it must fail the build here too.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct BlogFrontmatterCheck {
     title: String,
@@ -710,7 +719,7 @@ struct BlogFrontmatterCheck {
 /// A blog post must have a valid frontmatter block carrying the required
 /// fields, or the build fails (the post would otherwise silently vanish from
 /// the site at runtime). The extraction mirrors `extract_blog_frontmatter`.
-fn validate_blog_frontmatter(path: &str, content: &str) -> Result<(), String> {
+fn validate_blog_frontmatter(path: &str, content: &str) -> Result<BlogFrontmatterCheck, String> {
     let content = content.trim();
     if !content.starts_with("---") {
         return Err(format!(
@@ -725,13 +734,38 @@ fn validate_blog_frontmatter(path: &str, content: &str) -> Result<(), String> {
     };
     let yaml = after[..end].trim();
     serde_yaml::from_str::<BlogFrontmatterCheck>(yaml)
-        .map(|_| ())
         .map_err(|e| format!("{path}: malformed frontmatter: {e}"))
+}
+
+/// `_blog.json` category keys that no listed post is tagged with. Their
+/// metadata is silently ignored at runtime, which usually means a typo.
+fn unknown_category_keys(
+    categories: &HashMap<String, serde_json::Value>,
+    tags: &HashSet<String>,
+) -> Vec<String> {
+    let mut unknown: Vec<String> = categories
+        .keys()
+        .filter(|key| !tags.contains(*key))
+        .cloned()
+        .collect();
+    unknown.sort();
+    unknown
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn category_keys_without_a_matching_tag_are_reported() {
+        let categories: HashMap<String, serde_json::Value> =
+            serde_json::from_str(r#"{"rust": {}, "Rust": {}, "wasm": {}}"#).unwrap();
+        let tags = HashSet::from(["rust".to_string(), "wasm".to_string()]);
+        assert_eq!(
+            unknown_category_keys(&categories, &tags),
+            vec!["Rust".to_string()]
+        );
+    }
 
     #[test]
     fn missing_page_is_a_diagnostic_and_is_not_embedded() {

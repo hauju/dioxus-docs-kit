@@ -196,10 +196,11 @@ impl BlogRegistry {
         if page == 0 || page > self.total_pages_for_tag(&category.tag) {
             return None;
         }
+        let slug = super::categories::encode_path_segment(&category.slug);
         Some(if page == 1 {
-            format!("{base}/{}", category.slug)
+            format!("{base}/{slug}")
         } else {
-            format!("{base}/{}/page/{page}", category.slug)
+            format!("{base}/{slug}/page/{page}")
         })
     }
 
@@ -653,6 +654,30 @@ Misc
         assert_eq!(
             registry.get_category("web").unwrap().description,
             "Browse articles about Web."
+        );
+    }
+
+    #[test]
+    fn category_urls_percent_encode_non_ascii_slugs() {
+        let registry = BlogConfig::new(
+            r#"{"authors":{}, "posts":[], "categories":{}}"#,
+            HashMap::from([(
+                "a",
+                "---\ntitle: A\ndate: '2026-01-02'\nauthor: a\ntags: [Café]\n---\nA",
+            )]),
+        )
+        .with_category_base_path("/topics")
+        .build();
+        let category = registry.category_for_tag("Café").unwrap();
+        assert_eq!(category.slug, "café");
+        assert_eq!(
+            registry.category_url("café", 1).as_deref(),
+            Some("/topics/caf%C3%A9")
+        );
+        assert!(
+            registry
+                .generate_sitemap("https://example.com", "/blog")
+                .contains("<loc>https://example.com/topics/caf%C3%A9</loc>")
         );
     }
 

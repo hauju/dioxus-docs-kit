@@ -5,6 +5,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Fixed
+
+- Category URLs percent-encode non-ASCII slugs, so sitemap `<loc>`, canonical
+  and Open Graph URLs are valid for tags such as `café`.
+- Page metadata is rebuilt after a microtask instead of `requestAnimationFrame`,
+  so client navigation in a hidden tab no longer leaves stale head tags.
+- The blog build script warns about `_blog.json` `categories` keys that match
+  no post tag (strict mode fails), instead of silently ignoring their metadata.
+
 ## [0.7.0] — 2026-09-08
 
 ### Reliability

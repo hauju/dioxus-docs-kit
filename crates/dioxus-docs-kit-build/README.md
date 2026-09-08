@@ -52,7 +52,8 @@ dynamic OpenAPI routes are skipped by the link validator; strict mode does
 not validate runtime default paths or OpenAPI operation collisions.
 
 `generate_blog_content_map_with_validation(path, ValidationMode::Strict)`
-also rejects missing or duplicate blog posts. Invalid blog frontmatter fails
+also rejects missing or duplicate blog posts and `categories` keys that match
+no post tag. Invalid blog frontmatter fails
 in either mode; blog links are not validated.
 
 1. Reads the `_nav.json` file to discover all doc pages
