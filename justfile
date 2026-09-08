@@ -13,6 +13,11 @@ test:
 serve:
     dx serve
 
+# Run Chromium checks against an already running preview (agent-browser 0.23.4).
+[group("dev")]
+browser-test url="http://127.0.0.1:18479":
+    python3 scripts/browser-smoke.py {{url}}
+
 # Rebuild the kit's precompiled stylesheet (matches the CI freshness check).
 # Uses the lockfile-pinned tailwind binary — bunx may silently resolve a newer
 # cached version, which changes the output byte-for-byte and fails CI.

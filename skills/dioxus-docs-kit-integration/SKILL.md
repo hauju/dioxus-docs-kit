@@ -36,7 +36,7 @@ Add to the consumer project's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
+dioxus = { version = "0.7.10", features = ["router", "fullstack"] }
 dioxus-docs-kit = { version = "0.5", default-features = false }
 
 [build-dependencies]

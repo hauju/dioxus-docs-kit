@@ -1,3 +1,4 @@
+use super::managed_head::{HeadTag, ManagedBlogHead};
 use dioxus::prelude::*;
 
 use crate::BlogContext;
@@ -88,47 +89,26 @@ pub fn BlogPostMeta(slug: String) -> Element {
         post.frontmatter.cover_image.as_deref(),
     );
 
-    rsx! {
-        document::Title { "{title}" }
-        document::Meta { name: "description", content: "{description}" }
-        if let Some(ref url) = canonical {
-            document::Link { rel: "canonical", href: "{url}" }
-        }
-        if let Some(ref href) = markdown_href {
-            document::Link { rel: "alternate", r#type: "text/markdown", href: "{href}" }
-        }
-
-        // Open Graph
-        document::Meta { property: "og:title", content: "{title}" }
-        document::Meta { property: "og:description", content: "{description}" }
-        document::Meta { property: "og:type", content: "article" }
-        if let Some(ref url) = canonical {
-            document::Meta { property: "og:url", content: "{url}" }
-        }
-        if let Some(ref cover) = post.frontmatter.cover_image {
-            document::Meta { property: "og:image", content: "{cover}" }
-        }
-
-        // Twitter Card
-        document::Meta { name: "twitter:card", content: "summary_large_image" }
-        document::Meta { name: "twitter:title", content: "{title}" }
-        document::Meta { name: "twitter:description", content: "{description}" }
-        if let Some(ref cover) = post.frontmatter.cover_image {
-            document::Meta { name: "twitter:image", content: "{cover}" }
-        }
-
-        // Article metadata
-        document::Meta { property: "article:published_time", content: "{date}" }
-        if !author_name.is_empty() {
-            document::Meta { property: "article:author", content: "{author_name}" }
-        }
-        for tag in post.frontmatter.tags.iter() {
-            document::Meta { property: "article:tag", content: "{tag}" }
-        }
-
-        // schema.org Article JSON-LD for rich-result eligibility.
-        document::Script { r#type: "application/ld+json", "{json_ld}" }
+    let mut tags = listing_tags(
+        title,
+        description,
+        canonical.as_deref(),
+        post.frontmatter.cover_image.as_deref(),
+    );
+    tags.retain(|tag| tag != &HeadTag::meta("property", "og:type", "website"));
+    tags.push(HeadTag::meta("property", "og:type", "article"));
+    tags.push(HeadTag::meta("property", "article:published_time", date));
+    if !author_name.is_empty() {
+        tags.push(HeadTag::meta("property", "article:author", author_name));
     }
+    for tag in &post.frontmatter.tags {
+        tags.push(HeadTag::meta("property", "article:tag", tag));
+    }
+    if let Some(href) = markdown_href {
+        tags.push(HeadTag::link("alternate", &href, Some("text/markdown")));
+    }
+    tags.push(HeadTag::jsonld(json_ld));
+    rsx! { ManagedBlogHead { title: title.clone(), tags } }
 }
 
 /// Injects basic SEO meta tags for the blog index/listing page.
@@ -148,22 +128,42 @@ pub fn BlogIndexMeta(title: String, description: String) -> Element {
         .as_deref()
         .map(|origin| join_site_url(origin, &ctx.base_path, ""));
 
-    rsx! {
-        document::Title { "{title}" }
-        document::Meta { name: "description", content: "{description}" }
-        if let Some(ref url) = canonical {
-            document::Link { rel: "canonical", href: "{url}" }
-        }
-        document::Meta { property: "og:title", content: "{title}" }
-        document::Meta { property: "og:description", content: "{description}" }
-        document::Meta { property: "og:type", content: "website" }
-        if let Some(ref url) = canonical {
-            document::Meta { property: "og:url", content: "{url}" }
-        }
-        document::Meta { name: "twitter:card", content: "summary" }
-        document::Meta { name: "twitter:title", content: "{title}" }
-        document::Meta { name: "twitter:description", content: "{description}" }
+    let tags = listing_tags(&title, &description, canonical.as_deref(), None);
+    rsx! { ManagedBlogHead { title, tags } }
+}
+
+pub(super) fn listing_tags(
+    title: &str,
+    description: &str,
+    canonical: Option<&str>,
+    image: Option<&str>,
+) -> Vec<HeadTag> {
+    let mut tags = vec![
+        HeadTag::meta("name", "description", description),
+        HeadTag::meta("property", "og:title", title),
+        HeadTag::meta("property", "og:description", description),
+        HeadTag::meta("property", "og:type", "website"),
+        HeadTag::meta(
+            "name",
+            "twitter:card",
+            if image.is_some() {
+                "summary_large_image"
+            } else {
+                "summary"
+            },
+        ),
+        HeadTag::meta("name", "twitter:title", title),
+        HeadTag::meta("name", "twitter:description", description),
+    ];
+    if let Some(url) = canonical {
+        tags.push(HeadTag::link("canonical", url, None));
+        tags.push(HeadTag::meta("property", "og:url", url));
     }
+    if let Some(image) = image {
+        tags.push(HeadTag::meta("property", "og:image", image));
+        tags.push(HeadTag::meta("name", "twitter:image", image));
+    }
+    tags
 }
 
 #[cfg(test)]

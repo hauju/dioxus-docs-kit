@@ -7,7 +7,30 @@ use std::collections::HashMap;
 pub struct BlogManifest {
     #[serde(default)]
     pub authors: HashMap<String, Author>,
+    /// Optional category metadata keyed by the exact post tag.
+    #[serde(default)]
+    pub categories: HashMap<String, BlogCategoryMetadata>,
     pub posts: Vec<String>,
+}
+
+/// Optional presentation and URL overrides for a tag's category page.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct BlogCategoryMetadata {
+    pub slug: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub image: Option<String>,
+}
+
+/// A topic with at least one published post. Membership comes from post tags.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BlogCategory {
+    pub tag: String,
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub image: Option<String>,
 }
 
 /// Author definition from the blog manifest.

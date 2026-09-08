@@ -14,8 +14,10 @@ pub fn BlogMobileDrawer(mut open: Signal<bool>) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
 
     let current_slug = ctx.current_slug;
+    let current_category = ctx.current_category;
     use_effect(move || {
         let _ = current_slug();
+        let _ = current_category.map(|slug| slug());
         open.set(false);
     });
 

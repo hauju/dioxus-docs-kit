@@ -59,29 +59,43 @@ pub fn use_theme_provider(theme: Option<ThemeConfig>) -> Signal<String> {
 /// The handler is stored on `window` and any previous one is removed before
 /// registering, so layout remounts never accumulate listeners.
 pub(crate) fn use_search_hotkey(mut search_open: Signal<bool>) {
+    let owner = dioxus::core::current_scope_id().0;
     use_effect(move || {
         spawn(async move {
-            let mut eval = document::eval(
+            let mut eval = document::eval(&format!(
                 r#"
-                if (window.__dkSearchHotkey) {
-                    document.removeEventListener('keydown', window.__dkSearchHotkey);
-                }
-                window.__dkSearchHotkey = (e) => {
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                window.__dkSearchCleanup?.stop();
+                const handler = (e) => {{
+                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {{
                         e.preventDefault();
                         dioxus.send(true);
-                    }
-                };
-                document.addEventListener('keydown', window.__dkSearchHotkey);
-                while (true) { await new Promise(r => setTimeout(r, 1000000)); }
+                    }}
+                }};
+                window.__dkSearchHotkey = handler;
+                document.addEventListener('keydown', handler);
+                await new Promise(resolve => {{
+                    window.__dkSearchCleanup = {{ owner: {owner}, stop: () => {{
+                        document.removeEventListener('keydown', handler);
+                        if (window.__dkSearchHotkey === handler) {{
+                            delete window.__dkSearchHotkey;
+                            delete window.__dkSearchCleanup;
+                        }}
+                        resolve();
+                    }} }};
+                }});
                 "#,
-            );
-            loop {
-                if (eval.recv::<bool>().await).is_ok() {
-                    search_open.toggle();
-                }
+            ));
+            // A disposed evaluator returns Err immediately. Retrying forever
+            // would spin without yielding when the docs/blog layout unmounts.
+            while eval.recv::<bool>().await.is_ok() {
+                search_open.toggle();
             }
         });
+    });
+    use_drop(move || {
+        let _ = document::eval(&format!(
+            "if (window.__dkSearchCleanup?.owner === {owner}) window.__dkSearchCleanup.stop();"
+        ));
     });
 }
 

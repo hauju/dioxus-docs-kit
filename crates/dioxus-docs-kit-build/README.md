@@ -34,6 +34,27 @@ dioxus_docs_kit::blog_content_map!();
 
 ## What it does
 
+For release builds, opt into strict validation:
+
+```rust
+use dioxus_docs_kit_build::{generate_content_map_with_validation, ValidationMode};
+
+fn main() {
+    generate_content_map_with_validation("docs/_nav.json", ValidationMode::Strict);
+}
+```
+
+Strict mode reports all detected problems, then fails on missing files,
+duplicate navigation entries, unsupported frontmatter, and detected broken
+internal links or heading anchors. The original `generate_content_map` keeps
+reporting these as warnings. External links, application routes, and inferred
+dynamic OpenAPI routes are skipped by the link validator; strict mode does
+not validate runtime default paths or OpenAPI operation collisions.
+
+`generate_blog_content_map_with_validation(path, ValidationMode::Strict)`
+also rejects missing or duplicate blog posts. Invalid blog frontmatter fails
+in either mode; blog links are not validated.
+
 1. Reads the `_nav.json` file to discover all doc pages
 2. Emits `cargo:rerun-if-changed` for `_nav.json` and every `.mdx` file
 3. Writes `doc_content_generated.rs` to `OUT_DIR` containing `include_str!()` calls for each page

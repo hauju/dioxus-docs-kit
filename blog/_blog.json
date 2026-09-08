@@ -10,5 +10,31 @@
     "hello-world",
     "building-with-dioxus",
     "rust-web-future"
-  ]
+  ],
+  "categories": {
+    "rust": {
+      "title": "Rust",
+      "description": "Writing reliable software with Rust, from language fundamentals to building for the web."
+    },
+    "dioxus": {
+      "title": "Dioxus",
+      "description": "Build web applications in Rust with Dioxus. Explore components, routing, and the tools behind this site."
+    },
+    "announcement": {
+      "title": "Announcements",
+      "description": "New releases, features, and updates from Dioxus Docs Kit."
+    },
+    "wasm": {
+      "title": "WebAssembly",
+      "description": "How Rust and WebAssembly fit together on the web."
+    },
+    "tutorial": {
+      "title": "Tutorials",
+      "description": "Practical guides to building web applications with Dioxus."
+    },
+    "opinion": {
+      "title": "Perspectives",
+      "description": "Thoughts on Rust and the future of web development."
+    }
+  }
 }

@@ -18,6 +18,17 @@
  * anywhere inside `.dk-root`.
  */
 
+/* The full-viewport dialog element supplies the search backdrop itself. */
+.dk-search-backdrop::backdrop {
+    background: transparent;
+}
+
+.dk-search-result[data-active="true"] {
+    background: var(--dk-accent-soft, color-mix(in srgb, var(--color-primary, #2563eb) 10%, transparent));
+    outline: 2px solid var(--dk-accent, var(--color-primary, #2563eb));
+    outline-offset: -2px;
+}
+
 .dk-root,
 .dk-docs-root,
 .dk-blog-root {

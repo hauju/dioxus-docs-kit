@@ -145,10 +145,10 @@ Your post content in MDX format...
         let nav = use_navigator();
         let route = use_route::<Route>();
 
-        let current_slug = use_memo(move || match route.clone() {
+        let current_slug = use_memo(use_reactive!(|route| match route {
             Route::BlogPage { slug } => slug,
             _ => String::new(),
-        });
+        }));
 
         // The constructor defaults the meta fields; chain `.with_site_url()`
         // etc. to override them.
@@ -294,3 +294,95 @@ let llms_txt = BLOG.generate_llms_txt(
     "/blog",
 );
 ```
+
+
+## Category Pages
+
+Category pages give each topic a permanent URL, such as `/blog/categories/rust`. Posts are matched by their existing frontmatter tags. Featured posts are included, drafts are excluded, and a post can appear in several categories.
+
+Enable category URLs when building the registry:
+
+```rust
+BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+    .with_category_base_path("/blog/categories")
+    .with_posts_per_page(9)
+    .build()
+```
+
+Register both routes under your blog layout. The path must match `with_category_base_path`; you can use `/categories` or `/topics` instead.
+
+```rust
+#[derive(Debug, Clone, Routable, PartialEq)]
+enum Route {
+    #[layout(MyBlogLayout)]
+        #[route("/blog")]
+        BlogIndex {},
+        #[route("/blog/categories/:slug")]
+        BlogCategory { slug: String },
+        #[route("/blog/categories/:slug/page/:page")]
+        BlogCategoryPaginated { slug: String, page: usize },
+        #[route("/blog/:slug")]
+        BlogPage { slug: String },
+}
+
+#[component]
+fn BlogCategory(slug: String) -> Element {
+    rsx! { dioxus_docs_kit::BlogCategoryPage { slug } }
+}
+
+#[component]
+fn BlogCategoryPaginated(slug: String, page: usize) -> Element {
+    rsx! { dioxus_docs_kit::BlogCategoryPage { slug, page } }
+}
+```
+
+In `MyBlogLayout`, derive the current category from the route alongside `current_slug`. Pass it to `BlogContext` to highlight the active category and close the mobile drawer after navigation:
+
+```rust
+let current_category = use_memo(use_reactive!(|route| match route {
+    Route::BlogCategory { slug } | Route::BlogCategoryPaginated { slug, .. } => slug,
+    _ => String::new(),
+}));
+
+// Chain these onto your BlogContext::new(...) call:
+// .with_current_category(current_category)
+// .with_site_url("https://example.com")
+```
+
+`TagFilter` then renders category links automatically. Post badges and card badges also link to their categories. Without `with_category_base_path`, tag filters retain their existing local behavior.
+
+### Titles, descriptions, and images
+
+Add an optional `categories` object to `_blog.json`. Keys must match the original tag exactly:
+
+```json
+{
+  "authors": { "hauke": { "name": "Hauke Jung" } },
+  "posts": ["hello-world", "building-with-dioxus", "rust-web-future"],
+  "categories": {
+    "rust": {
+      "title": "Rust",
+      "description": "Practical guides to building web applications with Rust.",
+      "image": "/assets/rust-topic.webp"
+    },
+    "C++": {
+      "slug": "cpp",
+      "title": "C++"
+    }
+  }
+}
+```
+
+All metadata fields are optional. The default title is the tag, the default description is `Browse articles about {title}.`, and the URL slug is generated from the tag. Use `slug` to choose a stable URL or resolve collisions such as `C++` and `C#`. Slugs must be unique and contain only letters, numbers, or hyphens. Invalid or colliding slugs cause `try_build()` to return an error.
+
+Only tags attached to published posts create categories. Metadata alone does not create an empty page. Images appear in the category header and social metadata; root-relative images become absolute social URLs when `site_url` is set.
+
+### Pagination and search metadata
+
+Category page numbers start at **one**. The first page uses `/blog/categories/rust`; later pages use `/blog/categories/rust/page/2`. Pagination links work with direct loads, refresh, and browser history. The page size comes from `with_posts_per_page` and must be greater than zero.
+
+Category pages emit titles, descriptions, Open Graph, and Twitter metadata. Setting `BlogContext::with_site_url` also emits a canonical URL for each page. A `/page/1` URL canonicalizes to the category's first page. `with_auto_meta(false)` disables this automatic metadata for valid pages.
+
+Unknown categories and out-of-range pages render a not-found page with `noindex`. With the kit's `server` feature enabled, they also return HTTP 404 during server rendering. A client-only host must configure its own HTTP status handling.
+
+`BlogRegistry::generate_sitemap` includes every valid category page automatically, as does `SeoRouter::with_blog`. RSS remains a feed of posts. Use `category_url_for_tag`, `category_url`, or `category_posts_page` when building custom navigation and layouts.

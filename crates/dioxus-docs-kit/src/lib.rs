@@ -187,6 +187,8 @@ impl DocsContext {
 pub struct BlogContext {
     /// Current blog post slug (empty on the list/index page).
     pub current_slug: ReadSignal<String>,
+    /// Current category slug, when category routes are enabled.
+    pub current_category: Option<ReadSignal<String>>,
     /// Base URL path for the blog (e.g. "/blog").
     pub base_path: String,
     /// Callback to navigate to a blog post by slug (empty string = blog index).
@@ -228,12 +230,19 @@ impl BlogContext {
     ) -> Self {
         Self {
             current_slug: current_slug.into(),
+            current_category: None,
             base_path: base_path.into(),
             navigate,
             site_url: None,
             auto_meta: true,
             markdown_alternate: false,
         }
+    }
+
+    /// Track category routes for active navigation and mobile drawer dismissal.
+    pub fn with_current_category(mut self, slug: impl Into<ReadSignal<String>>) -> Self {
+        self.current_category = Some(slug.into());
+        self
     }
 
     /// Set the public site origin (e.g. `"https://example.com"`).
@@ -293,12 +302,14 @@ pub use dioxus_mdx::MermaidDiagram;
 // ============================================================================
 
 pub use blog::hooks::{ActiveTag, CurrentPage};
-pub use blog::types::{Author, BlogFrontmatter, BlogPost, BlogSearchEntry};
+pub use blog::types::{
+    Author, BlogCategory, BlogCategoryMetadata, BlogFrontmatter, BlogPost, BlogSearchEntry,
+};
 pub use blog::{BlogConfig, BlogProviders, BlogRegistry, use_blog_providers};
 
 pub use components::{
-    AuthorInfo, BlogCard, BlogIndexMeta, BlogLayout, BlogList, BlogMobileDrawer, BlogPostMeta,
-    BlogPostNav, BlogPostView, BlogSearchButton, BlogSearchModal, BlogThemeToggle,
+    AuthorInfo, BlogCard, BlogCategoryPage, BlogIndexMeta, BlogLayout, BlogList, BlogMobileDrawer,
+    BlogPostMeta, BlogPostNav, BlogPostView, BlogSearchButton, BlogSearchModal, BlogThemeToggle,
     ReadingProgressBar, ReadingTimeBadge, RelatedPosts, TagFilter,
 };
 

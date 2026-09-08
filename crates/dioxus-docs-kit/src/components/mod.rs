@@ -28,7 +28,7 @@ pub use theme_toggle::ThemeToggle;
 
 // Blog component re-exports
 pub use blog::{
-    AuthorInfo, BlogCard, BlogIndexMeta, BlogLayout, BlogList, BlogMobileDrawer, BlogPostMeta,
-    BlogPostNav, BlogPostView, BlogSearchButton, BlogSearchModal, BlogThemeToggle,
+    AuthorInfo, BlogCard, BlogCategoryPage, BlogIndexMeta, BlogLayout, BlogList, BlogMobileDrawer,
+    BlogPostMeta, BlogPostNav, BlogPostView, BlogSearchButton, BlogSearchModal, BlogThemeToggle,
     ReadingProgressBar, ReadingTimeBadge, RelatedPosts, TagFilter,
 };
