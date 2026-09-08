@@ -61,7 +61,7 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
         None => {
             let base = join_site_url("", &ctx.base_path, &registry.default_path);
             return rsx! {
-                NotFoundMeta { title: "Documentation page not found" }
+                NotFoundMeta { title: "Documentation page not found", auto_meta: ctx.auto_meta }
                 div { class: "container mx-auto px-8 py-12 max-w-4xl",
                     div { class: "text-center",
                         h1 { class: "text-4xl font-bold mb-4", "404" }

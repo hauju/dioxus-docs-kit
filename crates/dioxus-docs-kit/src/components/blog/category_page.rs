@@ -21,7 +21,7 @@ pub fn BlogCategoryPage(slug: String, #[props(default = 1)] page: usize) -> Elem
         .zip(registry.category_posts_page(&slug, page))
     else {
         return rsx! {
-            NotFoundMeta { title: "Category page not found" }
+            NotFoundMeta { title: "Category page not found", auto_meta: ctx.auto_meta }
             main { class: "max-w-6xl mx-auto px-4 py-12",
                 h1 { class: "text-4xl font-bold mb-4", "Category page not found" }
                 p { class: "text-base-content/70 mb-8", "This topic or page doesn't exist." }

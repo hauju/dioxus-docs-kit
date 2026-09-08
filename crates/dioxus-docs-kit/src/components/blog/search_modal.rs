@@ -34,6 +34,7 @@ pub fn BlogSearchModal() -> Element {
 
     rsx! {
         SearchModalShell {
+            id: "dk-blog-search",
             placeholder: "Search posts...",
             search,
             on_select,

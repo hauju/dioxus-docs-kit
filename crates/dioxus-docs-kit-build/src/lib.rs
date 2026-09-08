@@ -210,6 +210,7 @@ pub fn generate_blog_content_map_with_validation(manifest_path: &str, mode: Vali
     ));
 
     let mut seen = HashSet::new();
+    let mut malformed = Vec::new();
     for slug in &manifest.posts {
         if !seen.insert(slug) {
             diagnostics.push(format!("{manifest_path}: duplicate post \"{slug}\""));
@@ -219,16 +220,25 @@ pub fn generate_blog_content_map_with_validation(manifest_path: &str, mode: Vali
         emit_entry(&mut code, &manifest_dir, slug, &mdx_path, &mut diagnostics);
 
         // Fail the build on malformed frontmatter instead of letting the post
-        // silently vanish from the site at runtime.
+        // silently vanish from the site at runtime — after every other
+        // diagnostic has been reported.
         let full_path = include_path(&manifest_dir, &mdx_path);
-        if let Ok(content) = fs::read_to_string(&full_path) {
-            validate_blog_frontmatter(&mdx_path, &content);
+        if let Ok(content) = fs::read_to_string(&full_path)
+            && let Err(message) = validate_blog_frontmatter(&mdx_path, &content)
+        {
+            malformed.push(message);
         }
     }
 
     code.push_str("    map\n}\n");
 
+    diagnostics.extend(malformed.iter().cloned());
     report_diagnostics(&diagnostics, mode);
+    assert!(
+        malformed.is_empty(),
+        "dioxus-docs-kit: malformed blog frontmatter:\n{}",
+        malformed.join("\n")
+    );
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = Path::new(&out_dir).join("blog_content_generated.rs");
     fs::write(&dest, code).expect("Failed to write generated file");
@@ -700,19 +710,23 @@ struct BlogFrontmatterCheck {
 /// A blog post must have a valid frontmatter block carrying the required
 /// fields, or the build fails (the post would otherwise silently vanish from
 /// the site at runtime). The extraction mirrors `extract_blog_frontmatter`.
-fn validate_blog_frontmatter(path: &str, content: &str) {
+fn validate_blog_frontmatter(path: &str, content: &str) -> Result<(), String> {
     let content = content.trim();
     if !content.starts_with("---") {
-        panic!("{path}: missing frontmatter block (expected leading ---)");
+        return Err(format!(
+            "{path}: missing frontmatter block (expected leading ---)"
+        ));
     }
     let after = &content[3..];
     let Some(end) = after.find("\n---") else {
-        panic!("{path}: unclosed frontmatter block (missing closing ---)");
+        return Err(format!(
+            "{path}: unclosed frontmatter block (missing closing ---)"
+        ));
     };
     let yaml = after[..end].trim();
-    if let Err(e) = serde_yaml::from_str::<BlogFrontmatterCheck>(yaml) {
-        panic!("{path}: malformed frontmatter: {e}");
-    }
+    serde_yaml::from_str::<BlogFrontmatterCheck>(yaml)
+        .map(|_| ())
+        .map_err(|e| format!("{path}: malformed frontmatter: {e}"))
 }
 
 #[cfg(test)]
@@ -1020,40 +1034,44 @@ mod tests {
         validate_blog_frontmatter(
             "p.mdx",
             "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\n---\nbody",
-        );
+        )
+        .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "malformed frontmatter")]
-    fn blog_frontmatter_bad_yaml_panics() {
-        validate_blog_frontmatter(
+    fn blog_frontmatter_bad_yaml_is_an_error() {
+        let err = validate_blog_frontmatter(
             "p.mdx",
             "---\ntitle: [x\ndate: \"2026\"\nauthor: jane\n---\nbody",
-        );
+        )
+        .unwrap_err();
+        assert!(err.contains("malformed frontmatter"), "got: {err}");
     }
 
     #[test]
-    #[should_panic(expected = "missing field")]
-    fn blog_frontmatter_missing_field_panics() {
+    fn blog_frontmatter_missing_field_is_an_error() {
         // No `date` field.
-        validate_blog_frontmatter("p.mdx", "---\ntitle: Hi\nauthor: jane\n---\nbody");
+        let err = validate_blog_frontmatter("p.mdx", "---\ntitle: Hi\nauthor: jane\n---\nbody")
+            .unwrap_err();
+        assert!(err.contains("missing field"), "got: {err}");
     }
 
     #[test]
-    #[should_panic(expected = "missing frontmatter")]
-    fn blog_frontmatter_no_block_panics() {
-        validate_blog_frontmatter("p.mdx", "just body, no frontmatter");
+    fn blog_frontmatter_no_block_is_an_error() {
+        let err = validate_blog_frontmatter("p.mdx", "just body, no frontmatter").unwrap_err();
+        assert!(err.contains("missing frontmatter"), "got: {err}");
     }
 
     #[test]
-    #[should_panic(expected = "invalid type")]
-    fn blog_frontmatter_wrong_typed_optional_field_panics() {
+    fn blog_frontmatter_wrong_typed_optional_field_is_an_error() {
         // `tags` must be a sequence; a scalar fails deserialization at runtime
         // and would silently drop the post, so it must fail the build.
-        validate_blog_frontmatter(
+        let err = validate_blog_frontmatter(
             "p.mdx",
             "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\ntags: rust\n---\nbody",
-        );
+        )
+        .unwrap_err();
+        assert!(err.contains("invalid type"), "got: {err}");
     }
 
     #[test]
@@ -1061,6 +1079,7 @@ mod tests {
         validate_blog_frontmatter(
             "p.mdx",
             "---\ntitle: Hi\ndate: \"2026-01-01\"\nauthor: jane\ntags: [rust, web]\ndraft: true\ncoverImage: cover.png\n---\nbody",
-        );
+        )
+        .unwrap();
     }
 }

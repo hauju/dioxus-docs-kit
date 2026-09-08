@@ -76,6 +76,7 @@ pub fn SearchModal() -> Element {
 
     rsx! {
         SearchModalShell {
+            id: "dk-docs-search",
             placeholder: "Search documentation...",
             search,
             on_select,

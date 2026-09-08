@@ -25,7 +25,7 @@ pub fn BlogPostView(slug: String) -> Element {
         None => {
             let base = ctx.base_path.clone();
             return rsx! {
-                NotFoundMeta { title: "Post not found" }
+                NotFoundMeta { title: "Post not found", auto_meta: ctx.auto_meta }
                 div { class: "max-w-4xl mx-auto px-4 py-12",
                     div { class: "text-center",
                         h1 { class: "text-4xl font-bold mb-4", "404" }

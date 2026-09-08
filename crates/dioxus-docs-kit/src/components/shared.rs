@@ -66,7 +66,7 @@ pub(crate) fn use_search_hotkey(mut search_open: Signal<bool>) {
                 r#"
                 window.__dkSearchCleanup?.stop();
                 const handler = (e) => {{
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {{
+                    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {{
                         e.preventDefault();
                         dioxus.send(true);
                     }}
