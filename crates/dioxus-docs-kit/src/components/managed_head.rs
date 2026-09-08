@@ -65,24 +65,25 @@ pub(crate) fn ManagedPageHead(
             })
             .collect();
         let payload = serde_json::to_string(&payload).expect("head tags serialize");
-        // Defer until Dioxus has inserted the initial head components. A generation
-        // guard prevents queued work from a previous route from taking ownership.
+        // Defer one microtask so this runs after the effect flush in which Dioxus
+        // inserts the initial head components (unlike requestAnimationFrame it also
+        // runs in hidden tabs). A generation guard prevents queued work from a
+        // previous route from taking ownership.
         document::eval(&format!(
             r#"
             const generation = (window.__dkPageHeadGeneration || 0) + 1;
             window.__dkPageHeadGeneration = generation;
             window.__dkPageHeadOwner = {owner};
-            requestAnimationFrame(() => {{
-                if (window.__dkPageHeadGeneration !== generation) return;
-                document.head.querySelectorAll('[data-dk-page-head]').forEach(node => node.remove());
-                for (const item of {payload}) {{
-                    const node = document.createElement(item.tag);
-                    for (const [key, value] of item.attributes) node.setAttribute(key, value);
-                    node.setAttribute('data-dk-page-head', '{owner}');
-                    node.textContent = item.text;
-                    document.head.appendChild(node);
-                }}
-            }});
+            await Promise.resolve();
+            if (window.__dkPageHeadGeneration !== generation) return;
+            document.head.querySelectorAll('[data-dk-page-head]').forEach(node => node.remove());
+            for (const item of {payload}) {{
+                const node = document.createElement(item.tag);
+                for (const [key, value] of item.attributes) node.setAttribute(key, value);
+                node.setAttribute('data-dk-page-head', '{owner}');
+                node.textContent = item.text;
+                document.head.appendChild(node);
+            }}
         "#
         ));
     }));
@@ -124,12 +125,10 @@ pub(crate) fn ManagedPageHead(
 #[component]
 pub(crate) fn NotFoundMeta(title: String, auto_meta: bool) -> Element {
     #[cfg(feature = "server")]
-    if let Some(mut context) = dioxus_fullstack_core::FullstackContext::current() {
-        context.set_current_http_status(dioxus_fullstack_core::HttpError::new(
-            dioxus::server::http::StatusCode::NOT_FOUND,
-            title.clone(),
-        ));
-    }
+    dioxus_fullstack_core::FullstackContext::commit_http_status(
+        dioxus::server::http::StatusCode::NOT_FOUND,
+        Some(title.clone()),
+    );
     rsx! {
         ManagedPageHead {
             title,

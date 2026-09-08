@@ -27,6 +27,22 @@ pub(super) fn build_categories(
     }).collect()
 }
 
+/// Percent-encode a path segment so non-ASCII slugs are valid in sitemap
+/// `<loc>`, canonical and Open Graph URLs. Browsers show them decoded and the
+/// router decodes route segments, so `get_category` still sees the raw slug.
+pub(super) fn encode_path_segment(segment: &str) -> String {
+    let mut out = String::with_capacity(segment.len());
+    for byte in segment.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(byte as char)
+            }
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
+}
+
 pub(super) fn validate_base_path(path: &str) -> Result<(), DocsKitError> {
     if !path.starts_with('/')
         || path.starts_with("//")
