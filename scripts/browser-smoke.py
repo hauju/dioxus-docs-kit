@@ -30,8 +30,23 @@ def browser(*args):
     return result.stdout
 
 
+DIAGNOSTICS = (
+    "JSON.stringify({href: location.href, readyState: document.readyState, title: document.title, "
+    "hotkey: typeof window.__dkSearchHotkey, dialogOpen: document.querySelector('dialog')?.open, "
+    "category: !!document.querySelector('.dk-blog-category'), h1: document.querySelector('h1')?.textContent, "
+    "active: document.activeElement?.tagName, scrollY, width: innerWidth, height: innerHeight})"
+)
+
+
 def expect(expression):
-    browser("wait", "--fn", expression)
+    try:
+        browser("wait", "--fn", expression)
+    except RuntimeError:
+        try:
+            print("page state: " + browser("eval", DIAGNOSTICS).strip(), flush=True)
+        except (RuntimeError, subprocess.TimeoutExpired):
+            pass
+        raise
 
 
 def open_search():
@@ -224,6 +239,7 @@ try:
     expect("document.querySelectorAll('.dk-blog-category article').length === 2 && document.querySelector('.dk-blog-category article a[href=\"/blog/hello-world\"]')")
     expect("document.querySelector('.dk-blog-category nav a[aria-current=page]').getAttribute('href') === '/blog/categories/dioxus'")
     browser("back")
+    expect("typeof window.__dkSearchHotkey === 'function'")
     expect("location.pathname === '/blog/categories/rust' && document.title === 'Rust'")
     browser("click", '.dk-blog-category article h2 a[href="/blog/building-with-dioxus"]')
     expect("location.pathname === '/blog/building-with-dioxus' && !document.querySelector('.dk-blog-category')")
