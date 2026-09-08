@@ -38,14 +38,22 @@ DIAGNOSTICS = (
 )
 
 
+def click_element(selector):
+    # A wrapped inline link has its bounding-box centre in the gap between
+    # its lines (Linux font metrics), where a pointer click hits the parent.
+    # Dispatch the click on the element itself instead.
+    browser("eval", f"document.querySelector({json.dumps(selector)}).click()")
+
+
 def expect(expression):
     try:
         browser("wait", "--fn", expression)
     except RuntimeError:
-        try:
-            print("page state: " + browser("eval", DIAGNOSTICS).strip(), flush=True)
-        except (RuntimeError, subprocess.TimeoutExpired):
-            pass
+        for label, args in (("page state", ("eval", DIAGNOSTICS)), ("console", ("console",)), ("page errors", ("errors",))):
+            try:
+                print(f"{label}: " + browser(*args).strip(), flush=True)
+            except (RuntimeError, subprocess.TimeoutExpired):
+                pass
         raise
 
 
@@ -241,7 +249,7 @@ try:
     browser("back")
     expect("typeof window.__dkSearchHotkey === 'function'")
     expect("location.pathname === '/blog/categories/rust' && document.title === 'Rust'")
-    browser("click", '.dk-blog-category article h2 a[href="/blog/building-with-dioxus"]')
+    click_element('.dk-blog-category article h2 a[href="/blog/building-with-dioxus"]')
     expect("location.pathname === '/blog/building-with-dioxus' && !document.querySelector('.dk-blog-category')")
     browser("click", 'article header a[href="/blog/categories/rust"]')
     expect("location.pathname === '/blog/categories/rust' && document.querySelector('.dk-blog-category h1')?.textContent === 'Rust'")
