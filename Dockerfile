@@ -13,4 +13,4 @@ EXPOSE 8080
 COPY target/dx/dioxus-docs-kit-example/release/web /usr/local/app
 
 WORKDIR /usr/local/app
-ENTRYPOINT ["/usr/local/app/dioxus-docs-kit-example"]
+ENTRYPOINT ["/usr/local/app/server"]
