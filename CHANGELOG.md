@@ -26,6 +26,11 @@ apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Fixed
 
+- Keep documentation metadata current across client navigation and remove stale
+  canonical URLs, Markdown alternates, and structured data when leaving a page.
+- Return HTTP 404 with noindex for missing documentation and blog posts when
+  server rendering, sharing the same behavior as missing category pages.
+
 - **The production web bundle shipped unoptimized.** `dx bundle --web --release`
   keeps DWARF by default, which makes wasm-opt abort ("compile unit size was
   incorrect") and dx silently fall back to the raw wasm-bindgen output. The

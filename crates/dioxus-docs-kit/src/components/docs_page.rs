@@ -7,11 +7,15 @@ use crate::registry::DocsRegistry;
 use super::copy_page::CopyPageButton;
 use super::docs_layout::LayoutOffsets;
 use super::docs_meta::DocsPageMeta;
+use super::managed_head::NotFoundMeta;
 use super::page_nav::DocsPageNav;
+use super::seo::join_site_url;
 
 /// Documentation page content renderer.
 ///
 /// Checks if the path is an API endpoint page or a regular MDX page and renders accordingly.
+/// Missing paths render a noindex page and return HTTP 404 during server
+/// rendering when the `server` feature is enabled.
 ///
 /// # Props
 ///
@@ -27,6 +31,12 @@ use super::page_nav::DocsPageNav;
 pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let ctx = use_context::<DocsContext>();
+
+    let offsets = try_use_context::<LayoutOffsets>().unwrap_or(LayoutOffsets {
+        sticky_top: "top-20",
+        scroll_mt: "scroll-mt-20",
+        sidebar_height: "h-[calc(100vh-5rem)]",
+    });
 
     // Check if this is an API endpoint page
     if let Some((operation, spec)) = registry.get_api_operation_with_spec(&path) {
@@ -46,17 +56,12 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
         };
     }
 
-    let offsets = try_use_context::<LayoutOffsets>().unwrap_or(LayoutOffsets {
-        sticky_top: "top-20",
-        scroll_mt: "scroll-mt-20",
-        sidebar_height: "h-[calc(100vh-5rem)]",
-    });
-
     let doc = match registry.get_parsed_doc(&path) {
         Some(d) => d,
         None => {
-            let base = ctx.base_path.clone();
+            let base = join_site_url("", &ctx.base_path, &registry.default_path);
             return rsx! {
+                NotFoundMeta { title: "Documentation page not found" }
                 div { class: "container mx-auto px-8 py-12 max-w-4xl",
                     div { class: "text-center",
                         h1 { class: "text-4xl font-bold mb-4", "404" }

@@ -5,7 +5,6 @@ mod blog_list;
 mod blog_meta;
 mod blog_post;
 mod category_page;
-mod managed_head;
 mod mobile_drawer;
 mod post_nav;
 mod progress_bar;

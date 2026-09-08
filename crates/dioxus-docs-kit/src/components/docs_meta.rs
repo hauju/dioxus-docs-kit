@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use super::managed_head::{HeadTag, ManagedPageHead};
 use super::seo::{join_site_url, jsonld_to_string};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
@@ -68,7 +69,8 @@ fn build_docs_jsonld(
 /// for API endpoint pages — and emits `<title>`, `<meta name="description">`,
 /// Open Graph, Twitter Card, and schema.org `TechArticle` JSON-LD tags.
 /// Canonical, `og:url`, the JSON-LD `@id`, and a `BreadcrumbList` are only
-/// emitted when `site_url` is also set.
+/// emitted when `site_url` is also set. Tags update on client navigation and
+/// are removed when leaving the page, including Markdown alternates and JSON-LD.
 #[component]
 pub fn DocsPageMeta(path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
@@ -139,32 +141,24 @@ pub fn DocsPageMeta(path: String) -> Element {
 
     let json_ld = build_docs_jsonld(&title, &description, canonical.as_deref(), &breadcrumbs);
 
-    rsx! {
-        document::Title { "{title}" }
-        document::Meta { name: "description", content: "{description}" }
-        if let Some(ref url) = canonical {
-            document::Link { rel: "canonical", href: "{url}" }
-        }
-        if let Some(ref href) = markdown_href {
-            document::Link { rel: "alternate", r#type: "text/markdown", href: "{href}" }
-        }
-
-        // Open Graph
-        document::Meta { property: "og:title", content: "{title}" }
-        document::Meta { property: "og:description", content: "{description}" }
-        document::Meta { property: "og:type", content: "article" }
-        if let Some(ref url) = canonical {
-            document::Meta { property: "og:url", content: "{url}" }
-        }
-
-        // Twitter Card
-        document::Meta { name: "twitter:card", content: "summary" }
-        document::Meta { name: "twitter:title", content: "{title}" }
-        document::Meta { name: "twitter:description", content: "{description}" }
-
-        // schema.org TechArticle (+ BreadcrumbList) JSON-LD for rich results.
-        document::Script { r#type: "application/ld+json", "{json_ld}" }
+    let mut tags = vec![
+        HeadTag::meta("name", "description", &description),
+        HeadTag::meta("property", "og:title", &title),
+        HeadTag::meta("property", "og:description", &description),
+        HeadTag::meta("property", "og:type", "article"),
+        HeadTag::meta("name", "twitter:card", "summary"),
+        HeadTag::meta("name", "twitter:title", &title),
+        HeadTag::meta("name", "twitter:description", &description),
+    ];
+    if let Some(url) = canonical {
+        tags.push(HeadTag::link("canonical", &url, None));
+        tags.push(HeadTag::meta("property", "og:url", &url));
     }
+    if let Some(href) = markdown_href {
+        tags.push(HeadTag::link("alternate", &href, Some("text/markdown")));
+    }
+    tags.push(HeadTag::jsonld(json_ld));
+    rsx! { ManagedPageHead { title, tags } }
 }
 
 #[cfg(test)]

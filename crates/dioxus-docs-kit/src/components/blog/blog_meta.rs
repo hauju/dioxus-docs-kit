@@ -1,4 +1,4 @@
-use super::managed_head::{HeadTag, ManagedBlogHead};
+use crate::components::managed_head::{HeadTag, ManagedPageHead};
 use dioxus::prelude::*;
 
 use crate::BlogContext;
@@ -108,7 +108,7 @@ pub fn BlogPostMeta(slug: String) -> Element {
         tags.push(HeadTag::link("alternate", &href, Some("text/markdown")));
     }
     tags.push(HeadTag::jsonld(json_ld));
-    rsx! { ManagedBlogHead { title: title.clone(), tags } }
+    rsx! { ManagedPageHead { title: title.clone(), tags } }
 }
 
 /// Injects basic SEO meta tags for the blog index/listing page.
@@ -129,7 +129,7 @@ pub fn BlogIndexMeta(title: String, description: String) -> Element {
         .map(|origin| join_site_url(origin, &ctx.base_path, ""));
 
     let tags = listing_tags(&title, &description, canonical.as_deref(), None);
-    rsx! { ManagedBlogHead { title, tags } }
+    rsx! { ManagedPageHead { title, tags } }
 }
 
 pub(super) fn listing_tags(

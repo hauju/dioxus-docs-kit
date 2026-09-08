@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
 use super::blog_meta::listing_tags;
-use super::managed_head::{HeadTag, ManagedBlogHead};
 use super::{BlogCard, TagFilter};
+use crate::components::managed_head::{ManagedPageHead, NotFoundMeta};
 use crate::components::seo::join_site_url;
 use crate::{BlogCategory, BlogContext, BlogRegistry};
 
@@ -20,15 +20,8 @@ pub fn BlogCategoryPage(slug: String, #[props(default = 1)] page: usize) -> Elem
         .get_category(&slug)
         .zip(registry.category_posts_page(&slug, page))
     else {
-        #[cfg(feature = "server")]
-        if let Some(mut context) = dioxus_fullstack_core::FullstackContext::current() {
-            context.set_current_http_status(dioxus_fullstack_core::HttpError::new(
-                dioxus::server::http::StatusCode::NOT_FOUND,
-                "Category page not found",
-            ));
-        }
         return rsx! {
-            ManagedBlogHead { title: "Category page not found", tags: vec![HeadTag::meta("name", "robots", "noindex")] }
+            NotFoundMeta { title: "Category page not found" }
             main { class: "max-w-6xl mx-auto px-4 py-12",
                 h1 { class: "text-4xl font-bold mb-4", "Category page not found" }
                 p { class: "text-base-content/70 mb-8", "This topic or page doesn't exist." }
@@ -101,5 +94,5 @@ fn CategoryMeta(category: BlogCategory, page: usize) -> Element {
         }
     });
     let tags = listing_tags(&title, &description, canonical.as_deref(), image.as_deref());
-    rsx! { ManagedBlogHead { title, tags } }
+    rsx! { ManagedPageHead { title, tags } }
 }
