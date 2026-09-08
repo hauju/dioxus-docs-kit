@@ -309,30 +309,22 @@ BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
     .build()
 ```
 
-Register both routes under your blog layout. The path must match `with_category_base_path`; you can use `/categories` or `/topics` instead.
+Register both routes under your blog layout and point them at `BlogCategoryPage`; its `page` prop defaults to 1. The path must match `with_category_base_path`; you can use `/categories` or `/topics` instead.
 
 ```rust
+use dioxus_docs_kit::BlogCategoryPage;
+
 #[derive(Debug, Clone, Routable, PartialEq)]
 enum Route {
     #[layout(MyBlogLayout)]
         #[route("/blog")]
         BlogIndex {},
-        #[route("/blog/categories/:slug")]
+        #[route("/blog/categories/:slug", BlogCategoryPage)]
         BlogCategory { slug: String },
-        #[route("/blog/categories/:slug/page/:page")]
+        #[route("/blog/categories/:slug/page/:page", BlogCategoryPage)]
         BlogCategoryPaginated { slug: String, page: usize },
         #[route("/blog/:slug")]
         BlogPage { slug: String },
-}
-
-#[component]
-fn BlogCategory(slug: String) -> Element {
-    rsx! { dioxus_docs_kit::BlogCategoryPage { slug } }
-}
-
-#[component]
-fn BlogCategoryPaginated(slug: String, page: usize) -> Element {
-    rsx! { dioxus_docs_kit::BlogCategoryPage { slug, page } }
 }
 ```
 

@@ -66,9 +66,9 @@ enum Route {
     #[layout(MyBlogLayout)]
         #[route("/blog")]
         BlogIndex {},
-        #[route("/blog/categories/:slug")]
+        #[route("/blog/categories/:slug", BlogCategoryPage)]
         BlogCategory { slug: String },
-        #[route("/blog/categories/:slug/page/:page")]
+        #[route("/blog/categories/:slug/page/:page", BlogCategoryPage)]
         BlogCategoryPaginated { slug: String, page: usize },
         #[route("/blog/:slug")]
         BlogPage { slug: String },
@@ -865,14 +865,4 @@ fn LandingFooter() -> Element {
             }
         }
     }
-}
-
-#[component]
-fn BlogCategory(slug: String) -> Element {
-    rsx! { BlogCategoryPage { slug } }
-}
-
-#[component]
-fn BlogCategoryPaginated(slug: String, page: usize) -> Element {
-    rsx! { BlogCategoryPage { slug, page } }
 }

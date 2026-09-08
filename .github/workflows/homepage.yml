@@ -183,14 +183,16 @@ jobs:
       - name: Check bundle size
         run: ./scripts/wasm-size.sh
 
-      - name: Set up Node for browser checks
-        uses: actions/setup-node@v4
+      # agent-browser downloads Chrome for Testing into the puppeteer cache.
+      - name: Cache the smoke-test browser
+        uses: actions/cache@v4
         with:
-          node-version: "22"
+          path: ~/.cache/puppeteer
+          key: agent-browser-0.23.4-${{ runner.os }}
 
       - name: Install browser smoke runner
         run: |
-          npm install --global agent-browser@0.23.4
+          bun add --global agent-browser@0.23.4
           agent-browser install --with-deps
 
       - name: Check search in the bundled site
