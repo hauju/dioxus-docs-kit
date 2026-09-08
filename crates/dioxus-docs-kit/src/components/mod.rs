@@ -3,6 +3,7 @@ mod copy_page;
 mod docs_layout;
 mod docs_meta;
 mod docs_page;
+mod managed_head;
 mod mobile_drawer;
 mod page_nav;
 mod search_modal;

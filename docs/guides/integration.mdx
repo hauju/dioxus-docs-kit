@@ -240,3 +240,12 @@ Once integrated, your docs site includes:
     Explore all available MDX components
   </Card>
 </CardGroup>
+
+
+## Page metadata and not-found responses
+
+With `auto_meta` enabled (the default), documentation and blog metadata updates during client navigation. The kit removes its previous canonical URL, description, social tags, Markdown alternate, and structured data when leaving a page. Consumer-supplied head tags are left alone. Use `with_auto_meta(false)` if your app manages page metadata itself.
+
+Missing documentation paths, API operations, blog posts, and category pages render a not-found view with `noindex`. With the kit's `server` feature enabled, direct requests also return HTTP 404. The not-found title and `noindex` remain enabled when automatic metadata is off. Navigating to an existing page removes the not-found metadata.
+
+Client-only hosting controls HTTP status codes separately; enable server rendering to use the kit's HTTP 404 handling.

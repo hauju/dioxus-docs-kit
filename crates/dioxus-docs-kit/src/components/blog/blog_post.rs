@@ -5,6 +5,7 @@ use dioxus_mdx::{DocContent, DocTableOfContents, extract_headers};
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
+use crate::components::managed_head::NotFoundMeta;
 
 use super::author_info::AuthorInfo;
 use super::blog_meta::BlogPostMeta;
@@ -12,7 +13,8 @@ use super::post_nav::BlogPostNav;
 use super::progress_bar::ReadingProgressBar;
 use super::related_posts::RelatedPosts;
 
-/// Single blog post view.
+/// Single blog post view. Missing posts render a noindex page and return HTTP
+/// 404 during server rendering when the `server` feature is enabled.
 #[component]
 pub fn BlogPostView(slug: String) -> Element {
     let registry = use_context::<&'static BlogRegistry>();
@@ -23,6 +25,7 @@ pub fn BlogPostView(slug: String) -> Element {
         None => {
             let base = ctx.base_path.clone();
             return rsx! {
+                NotFoundMeta { title: "Post not found" }
                 div { class: "max-w-4xl mx-auto px-4 py-12",
                     div { class: "text-center",
                         h1 { class: "text-4xl font-bold mb-4", "404" }
