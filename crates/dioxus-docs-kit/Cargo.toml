@@ -22,6 +22,8 @@ dioxus-fullstack-core = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+webmcp-rs = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { workspace = true }
@@ -49,6 +51,10 @@ server = ["dioxus/server", "dep:dioxus-fullstack-core"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
 openapi = ["dioxus-mdx/openapi"]
+# Register the site's docs as WebMCP tools for an in-browser agent
+# (`DocsWebMcp`). Off by default: it pulls `webmcp-rs` + `schemars`, and a
+# docs site that never meets an agent should not pay for them.
+webmcp = ["dep:webmcp-rs", "dep:schemars"]
 
 # Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
 # own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
@@ -84,3 +90,8 @@ lang-yaml = ["highlight", "dioxus-mdx/lang-yaml"]
 # 0.5.0. Deliberately not `all-features`: that would compile every `lang-*`
 # tree-sitter grammar just to render the docs.
 features = ["server"]
+
+[package.metadata.cargo-machete]
+# The package is `webmcp-rs` but its library is `webmcp`, so `use webmcp::...`
+# in src/webmcp.rs does not look like a use of this dependency to machete.
+ignored = ["webmcp-rs"]

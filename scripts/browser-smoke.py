@@ -74,6 +74,41 @@ def open_search():
     expect("document.querySelector('dialog:modal') && document.activeElement.matches('[role=combobox]')")
 
 
+# The docs register themselves as WebMCP tools for an in-browser agent. Chromium
+# has no native `document.modelContext`, so what answers here is the polyfill
+# index.html loads — the same thing a visitor gets on any browser without
+# WebMCP. Tools are registered during the app's first render, not on page load,
+# so every check below has to run after the app is interactive.
+WEBMCP_TOOLS = ["docs_search", "docs_get_page", "docs_list_pages", "docs_get_api_operation"]
+# Each tool replies with exactly one JSON text block; this is its parsed payload.
+PAYLOAD = "JSON.parse(window.__dkCall.content[0].text)"
+
+
+def list_tools():
+    # `void 0` on purpose: a registered tool holds a closure and a window
+    # reference, and returning the promise makes CDP try to deep-serialize it
+    # ("Object reference chain is too long"). Park it and assert on the window.
+    browser("eval", "window.__dkTools = undefined;"
+                    "document.modelContext.getTools().then(t => window.__dkTools = t);"
+                    "void 0")
+    expect("Array.isArray(window.__dkTools)")
+
+
+def call_tool(name, args):
+    # Park the reply on the window rather than reading it back through stdout,
+    # so every assertion stays a `wait --fn` predicate like the rest of this file.
+    browser("eval",
+        "window.__dkCall = undefined; window.__dkCallError = undefined;"
+        "(async () => { try {"
+        "  const ctx = document.modelContext;"
+        f"  const tool = (await ctx.getTools()).find(t => t.name === {json.dumps(name)});"
+        f"  if (!tool) throw new Error('tool not registered: ' + {json.dumps(name)});"
+        f"  window.__dkCall = await ctx.executeTool(tool, {json.dumps(args)});"
+        "} catch (e) { window.__dkCallError = String(e); } })(); void 0")
+    expect("window.__dkCall !== undefined || window.__dkCallError !== undefined")
+    expect("!window.__dkCallError")
+
+
 
 class PageHead(HTMLParser):
     def __init__(self):
@@ -175,6 +210,47 @@ try:
     for path, title, description in [INTRO, QUICKSTART, API, POST]:
         check_page_response(path, 200, path, title, description)
     expect_head(*INTRO)
+
+    # --- WebMCP: the page hands its docs to an agent driving the browser. ----
+    expect("!!document.modelContext")
+    list_tools()
+    expect(json.dumps(WEBMCP_TOOLS) + ".every(n => window.__dkTools.some(t => t.name === n))")
+    # Without a description and an object schema an agent cannot plan a call.
+    expect("window.__dkTools.every(t => (t.description || '').length > 20 && t.inputSchema.type === 'object')")
+    expect("window.__dkTools.find(t => t.name === 'docs_search').inputSchema.required.includes('query')")
+
+    call_tool("docs_search", {"query": "quick start"})
+    expect("!window.__dkCall.isError && " + PAYLOAD + ".results.length > 0")
+    expect(PAYLOAD + ".results.some(r => r.path === 'getting-started/quickstart')")
+    # Every hit must carry a URL an agent can follow back to the page.
+    expect(PAYLOAD + ".results.every(r => r.url.includes('/docs/' + r.path))")
+    call_tool("docs_search", {"query": "the", "limit": 2})
+    expect(PAYLOAD + ".results.length <= 2")
+
+    # docs_get_page has to accept the URL it just handed out, not only the bare path.
+    call_tool("docs_get_page", {"path": origin + "/docs/getting-started/quickstart#prerequisites"})
+    expect("!window.__dkCall.isError && " + PAYLOAD + ".path === 'getting-started/quickstart'")
+    expect(PAYLOAD + ".title === 'Quick Start' && " + PAYLOAD + ".tab === 'Docs'")
+    # Markdown source, not the rendered markup.
+    expect(PAYLOAD + ".markdown.includes('## Prerequisites') && !" + PAYLOAD + ".markdown.includes('<h2')")
+    # A miss is a soft error that names the real pages in the group.
+    call_tool("docs_get_page", {"path": "getting-started/quickstart-typo"})
+    expect("window.__dkCall.isError && window.__dkCall.content[0].text.includes('getting-started/quickstart')")
+
+    # docs_list_pages fills the API group from the spec; _nav.json never lists operations.
+    call_tool("docs_list_pages", {})
+    expect(PAYLOAD + ".groups.some(g => g.pages.some(p => p.path === 'getting-started/introduction'))")
+    expect(PAYLOAD + ".groups.find(g => g.group === 'API Reference')"
+           ".pages.some(p => p.path === 'api-reference/list-pets' && p.method === 'GET')")
+
+    call_tool("docs_get_api_operation", {"path": "api-reference/list-pets"})
+    expect("!window.__dkCall.isError && " + PAYLOAD + ".method === 'GET' && " + PAYLOAD + ".endpoint === '/pets'")
+    expect(PAYLOAD + ".parameters.some(p => p.name === 'limit' && p.in === 'query' && p.type === 'integer<int32>')")
+    expect(PAYLOAD + ".responses.some(r => r.status === '200')")
+    expect(PAYLOAD + ".curl.startsWith('curl')")
+    call_tool("docs_get_api_operation", {"path": "getting-started/introduction"})
+    expect("window.__dkCall.isError")
+
     browser("click", '.dk-sidebar a[href="/docs/getting-started/quickstart"]')
     expect_head(*QUICKSTART)
     browser("back")
@@ -232,6 +308,10 @@ try:
     browser("scrollintoview", 'a[href="/blog"]')
     browser("click", 'a[href="/blog"]')
     expect("location.pathname === '/blog' && document.querySelector('[role=combobox]').getAttribute('aria-label') === 'Search posts...'")
+    # The docs layout unmounted, so its tools must be gone: an agent is never
+    # offered a tool that reads a section the user has navigated away from.
+    list_tools()
+    expect("window.__dkTools.every(t => !" + json.dumps(WEBMCP_TOOLS) + ".includes(t.name))")
     expect_head("/blog", "Blog", "Latest blog posts and updates.", kind=None, markdown=False)
     browser("set", "viewport", "390", "844")
     expect("typeof window.__dkSearchHotkey === 'function'")
@@ -291,7 +371,7 @@ try:
         else:
             expect_head("/blog", "Blog", "Latest blog posts and updates.", kind=None, markdown=False)
 
-    print("Browser smoke passed: docs/API/blog metadata, 404 recovery, categories, SSR/status codes, history, linked badges, mobile layout; docs/blog search, arrow selection, focus containment/restoration, Escape, empty results, and navigation.")
+    print("Browser smoke passed: WebMCP tool registration/execution/teardown; docs/API/blog metadata, 404 recovery, categories, SSR/status codes, history, linked badges, mobile layout; docs/blog search, arrow selection, focus containment/restoration, Escape, empty results, and navigation.")
 finally:
     # Preserve the original test failure if browser startup itself failed.
     subprocess.run(["agent-browser", "--session", session, "close"], capture_output=True, timeout=15)

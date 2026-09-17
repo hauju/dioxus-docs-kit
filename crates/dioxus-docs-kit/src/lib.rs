@@ -74,6 +74,8 @@ pub mod registry;
 pub(crate) mod search;
 #[cfg(feature = "server")]
 pub mod server;
+#[cfg(feature = "webmcp")]
+pub mod webmcp;
 
 use dioxus::prelude::*;
 
@@ -282,6 +284,9 @@ pub use components::{
 };
 
 pub use hooks::{DocsProviders, use_docs_context, use_docs_providers};
+
+#[cfg(feature = "webmcp")]
+pub use webmcp::DocsWebMcp;
 
 pub use dioxus_mdx::{
     ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,

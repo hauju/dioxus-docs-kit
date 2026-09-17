@@ -5,6 +5,20 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Added
+
+- `webmcp` feature (off by default): `DocsWebMcp` registers the site's docs as
+  [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent
+  driving the browser can call `docs_search`, `docs_get_page`, `docs_list_pages`
+  and `docs_get_api_operation` instead of scraping the rendered page. The tools are
+  read-only and read the search index and content map already compiled into the
+  wasm; registration is tied to the component's mount, so leaving the docs
+  section unregisters them. Built on `webmcp-rs`. Browsers without native
+  WebMCP need Google's polyfill loaded from `index.html` before the wasm
+  starts; the README shows the two lines, and the example app has them.
+
 ## [0.7.1] — 2026-09-08
 
 ### Fixed

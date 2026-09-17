@@ -213,6 +213,32 @@ dx bundle --web --release --debug-symbols false
 
 Without `--debug-symbols false`, `wasm-opt` aborts on the DWARF `dx` keeps by default and `dx` silently ships the unoptimized wasm (25 MB instead of 7 MB for this site). Copy the `[profile.wasm-release]` section from this repo's `Cargo.toml` and write brotli sidecars into the bundle — details in the [kit README](crates/dioxus-docs-kit/README.md#production-build).
 
+### 7. Optional: hand the docs to an in-browser agent (WebMCP)
+
+With the `webmcp` feature (off by default), `DocsWebMcp {}` mounted below `use_docs_providers` registers `docs_search`, `docs_get_page`, `docs_list_pages` and `docs_get_api_operation` as [WebMCP](https://github.com/webmachinelearning/webmcp) tools. They are read-only and answer from the search index and content already in the wasm.
+
+```toml
+dioxus-docs-kit = { version = "0.7", features = ["webmcp"] }
+```
+
+Only Chrome 149+ has `document.modelContext` natively (origin trial or `chrome://flags/#enable-webmcp-testing`). Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0) to run **before the wasm starts**, so it goes in `index.html`, not in a component. The polyfill is not part of the crate; copy it from this repo's `assets/webmcp-polyfill.js` and pin it as an unhashed asset so the URL is stable:
+
+```html
+<!-- index.html, in <head> -->
+<script src="/assets/webmcp-polyfill.js"></script>
+```
+
+```rust
+// main.rs: referenced from index.html, not from Rust, so keep it in the bundle.
+#[used]
+static WEBMCP_POLYFILL: Asset = asset!(
+    "/assets/webmcp-polyfill.js",
+    AssetOptions::js().with_minify(false).with_hash_suffix(false)
+);
+```
+
+The polyfill returns early when the browser has the native API. The `docs_` prefix keeps them clear of your page's own tools (WebMCP rejects a duplicate name). `scripts/browser-smoke.py` shows an agent calling them through `document.modelContext`, and the [WebMCP guide](https://dioxus-docs-kit.oxidt.com/docs/guides/webmcp) covers what each tool returns.
+
 ## Claude Code Skill
 
 This repo ships a [Claude Code skill](skills/dioxus-docs-kit-integration/) that automates the full integration. Install it globally:

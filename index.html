@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <!-- WebMCP polyfill (Apache-2.0, vendored in assets/). A plain <script> in
+         the head on purpose: it must install `document.modelContext` before the
+         wasm module renders and registers the `DocsWebMcp` tools, which rules
+         out injecting it from a component. Root-relative because docs routes are
+         nested. The URL is stable: src/main.rs pins the asset with the hash
+         suffix off. It stands down when the browser has native WebMCP. -->
+    <script src="/assets/webmcp-polyfill.js"></script>
+  </head>
+  <body>
+    <div id="main"></div>
+  </body>
+</html>
