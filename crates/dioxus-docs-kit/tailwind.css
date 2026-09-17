@@ -26,5 +26,9 @@
 @source "./safelist.html";
 @source "./src/**/*.{rs,html,css}";
 @source "../dioxus-mdx/src/**/*.{rs,html,css}";
+/* Tailwind also auto-scans the repo; the vendored WebMCP polyfill mentions
+   checkbox/radio/range input types, which would pull three DaisyUI components
+   nobody renders into the precompiled sheet. */
+@source not "../../assets/webmcp-polyfill.js";
 
 @import "./theme.css";
