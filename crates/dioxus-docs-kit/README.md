@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.7"
+dioxus-docs-kit = "0.8"
 ```
 
 ### 1. Build a Registry
@@ -317,14 +317,14 @@ Rust needs no feature of its own — `dioxus-code`'s `runtime` always compiles i
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { version = "0.7", features = ["lang-c-sharp", "lang-cpp", "lang-tsx"] }
+dioxus-docs-kit = { version = "0.8", features = ["lang-c-sharp", "lang-cpp", "lang-tsx"] }
 ```
 
 To trim the set down to what your docs actually fence:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = { version = "0.7", default-features = false, features = [
+dioxus-docs-kit = { version = "0.8", default-features = false, features = [
     "web", "mermaid", "highlight", "openapi", "lang-bash", "lang-json", "lang-toml",
 ] }
 ```
@@ -335,7 +335,7 @@ The kit carries `lang-*` features only for the languages above. For anything els
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.7"
+dioxus-docs-kit = "0.8"
 dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }
 ```
 
