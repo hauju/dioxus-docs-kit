@@ -23,6 +23,8 @@ dioxus-mdx = { version = "0.7.1", path = "crates/dioxus-mdx", default-features =
 dioxus-docs-kit = { version = "0.7.1", path = "crates/dioxus-docs-kit", default-features = false }
 dioxus-docs-kit-build = { version = "0.7.1", path = "crates/dioxus-docs-kit-build" }
 serde = { version = "1.0", features = ["derive"] }
+schemars = "1"
+webmcp-rs = { version = "0.1", default-features = false, features = ["schema", "dioxus"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 tracing = "0.1"
@@ -67,12 +69,14 @@ default = [
     "lang-json",
     "lang-python",
     "lang-typescript",
+    "webmcp",
 ]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
 highlight = ["dioxus-docs-kit/highlight"]
 openapi = ["dioxus-docs-kit/openapi"]
+webmcp = ["dioxus-docs-kit/webmcp"]
 
 # Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
 # own compiles no grammar beyond Rust, which ships with `dioxus-code`'s

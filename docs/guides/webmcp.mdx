@@ -1,0 +1,97 @@
+---
+title: WebMCP Tools
+description: Hand your docs to an agent driving the browser as read-only WebMCP tools
+sidebarTitle: WebMCP
+icon: bot
+---
+
+## Overview
+
+[WebMCP](https://github.com/webmachinelearning/webmcp) lets a page register tools on `document.modelContext` for whatever agent is driving the browser. With the `webmcp` feature, `dioxus-docs-kit` registers your docs as four read-only tools, so an agent searches the index and reads Markdown source instead of scraping the rendered page.
+
+This site has them on. Open it in a WebMCP-capable browser or agent and call `docs_list_pages`.
+
+<Note>
+The tools are read-only. None of them navigates or changes what the visitor sees.
+</Note>
+
+## Setup
+
+<Steps>
+  <Step title="Enable the feature">
+    ```toml
+    dioxus-docs-kit = { version = "0.7", features = ["webmcp"] }
+    ```
+
+    It is off by default because it pulls `webmcp-rs` and `schemars` into the wasm.
+  </Step>
+
+  <Step title="Mount the component">
+    Put `DocsWebMcp {}` anywhere below `use_docs_providers`. It renders nothing. The registrations live exactly as long as the mount, so leaving the docs section unregisters them.
+
+    ```rust
+    rsx! {
+        DocsLayout {
+            header: rsx! { /* ... */ },
+            DocsWebMcp {}
+            Outlet::<Route> {}
+        }
+    }
+    ```
+  </Step>
+
+  <Step title="Load the polyfill">
+    Only Chrome 149+ has `document.modelContext` natively, behind the origin trial or `chrome://flags/#enable-webmcp-testing`. Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0), and it has to run **before the wasm starts**, because the tools register on first render. That rules out a component: it goes in `index.html`.
+
+    The polyfill is not part of the crate. Copy it from this repo's `assets/webmcp-polyfill.js`, then pin it as an unhashed asset so the URL is stable:
+
+    <CodeGroup>
+    ```html index.html
+    <head>
+      <script src="/assets/webmcp-polyfill.js"></script>
+    </head>
+    ```
+
+    ```rust main.rs
+    // Referenced from index.html, not from Rust, so keep it in the bundle.
+    #[used]
+    static WEBMCP_POLYFILL: Asset = asset!(
+        "/assets/webmcp-polyfill.js",
+        AssetOptions::js().with_minify(false).with_hash_suffix(false)
+    );
+    ```
+    </CodeGroup>
+
+    The polyfill returns early when the browser has the native API.
+  </Step>
+</Steps>
+
+## Tools
+
+Every tool replies with one JSON text block. Paths are content paths, the same ones you list in `_nav.json`, and every result carries the page URL so the agent can send the visitor there.
+
+| Tool | Arguments | Returns |
+|------|-----------|---------|
+| `docs_search` | `query`, optional `limit` (default 10, max 50) | Ranked section-level hits with title, heading, breadcrumb, a snippet and the URL |
+| `docs_get_page` | `path` | The page's Markdown source plus title, description and tab |
+| `docs_list_pages` | none | Every page grouped like the sidebar, API endpoints included |
+| `docs_get_api_operation` | `path` | One OpenAPI operation: method, endpoint, parameters, request body, responses and a ready `curl` command |
+
+`docs_get_page` and `docs_get_api_operation` accept whatever shape an agent hands back: a full URL, a leading slash, the docs base path, a `.md` suffix or a `#anchor` are all stripped. A miss returns a soft error that names the nearest real pages.
+
+<Tip>
+The `docs_` prefix keeps the tools clear of whatever else your page registers. WebMCP rejects a second tool with an existing name, and `use_tool` only logs that rejection, so an unprefixed collision would silently drop one side.
+</Tip>
+
+## Calling them by hand
+
+Open the console on this site:
+
+```javascript
+const tools = await document.modelContext.getTools();
+const search = tools.find(t => t.name === "docs_search");
+const reply = await document.modelContext.executeTool(search, { query: "theme toggle" });
+JSON.parse(reply.content[0].text).results;
+```
+
+`scripts/browser-smoke.py` in the repo runs the same calls against every tool in CI.

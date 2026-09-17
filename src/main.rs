@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_docs_kit::{
     BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
     BlogThemeToggle, Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
-    DocsRegistry, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
+    DocsRegistry, DocsWebMcp, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
     use_blog_providers, use_docs_context, use_docs_providers,
 };
 use dioxus_free_icons::Icon;
@@ -15,6 +15,20 @@ use std::sync::LazyLock;
 // The wasm32 `stderr` shim now lives in the `dioxus-docs-kit` library
 // (`crates/dioxus-docs-kit/src/lib.rs`) so library consumers get it too; this
 // binary picks it up transitively.
+
+// Referenced by name from `index.html`, not from Rust, so the hash suffix is
+// off and `#[used]` keeps it in the bundle. The polyfill has to be a plain
+// `<script>` in the head: it must install `document.modelContext` before the
+// wasm renders and `DocsWebMcp` registers its tools, which rules out injecting
+// it from a component.
+#[cfg(feature = "webmcp")]
+#[used]
+static WEBMCP_POLYFILL: Asset = asset!(
+    "/assets/webmcp-polyfill.js",
+    AssetOptions::js()
+        .with_minify(false)
+        .with_hash_suffix(false)
+);
 
 // ============================================================================
 // Documentation Registry
@@ -407,6 +421,10 @@ fn MyDocsLayout() -> Element {
                     theme_toggle: rsx! { ThemeToggle {} },
                 }
             },
+            // Hands the docs to an in-browser agent as WebMCP tools. Mounted
+            // here so the registrations live exactly as long as the docs
+            // section: leaving it unregisters them.
+            DocsWebMcp {}
             Outlet::<Route> {}
         }
     }
