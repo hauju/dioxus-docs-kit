@@ -3,6 +3,10 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
+<Update label="v0.8.0" description="September 2026">
+- **WebMCP tools**: the opt-in `webmcp` feature adds `DocsWebMcp`, which registers `docs_search`, `docs_get_page`, `docs_list_pages` and `docs_get_api_operation` as read-only [WebMCP](https://github.com/webmachinelearning/webmcp) tools for an agent driving the browser. See the [WebMCP guide](/docs/guides/webmcp)
+</Update>
+
 <Update label="v0.7.1" description="September 2026">
 - **Category URLs**: non-ASCII slugs are percent-encoded in sitemap, canonical and Open Graph URLs
 - **Metadata in hidden tabs**: head tags rebuild after a microtask instead of `requestAnimationFrame`, so background-tab navigation no longer leaves stale tags

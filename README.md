@@ -33,10 +33,10 @@ To add the kit to an **existing** Dioxus app instead, follow the
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = "0.7"
+dioxus-docs-kit = "0.8"
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.7"
+dioxus-docs-kit-build = "0.8"
 
 [features]
 default = ["web"]
@@ -218,7 +218,7 @@ Without `--debug-symbols false`, `wasm-opt` aborts on the DWARF `dx` keeps by de
 With the `webmcp` feature (off by default), `DocsWebMcp {}` mounted below `use_docs_providers` registers `docs_search`, `docs_get_page`, `docs_list_pages` and `docs_get_api_operation` as [WebMCP](https://github.com/webmachinelearning/webmcp) tools. They are read-only and answer from the search index and content already in the wasm.
 
 ```toml
-dioxus-docs-kit = { version = "0.7", features = ["webmcp"] }
+dioxus-docs-kit = { version = "0.8", features = ["webmcp"] }
 ```
 
 Only Chrome 149+ has `document.modelContext` natively (origin trial or `chrome://flags/#enable-webmcp-testing`). Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0) to run **before the wasm starts**, so it goes in `index.html`, not in a component. The polyfill is not part of the crate; copy it from this repo's `assets/webmcp-polyfill.js` and pin it as an unhashed asset so the URL is stable:
