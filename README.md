@@ -221,7 +221,7 @@ With the `webmcp` feature (off by default), `DocsWebMcp {}` mounted below `use_d
 dioxus-docs-kit = { version = "0.8", features = ["webmcp"] }
 ```
 
-Only Chrome 149+ has `document.modelContext` natively (origin trial or `chrome://flags/#enable-webmcp-testing`). Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0) to run **before the wasm starts**, so it goes in `index.html`, not in a component. The polyfill is not part of the crate; copy it from this repo's `assets/webmcp-polyfill.js` and pin it as an unhashed asset so the URL is stable:
+Chrome 153+ has `document.modelContext` natively (149 to 152 behind the origin trial or `chrome://flags/#enable-webmcp-testing`). Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0) to run **before the wasm starts**, so it goes in `index.html`, not in a component. The polyfill is not part of the crate; copy it from this repo's `assets/webmcp-polyfill.js` and pin it as an unhashed asset so the URL is stable:
 
 ```html
 <!-- index.html, in <head> -->

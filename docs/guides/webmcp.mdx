@@ -41,7 +41,7 @@ The tools are read-only. None of them navigates or changes what the visitor sees
   </Step>
 
   <Step title="Load the polyfill">
-    Only Chrome 149+ has `document.modelContext` natively, behind the origin trial or `chrome://flags/#enable-webmcp-testing`. Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0), and it has to run **before the wasm starts**, because the tools register on first render. That rules out a component: it goes in `index.html`.
+    Chrome 153+ has `document.modelContext` natively; 149 to 152 need the origin trial or `chrome://flags/#enable-webmcp-testing`. Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0), and it has to run **before the wasm starts**, because the tools register on first render. That rules out a component: it goes in `index.html`.
 
     The polyfill is not part of the crate. Copy it from this repo's `assets/webmcp-polyfill.js`, then pin it as an unhashed asset so the URL is stable:
 
@@ -88,9 +88,12 @@ The `docs_` prefix keeps the tools clear of whatever else your page registers. W
 Open the console on this site:
 
 ```javascript
-const tools = await document.modelContext.getTools();
-const search = tools.find(t => t.name === "docs_search");
-const reply = await document.modelContext.executeTool(search, { query: "theme toggle" });
+const ctx = document.modelContext;
+const search = (await ctx.getTools()).find(t => t.name === "docs_search");
+// Chrome 153 and 154 only parse JSON-string arguments and return the result
+// JSON-stringified; the polyfill and Chrome 155+ take and return objects.
+let reply = await ctx.executeTool(search, JSON.stringify({ query: "theme toggle" }));
+if (typeof reply === "string") reply = JSON.parse(reply);
 JSON.parse(reply.content[0].text).results;
 ```
 

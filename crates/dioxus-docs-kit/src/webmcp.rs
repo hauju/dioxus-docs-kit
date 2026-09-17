@@ -21,11 +21,12 @@
 //! registry the user has navigated away from.
 //!
 //! Off wasm (SSR, tests) registration is a silent no-op, and in a browser
-//! without WebMCP nothing happens either. Chrome 149+ has it behind the origin
-//! trial or `chrome://flags/#enable-webmcp-testing`; for everyone else, load
-//! Google's WebMCP polyfill before the wasm starts: a plain `<script src>` in
-//! `index.html` pointing at an unhashed asset (the example app does exactly
-//! that, see its `index.html` and the `WEBMCP_POLYFILL` asset in `src/main.rs`).
+//! without WebMCP nothing happens either. Chrome 153+ has it natively (149 to
+//! 152 behind the origin trial or `chrome://flags/#enable-webmcp-testing`); for
+//! everyone else, load Google's WebMCP polyfill before the wasm starts: a plain
+//! `<script src>` in `index.html` pointing at an unhashed asset (the example
+//! app does exactly that, see its `index.html` and the `WEBMCP_POLYFILL` asset
+//! in `src/main.rs`).
 //! A `document::Script` from a component is too late; the tools register on
 //! first render.
 

@@ -74,11 +74,15 @@ def open_search():
     expect("document.querySelector('dialog:modal') && document.activeElement.matches('[role=combobox]')")
 
 
-# The docs register themselves as WebMCP tools for an in-browser agent. Chromium
-# has no native `document.modelContext`, so what answers here is the polyfill
-# index.html loads — the same thing a visitor gets on any browser without
-# WebMCP. Tools are registered during the app's first render, not on page load,
-# so every check below has to run after the app is interactive.
+# The docs register themselves as WebMCP tools for an in-browser agent. Chrome
+# for Testing 153+ has `document.modelContext` natively; older builds get the
+# polyfill index.html loads, so which one answers depends on the browser the
+# runner installed. The native API differs from the polyfill in three ways the
+# helpers below absorb: `getTools()` hands back `inputSchema` as a JSON string,
+# `executeTool` on Chrome 153/154 only parses JSON-string arguments (155+ takes
+# objects, as the polyfill does), and the reply is the tool's result
+# JSON-stringified. Tools are registered during the app's first render, not on
+# page load, so every check below has to run after the app is interactive.
 WEBMCP_TOOLS = ["docs_search", "docs_get_page", "docs_list_pages", "docs_get_api_operation"]
 # Each tool replies with exactly one JSON text block; this is its parsed payload.
 PAYLOAD = "JSON.parse(window.__dkCall.content[0].text)"
@@ -89,7 +93,10 @@ def list_tools():
     # reference, and returning the promise makes CDP try to deep-serialize it
     # ("Object reference chain is too long"). Park it and assert on the window.
     browser("eval", "window.__dkTools = undefined;"
-                    "document.modelContext.getTools().then(t => window.__dkTools = t);"
+                    "document.modelContext.getTools().then(t => window.__dkTools = t.map(x => ({"
+                    "  name: x.name, description: x.description,"
+                    "  inputSchema: typeof x.inputSchema === 'string' ? JSON.parse(x.inputSchema) : x.inputSchema"
+                    "})));"
                     "void 0")
     expect("Array.isArray(window.__dkTools)")
 
@@ -103,7 +110,10 @@ def call_tool(name, args):
         "  const ctx = document.modelContext;"
         f"  const tool = (await ctx.getTools()).find(t => t.name === {json.dumps(name)});"
         f"  if (!tool) throw new Error('tool not registered: ' + {json.dumps(name)});"
-        f"  window.__dkCall = await ctx.executeTool(tool, {json.dumps(args)});"
+        "  let reply;"
+        f"  try {{ reply = await ctx.executeTool(tool, {json.dumps(args)}); }}"
+        f"  catch (e) {{ reply = await ctx.executeTool(tool, JSON.stringify({json.dumps(args)})); }}"
+        "  window.__dkCall = typeof reply === 'string' ? JSON.parse(reply) : reply;"
         "} catch (e) { window.__dkCallError = String(e); } })(); void 0")
     expect("window.__dkCall !== undefined || window.__dkCallError !== undefined")
     expect("!window.__dkCallError")
