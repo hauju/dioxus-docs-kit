@@ -246,6 +246,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger Coolify Deployment
+        # POST, not GET: Coolify changed the endpoint, and a GET answers 200
+        # with {"message":"This endpoint has changed to a POST request."} —
+        # which passed silently for a month. `--fail` turns any non-2xx into
+        # a red job so this cannot happen again.
         run: |
-          curl --request GET '${{ vars.COOLIFY_WEBHOOK }}&force=true' \
+          curl --fail --silent --show-error --request POST '${{ vars.COOLIFY_WEBHOOK }}&force=true' \
             --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
