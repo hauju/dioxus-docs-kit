@@ -29,7 +29,7 @@ pub(super) fn try_parse_callout(content: &str) -> Option<(DocNode, &str)> {
     Some((
         DocNode::Callout(CalloutNode {
             callout_type,
-            content: inner,
+            content_html: inner,
         }),
         rest,
     ))
@@ -47,7 +47,12 @@ mod tests {
         assert_eq!(nodes.len(), 1);
         if let DocNode::Callout(c) = &nodes[0] {
             assert_eq!(c.callout_type, CalloutType::Warning);
-            assert_eq!(c.content, "Don't do this!");
+            // Rendered to HTML at parse time, so match on the prose inside it.
+            assert!(
+                c.content_html.contains("do this!"),
+                "got: {}",
+                c.content_html
+            );
         } else {
             panic!("Expected Callout node");
         }

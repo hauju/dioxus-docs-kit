@@ -1,13 +1,14 @@
 fn main() {
-    use dioxus_docs_kit_build::ValidationMode;
-    dioxus_docs_kit_build::generate_content_map_with_validation(
-        "docs/_nav.json",
-        ValidationMode::Strict,
-    );
-    dioxus_docs_kit_build::generate_blog_content_map_with_validation(
-        "blog/_blog.json",
-        ValidationMode::Strict,
-    );
+    use dioxus_docs_kit_build::{BlogBuild, DocsBuild, ValidationMode};
+
+    DocsBuild::new("docs/_nav.json")
+        .with_openapi("api-reference", "docs/api-reference/petstore.yaml")
+        .with_validation(ValidationMode::Strict)
+        .generate();
+
+    BlogBuild::new("blog/_blog.json")
+        .with_validation(ValidationMode::Strict)
+        .generate();
 
     // Compile the actual onboarding snippet, not a separately maintained copy.
     println!("cargo:rerun-if-changed=README.md");

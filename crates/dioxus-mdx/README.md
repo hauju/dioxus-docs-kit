@@ -31,7 +31,13 @@ fn BlogPost(content: String) -> Element {
 
 ## Parsing Only
 
-Use the parser directly without rendering:
+Use the parser directly without rendering — and without pulling in Dioxus at
+all, by depending on the crate with `default-features = false, features = ["parse"]`.
+That is how `dioxus-docs-kit-build` parses a whole documentation site inside a
+build script.
+
+The parsed tree is `serde`-serializable, so you can parse at build time and
+deserialize the result in the browser instead of shipping the parser.
 
 ```rust
 use dioxus_mdx::{parse_document, parse_mdx};
@@ -111,10 +117,13 @@ and adapt to any DaisyUI theme.
 
 ## Features
 
+- `components` (default) — the Dioxus renderer components. This is the only thing that pulls `dioxus` in; without it the crate is a plain Rust library of the document types plus (with `parse`) the parser.
+- `parse` (default) — the MDX/Markdown parser, including Markdown → HTML rendering. Pulls in `markdown` and a regex engine. A `dioxus-docs-kit` app leaves this off on the client: its pages are parsed into a bundle at build time.
 - `web` (default) — enables web-specific features like clipboard copy buttons on code blocks
 - `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain is needed for wasm and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `CodeTheme`, `Theme`, and `CodeThemeOverride` re-exports.
 - `lang-*` — one tree-sitter grammar each, on top of `highlight`. `highlight` on its own highlights Rust only (`dioxus-code`'s `runtime` always compiles it, so `lang-rust` needs nothing extra). The default set adds `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-typescript` and `lang-yaml`; `lang-c-sharp`, `lang-cpp` and `lang-tsx` are available but off by default (their grammars are the largest). For any other language, depend on `dioxus-code` directly — `dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }` — and cargo unifies the grammar into the copy this crate uses. A fence whose grammar is not compiled in renders as plain text in the same markup.
-- `openapi` (default) — parses OpenAPI specs: `parse_openapi()` and inline `<OpenAPI>…</OpenAPI>` blocks. Disable to drop `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`) from the build. The `OpenApiSpec` types and the viewer components (`OpenApiViewer`, `EndpointPage`, …) stay available — only spec parsing goes away, so an `<OpenAPI>` block falls through to the markdown branch and its body renders as text. Frontmatter parsing is unaffected: it uses the built-in `parse_yaml_lite` subset parser, not `serde_yaml`.
+- `openapi` — the `OpenApiSpec` types and the viewer components (`OpenApiViewer`, `EndpointPage`, …). Costs no dependencies; always compiled.
+- `openapi-parse` (default) — the spec *parser*: `parse_openapi()` and inline `<OpenAPI>…</OpenAPI>` blocks, plus `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`). Disable to drop them; an `<OpenAPI>` block then falls through to the markdown branch and its body renders as text. Frontmatter parsing is unaffected: it uses the built-in `parse_yaml_lite` subset parser, not `serde_yaml`.
 
 ## License
 

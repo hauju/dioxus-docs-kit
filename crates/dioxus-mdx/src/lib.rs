@@ -110,9 +110,12 @@
 //! }
 //! ```
 
+#[cfg(feature = "components")]
 pub mod components;
 pub mod parser;
+#[cfg(feature = "parse")]
 mod re;
+mod text;
 
 // Re-export parser types and functions
 pub use parser::{
@@ -122,13 +125,25 @@ pub use parser::{
     MediaTypeContent, OpenApiNode, OpenApiSpec, ParamFieldNode, ParamLocation, ParameterLocation,
     ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode, SchemaDefinition,
     SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode, YamlLiteError, YamlMap,
-    YamlValue, extract_frontmatter, get_raw_markdown, parse_document, parse_mdx, parse_yaml_lite,
-    strip_leading_h1,
+    YamlValue, parse_yaml_lite,
 };
 
-// Spec parsing lives behind the `openapi` feature (default); the `OpenApiSpec`
-// types and the viewer components above are always available.
-#[cfg(feature = "openapi")]
+// Heading helpers are free of both dioxus and regex, so they are available in
+// every configuration (the renderer, the TOC and the build-time bundle
+// generator all have to agree on anchor ids).
+pub use text::{extract_headers, parse_atx_heading, slugify, strip_markdown_links};
+
+// Parsing lives behind the `parse` feature (default). A docs-kit app turns it
+// off: its content is parsed into a bundle at build time.
+#[cfg(feature = "parse")]
+pub use parser::{
+    extract_frontmatter, parse_body, parse_document, parse_mdx, strip_leading_h1, to_html,
+    to_html_with_heading_ids,
+};
+
+// Spec parsing lives behind the `openapi-parse` feature (default); the
+// `OpenApiSpec` types and the viewer components are always available.
+#[cfg(feature = "openapi-parse")]
 pub use parser::{OpenApiError, parse_openapi};
 
 // Re-export the syntax-highlighting theme types so consumers can build a
@@ -138,15 +153,19 @@ pub use parser::{OpenApiError, parse_openapi};
 pub use dioxus_code::{CodeTheme, Theme};
 
 // Re-export components
+#[cfg(feature = "components")]
 pub use components::{
     ApiInfoHeader, DocAccordionGroup, DocAccordionItem, DocCallout, DocCard, DocCardGroup,
     DocCodeBlock, DocCodeGroup, DocContent, DocExpandable, DocNodeRenderer, DocParamField,
     DocRequestExample, DocResponseExample, DocResponseField, DocSteps, DocTableOfContents, DocTabs,
-    DocUpdate, EndpointCard, EndpointPage, MdxContent, MdxIcon, MdxRenderer, MethodBadge,
-    OpenApiViewer, ParameterItem, ParametersList, RequestBodySection, ResponseItem, ResponsesList,
-    SchemaDefinitions, SchemaTypeLabel, SchemaViewer, TagGroup, UngroupedEndpoints,
-    extract_headers, slugify,
+    DocUpdate, EndpointCard, EndpointPage, MdxIcon, MethodBadge, OpenApiViewer, ParameterItem,
+    ParametersList, RequestBodySection, ResponseItem, ResponsesList, SchemaDefinitions,
+    SchemaTypeLabel, SchemaViewer, TagGroup, UngroupedEndpoints,
 };
+
+// Runtime MDX parsing components need both features.
+#[cfg(all(feature = "components", feature = "parse"))]
+pub use components::{MdxContent, MdxRenderer};
 
 // `CodeThemeOverride` wraps a `dioxus-code` type, so it's only available with the
 // `highlight` feature (default).

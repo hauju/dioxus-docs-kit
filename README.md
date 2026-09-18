@@ -44,17 +44,22 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
 
-The kit's default features are `web` + `mermaid` + `highlight` + `openapi`, plus one `lang-*` syntax-highlighting grammar each for bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript and yaml (Rust is always highlighted; `lang-tsx`, `lang-c-sharp` and `lang-cpp` are available but off). If you disable default features, re-enable `mermaid`, `highlight`, `openapi` and the `lang-*` features your docs need, or ` ```mermaid ` fences stop rendering as diagrams, code blocks fall back to plain text, and `DocsConfig::with_openapi()` disappears.
+The kit's default features are `web` + `mermaid` + `highlight` + `openapi`, plus one `lang-*` syntax-highlighting grammar each for bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript and yaml (Rust is always highlighted; `lang-tsx`, `lang-c-sharp` and `lang-cpp` are available but off). If you disable default features, re-enable `mermaid`, `highlight`, `openapi` and the `lang-*` features your docs need, or ` ```mermaid ` fences stop rendering as diagrams, code blocks fall back to plain text, and API reference pages disappear.
 
 ### 2. Set up `build.rs`
 
 ```rust
 fn main() {
-    dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+        // Optional: .with_openapi("api-reference", "docs/api-reference/spec.yaml")
+        .generate();
 }
 ```
 
-This reads your `_nav.json`, generates `include_str!()` calls for every `.mdx` file, and writes the result to `$OUT_DIR/doc_content_generated.rs`.
+This reads your `_nav.json`, parses every `.mdx` page (rendering its prose to
+HTML), parses any OpenAPI spec, precomputes the search index, and writes one
+`$OUT_DIR/docs_bundle.json`. All of it happens at build time, so your wasm
+bundle carries no MDX, Markdown or YAML parser and never re-parses a page.
 
 ### 3. Create content
 
@@ -88,15 +93,12 @@ use dioxus_docs_kit::{
 };
 use std::sync::LazyLock;
 
-// Generate the content map function from build.rs output
-dioxus_docs_kit::doc_content_map!();
-
-// Build the registry (parses all docs, builds search index)
+// Load the bundle build.rs wrote (docs, OpenAPI specs and search index,
+// already parsed)
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/_nav.json")), doc_content_map())
+    DocsConfig::new(dioxus_docs_kit::docs_bundle!())
         .with_default_path("getting-started/introduction")
         .with_theme_toggle("light", "dark", "dark")
-        // Optional: .with_openapi("api-reference", include_str!("../docs/api-reference/spec.yaml"))
         .build()
 });
 

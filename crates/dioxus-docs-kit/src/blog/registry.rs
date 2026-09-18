@@ -1,14 +1,11 @@
 //! Blog content registry.
 
 use crate::blog::config::BlogConfig;
-use crate::blog::types::{
-    Author, BlogCategory, BlogManifest, BlogPost, BlogSearchEntry, calculate_reading_time,
-    extract_blog_frontmatter,
-};
+use crate::blog::types::{Author, BlogCategory, BlogPost, BlogSearchEntry};
+use crate::bundle::BlogBundle;
 use crate::components::seo::xml_escape;
 use crate::config::ThemeConfig;
 use crate::error::DocsKitError;
-use dioxus_mdx::{get_raw_markdown, parse_mdx, strip_leading_h1};
 use std::collections::HashMap;
 
 /// Central blog registry holding all parsed content.
@@ -37,8 +34,7 @@ pub struct BlogRegistry {
 
 impl BlogRegistry {
     pub(crate) fn try_from_config(config: BlogConfig) -> Result<Self, DocsKitError> {
-        let manifest: BlogManifest = serde_json::from_str(config.manifest_json())
-            .map_err(DocsKitError::BlogManifestParse)?;
+        let bundle = BlogBundle::parse(config.bundle_json())?;
         if config.posts_per_page() == 0 {
             return Err(DocsKitError::BlogConfig(
                 "posts_per_page must be greater than zero".into(),
@@ -48,46 +44,9 @@ impl BlogRegistry {
             super::categories::validate_base_path(path)?;
         }
 
-        let mut posts: Vec<BlogPost> = config
-            .content_map()
-            .iter()
-            .filter(|(key, _)| **key != "__manifest__")
-            .filter_map(|(&slug, &content)| {
-                let (frontmatter, remaining) = match extract_blog_frontmatter(content) {
-                    Ok(parsed) => parsed,
-                    Err(e) => {
-                        tracing::warn!("dioxus-docs-kit: skipping blog post \"{slug}\": {e}");
-                        return None;
-                    }
-                };
-
-                if frontmatter.draft {
-                    return None;
-                }
-
-                // Blog post views render the frontmatter title in their own
-                // <h1>; strip a duplicate body H1 so each page emits exactly one.
-                let body = strip_leading_h1(remaining);
-                let nodes = parse_mdx(body);
-                let raw_markdown = get_raw_markdown(&nodes);
-                let reading_time_minutes = calculate_reading_time(&raw_markdown);
-
-                Some(BlogPost {
-                    slug: slug.to_string(),
-                    frontmatter,
-                    content: nodes,
-                    raw_markdown,
-                    reading_time_minutes,
-                })
-            })
-            .collect();
-
-        posts.sort_by(|a, b| {
-            b.frontmatter
-                .date
-                .cmp(&a.frontmatter.date)
-                .then_with(|| a.slug.cmp(&b.slug))
-        });
+        // Drafts are already dropped and posts already sorted newest-first by
+        // `dioxus-docs-kit-build`.
+        let posts: Vec<BlogPost> = bundle.posts;
 
         let mut tag_set: Vec<String> = posts
             .iter()
@@ -97,7 +56,7 @@ impl BlogRegistry {
         tag_set.dedup();
 
         let categories = if config.category_base_path().is_some() {
-            super::categories::build_categories(&tag_set, &manifest.categories)?
+            super::categories::build_categories(&tag_set, &bundle.categories)?
         } else {
             Vec::new()
         };
@@ -110,7 +69,7 @@ impl BlogRegistry {
             .map(|(i, _)| i)
             .collect();
 
-        let search_index = Self::build_search_index(&posts);
+        let search_index = bundle.search;
 
         let posts_per_page = config.posts_per_page();
         let date_format = config.date_format().to_string();
@@ -118,7 +77,7 @@ impl BlogRegistry {
 
         Ok(Self {
             posts,
-            authors: manifest.authors,
+            authors: bundle.authors,
             all_tags: tag_set,
             categories,
             category_base_path,
@@ -373,28 +332,6 @@ impl BlogRegistry {
         })
     }
 
-    fn build_search_index(posts: &[BlogPost]) -> Vec<BlogSearchEntry> {
-        posts
-            .iter()
-            .map(|post| {
-                let title = post.frontmatter.title.clone();
-                let description = post.frontmatter.description.clone().unwrap_or_default();
-                let body = crate::search::clean_markdown(&post.raw_markdown);
-                BlogSearchEntry {
-                    slug: post.slug.clone(),
-                    title_lower: crate::search::search_lower(&title),
-                    description_lower: crate::search::search_lower(&description),
-                    body_lower: crate::search::search_lower(&body),
-                    title,
-                    description,
-                    body,
-                    date: post.frontmatter.date.clone(),
-                    tags: post.frontmatter.tags.clone(),
-                }
-            })
-            .collect()
-    }
-
     // ── RSS ──────────────────────────────────────────────────────────────
 
     pub fn generate_rss(&self, site_title: &str, site_url: &str, blog_path: &str) -> String {
@@ -531,7 +468,14 @@ pub fn format_date_with(date: &str, fmt: &str) -> String {
 mod tests {
     use super::*;
     use crate::blog::config::BlogConfig;
-    use std::collections::HashMap;
+
+    /// Build a real bundle with the build-time generator, exactly as
+    /// `build.rs` does, and hand it to the runtime as a `'static` string.
+    fn bundle(manifest: &str, posts: &[(&str, &str)]) -> &'static str {
+        dioxus_docs_kit_build::blog_bundle_json(manifest, posts)
+            .expect("generate blog bundle")
+            .leak()
+    }
 
     fn build_registry(posts_per_page: usize) -> BlogRegistry {
         let manifest = r#"{
@@ -541,103 +485,68 @@ mod tests {
             "posts": ["featured", "regular-1", "regular-2", "regular-3", "rust-new", "rust-old", "misc"]
         }"#;
 
-        let mut content_map = HashMap::new();
-        content_map.insert(
-            "featured",
-            r#"---
-title: "Featured"
-date: "2026-03-21"
-author: "author"
-tags: ["announcement"]
-featured: true
----
-Featured post
-"#,
-        );
-        content_map.insert(
-            "regular-1",
-            r#"---
-title: "Regular 1"
-date: "2026-03-20"
-author: "author"
-tags: ["announcement"]
----
-Regular one
-"#,
-        );
-        content_map.insert(
-            "regular-2",
-            r#"---
-title: "Regular 2"
-date: "2026-03-19"
-author: "author"
-tags: ["announcement"]
----
-Regular two
-"#,
-        );
-        content_map.insert(
-            "regular-3",
-            r#"---
-title: "Regular 3"
-date: "2026-03-18"
-author: "author"
-tags: ["announcement"]
----
-Regular three
-"#,
-        );
-        content_map.insert(
-            "rust-new",
-            r#"---
-title: "Rust New"
-date: "2026-03-17"
-author: "author"
-tags: ["rust", "web", "async"]
----
-Rust new
-"#,
-        );
-        content_map.insert(
-            "rust-old",
-            r#"---
-title: "Rust Old"
-date: "2026-03-16"
-author: "author"
-tags: ["rust", "web"]
----
-Rust old
-"#,
-        );
-        content_map.insert(
-            "misc",
-            r#"---
-title: "Misc"
-date: "2026-03-15"
-author: "author"
-tags: ["rust"]
----
-Misc
-"#,
-        );
+        let posts: &[(&str, &str)] = &[
+            (
+                "featured",
+                "---\ntitle: \"Featured\"\ndate: \"2026-03-21\"\nauthor: \"author\"\ntags: [\"announcement\"]\nfeatured: true\n---\nFeatured post\n",
+            ),
+            (
+                "regular-1",
+                "---\ntitle: \"Regular 1\"\ndate: \"2026-03-20\"\nauthor: \"author\"\ntags: [\"announcement\"]\n---\nRegular one\n",
+            ),
+            (
+                "regular-2",
+                "---\ntitle: \"Regular 2\"\ndate: \"2026-03-19\"\nauthor: \"author\"\ntags: [\"announcement\"]\n---\nRegular two\n",
+            ),
+            (
+                "regular-3",
+                "---\ntitle: \"Regular 3\"\ndate: \"2026-03-18\"\nauthor: \"author\"\ntags: [\"announcement\"]\n---\nRegular three\n",
+            ),
+            (
+                "rust-new",
+                "---\ntitle: \"Rust New\"\ndate: \"2026-03-17\"\nauthor: \"author\"\ntags: [\"rust\", \"web\", \"async\"]\n---\nRust new\n",
+            ),
+            (
+                "rust-old",
+                "---\ntitle: \"Rust Old\"\ndate: \"2026-03-16\"\nauthor: \"author\"\ntags: [\"rust\", \"web\"]\n---\nRust old\n",
+            ),
+            (
+                "misc",
+                "---\ntitle: \"Misc\"\ndate: \"2026-03-15\"\nauthor: \"author\"\ntags: [\"rust\"]\n---\nMisc\n",
+            ),
+        ];
 
-        BlogConfig::new(manifest, content_map)
+        BlogConfig::new(bundle(manifest, posts))
             .with_posts_per_page(posts_per_page)
             .build()
     }
 
     fn category_config() -> BlogConfig {
-        BlogConfig::new(r#"{"authors":{}, "posts":[], "categories":{
+        let manifest = r#"{"authors":{}, "posts":[], "categories":{
             "Rust": {"slug":"rust-lang", "title":"Rust programming", "description":"Learn Rust.", "image":"/rust.png"},
             "unused": {"title":"Unused"}
-        }}"#, HashMap::from([
-            ("a", "---\ntitle: A\ndate: '2026-01-02'\nauthor: a\ntags: [Rust]\nfeatured: true\n---\nA"),
-            ("b", "---\ntitle: B\ndate: '2026-01-02'\nauthor: a\ntags: [Rust, Web]\n---\nB"),
-            ("c", "---\ntitle: C\ndate: '2026-01-01'\nauthor: a\ntags: [Rust]\n---\nC"),
-            ("draft", "---\ntitle: Draft\ndate: '2026-01-03'\nauthor: a\ntags: [Rust, Secret]\ndraft: true\n---\nDraft"),
-        ]))
-        .with_category_base_path("/topics/")
-        .with_posts_per_page(2)
+        }}"#;
+        let posts: &[(&str, &str)] = &[
+            (
+                "a",
+                "---\ntitle: A\ndate: '2026-01-02'\nauthor: a\ntags: [Rust]\nfeatured: true\n---\nA",
+            ),
+            (
+                "b",
+                "---\ntitle: B\ndate: '2026-01-02'\nauthor: a\ntags: [Rust, Web]\n---\nB",
+            ),
+            (
+                "c",
+                "---\ntitle: C\ndate: '2026-01-01'\nauthor: a\ntags: [Rust]\n---\nC",
+            ),
+            (
+                "draft",
+                "---\ntitle: Draft\ndate: '2026-01-03'\nauthor: a\ntags: [Rust, Secret]\ndraft: true\n---\nDraft",
+            ),
+        ];
+        BlogConfig::new(bundle(manifest, posts))
+            .with_category_base_path("/topics/")
+            .with_posts_per_page(2)
     }
 
     #[test]
@@ -659,13 +568,13 @@ Misc
 
     #[test]
     fn category_urls_percent_encode_non_ascii_slugs() {
-        let registry = BlogConfig::new(
+        let registry = BlogConfig::new(bundle(
             r#"{"authors":{}, "posts":[], "categories":{}}"#,
-            HashMap::from([(
+            &[(
                 "a",
                 "---\ntitle: A\ndate: '2026-01-02'\nauthor: a\ntags: [Café]\n---\nA",
-            )]),
-        )
+            )],
+        ))
         .with_category_base_path("/topics")
         .build();
         let category = registry.category_for_tag("Café").unwrap();
@@ -830,12 +739,11 @@ Misc
             "authors": { "author": { "name": "Author" } },
             "posts": ["ampersand"]
         }"#;
-        let mut content_map = HashMap::new();
-        content_map.insert(
+        let posts: &[(&str, &str)] = &[(
             "ampersand",
             "---\ntitle: \"Rust & WASM: <T> generics\"\ndate: \"2026-03-21\"\nauthor: \"author\"\ndescription: \"a \\\"quoted\\\" & thing\"\n---\nBody\n",
-        );
-        let registry = BlogConfig::new(manifest, content_map).build();
+        )];
+        let registry = BlogConfig::new(bundle(manifest, posts)).build();
 
         let rss = registry.generate_rss("Site & Co", "https://example.com", "/blog");
 

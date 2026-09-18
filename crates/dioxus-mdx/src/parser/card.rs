@@ -97,7 +97,7 @@ fn parse_cards(content: &str) -> Vec<CardNode> {
                     .unwrap_or_default(),
                 icon: caps.get(2).map(|m| m.as_str().to_string()),
                 href: caps.get(3).map(|m| m.as_str().to_string()),
-                content: String::new(),
+                content_html: String::new(),
             });
             remaining = &remaining[full_match.end()..];
             continue;
@@ -153,7 +153,7 @@ fn parse_single_card(content: &str) -> Option<CardNode> {
         title: title.unwrap_or_default(),
         icon,
         href,
-        content: inner_content,
+        content_html: inner_content,
     })
 }
 
@@ -228,9 +228,9 @@ mod tests {
         // Card's tags leak onto the page as literal text.
         let content = "<Card title=\"Outer\">intro<CardGroup><Card title=\"Inner\">x</Card></CardGroup></Card>trailing";
         let nodes = parse_mdx(content);
-        let leaked = nodes.iter().any(
-            |n| matches!(n, DocNode::Markdown(m) if m.contains("<Card") || m.contains("</Card>")),
-        );
+        let leaked = nodes
+            .iter()
+            .any(|n| matches!(n, DocNode::Html(m) if m.contains("<Card") || m.contains("</Card>")));
         assert!(!leaked, "raw Card tags leaked into markdown: {nodes:?}");
     }
 }

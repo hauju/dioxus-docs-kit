@@ -2,17 +2,14 @@
 //!
 //! Holds parsed docs, nav config, search index, and OpenAPI specs.
 
+use crate::bundle::DocsBundle;
 use crate::components::seo::xml_escape;
 #[cfg(feature = "highlight")]
 use crate::config::CodeThemeConfig;
 use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
-use crate::search::{Field, clean_markdown, search_lower};
-#[cfg(feature = "openapi")]
-use dioxus_mdx::parse_openapi;
-use dioxus_mdx::{
-    ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc, parse_document, slugify,
-};
+use crate::search::Field;
+use dioxus_mdx::{ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -67,143 +64,40 @@ pub struct ApiEndpointEntry {
 /// the first heading is a page-level "intro" entry with an empty `heading` /
 /// `anchor`, and each heading starts a new entry whose `anchor` deep-links to
 /// the rendered heading id. OpenAPI operations are indexed as single page-level
-/// entries. The `*_lower` fields are lowercased once at build time so search
-/// never re-lowercases per keystroke.
-#[derive(PartialEq)]
+/// entries. The whole index, `*_lower` fields included, is built by
+/// `dioxus-docs-kit-build` and read straight out of the content bundle.
+#[derive(PartialEq, Deserialize)]
 pub struct SearchEntry {
     /// Content path of the owning page (e.g. "getting-started/introduction").
     pub path: String,
     /// Anchor id of the section heading, empty for page-level / intro entries.
     /// Matches the rendered heading `id` (`dioxus_mdx::slugify`).
+    #[serde(default)]
     pub anchor: String,
     /// Page title (frontmatter title or humanised slug / API summary).
     pub title: String,
     /// Section heading text, empty for page-level / intro entries.
+    #[serde(default)]
     pub heading: String,
     /// Page/operation description.
+    #[serde(default)]
     pub description: String,
     /// Cleaned section body text used for matching and snippet extraction.
+    #[serde(default)]
     pub body: String,
     /// Sidebar breadcrumb (nav group, or API group + tag).
+    #[serde(default)]
     pub breadcrumb: String,
     /// HTTP method for API operation entries (drives the result badge).
+    #[serde(default)]
     pub api_method: Option<HttpMethod>,
     pub(crate) title_lower: String,
+    #[serde(default)]
     pub(crate) heading_lower: String,
+    #[serde(default)]
     pub(crate) description_lower: String,
+    #[serde(default)]
     pub(crate) body_lower: String,
-}
-
-impl SearchEntry {
-    #[allow(clippy::too_many_arguments)]
-    fn new(
-        path: String,
-        anchor: String,
-        title: String,
-        heading: String,
-        description: String,
-        body: String,
-        breadcrumb: String,
-        api_method: Option<HttpMethod>,
-    ) -> Self {
-        let title_lower = search_lower(&title);
-        let heading_lower = search_lower(&heading);
-        let description_lower = search_lower(&description);
-        let body_lower = search_lower(&body);
-        Self {
-            path,
-            anchor,
-            title,
-            heading,
-            description,
-            body,
-            breadcrumb,
-            api_method,
-            title_lower,
-            heading_lower,
-            description_lower,
-            body_lower,
-        }
-    }
-}
-
-/// A single documentation section produced by [`split_into_sections`].
-struct Section {
-    /// Heading text, empty for the leading intro section.
-    heading: String,
-    /// Anchor id (`slugify(heading)`), empty for the intro section.
-    anchor: String,
-    /// Raw markdown body for this section (before [`clean_markdown`]).
-    body: String,
-}
-
-/// Split reconstructed markdown into sections on its h2–h4 ATX headings.
-///
-/// The slice before the first heading is always returned first as the intro
-/// section (empty `heading`/`anchor`). Fenced code blocks are skipped so a `##`
-/// inside code is not mistaken for a heading. Anchors use the same
-/// `dioxus_mdx::slugify` the renderer applies to heading ids.
-fn split_into_sections(raw: &str) -> Vec<Section> {
-    let mut sections = Vec::new();
-    let mut heading = String::new();
-    let mut anchor = String::new();
-    let mut body = String::new();
-    let mut fence: Option<char> = None;
-
-    for line in raw.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-            let marker = if trimmed.starts_with("```") { '`' } else { '~' };
-            match fence {
-                None => fence = Some(marker),
-                Some(open) if open == marker => fence = None,
-                Some(_) => {} // the other marker inside a fence is literal content
-            }
-            body.push_str(line);
-            body.push('\n');
-            continue;
-        }
-        if fence.is_none()
-            && let Some(text) = parse_atx_heading(trimmed)
-        {
-            sections.push(Section {
-                heading: std::mem::take(&mut heading),
-                anchor: std::mem::take(&mut anchor),
-                body: std::mem::take(&mut body),
-            });
-            anchor = slugify(text);
-            heading = text.to_string();
-            continue;
-        }
-        body.push_str(line);
-        body.push('\n');
-    }
-    sections.push(Section {
-        heading,
-        anchor,
-        body,
-    });
-    sections
-}
-
-/// Return the heading text of an h2–h4 ATX heading line, or `None`.
-///
-/// Mirrors the TOC heading regex (`^#{2,4}\s+\S`): 2–4 leading `#`, at least one
-/// space/tab, then non-empty text (h1/h5/h6 are ignored).
-fn parse_atx_heading(line: &str) -> Option<&str> {
-    let hashes = line.bytes().take_while(|&b| b == b'#').count();
-    if !(2..=4).contains(&hashes) {
-        return None;
-    }
-    let rest = &line[hashes..];
-    if !rest.starts_with([' ', '\t']) {
-        return None;
-    }
-    let text = rest.trim();
-    if text.is_empty() {
-        return None;
-    }
-    Some(text)
 }
 
 /// Central documentation registry holding all parsed content.
@@ -214,7 +108,7 @@ pub struct DocsRegistry {
     /// Navigation configuration.
     pub nav: NavConfig,
     /// Pre-parsed documentation pages.
-    parsed_docs: HashMap<&'static str, ParsedDoc>,
+    parsed_docs: HashMap<String, ParsedDoc>,
     /// Prebuilt search index.
     search_index: Vec<SearchEntry>,
     /// OpenAPI specs keyed by URL prefix.
@@ -235,33 +129,16 @@ pub struct DocsRegistry {
 }
 
 impl DocsRegistry {
-    /// Build a registry from a [`DocsConfig`].
+    /// Build a registry from a [`DocsConfig`] by deserializing its bundle.
     pub(crate) fn try_from_config(config: DocsConfig) -> Result<Self, DocsKitError> {
-        let nav: NavConfig =
-            serde_json::from_str(config.nav_json()).map_err(DocsKitError::NavParse)?;
+        let bundle = DocsBundle::parse(config.bundle_json())?;
+        let nav = bundle.nav;
+        let parsed_docs: HashMap<String, ParsedDoc> = bundle.docs.into_iter().collect();
 
-        // Parse all documents
-        let parsed_docs: HashMap<&'static str, ParsedDoc> = config
-            .content_map()
-            .iter()
-            .map(|(&path, &content)| (path, parse_document(content)))
-            .collect();
-
-        // Parse OpenAPI specs. Without the `openapi` feature no spec can be
-        // registered, so the rest of the API index simply sees an empty list.
+        // Without the `openapi` feature the bundle's specs are ignored, so the
+        // rest of the API index simply sees an empty list.
         #[cfg(feature = "openapi")]
-        let openapi_specs: Vec<(String, OpenApiSpec)> = config
-            .openapi_specs()
-            .iter()
-            .map(|(prefix, yaml)| {
-                parse_openapi(yaml)
-                    .map(|spec| (prefix.clone(), spec))
-                    .map_err(|error| DocsKitError::OpenApi {
-                        prefix: prefix.clone(),
-                        error,
-                    })
-            })
-            .collect::<Result<_, _>>()?;
+        let openapi_specs: Vec<(String, OpenApiSpec)> = bundle.openapi;
         #[cfg(not(feature = "openapi"))]
         let openapi_specs: Vec<(String, OpenApiSpec)> = Vec::new();
 
@@ -296,9 +173,14 @@ impl DocsRegistry {
             );
         }
 
-        // Build search index
-        let search_index =
-            Self::build_search_index(&nav, &parsed_docs, &openapi_specs, &api_group_name);
+        // The index itself is precomputed; only the API breadcrumbs depend on
+        // the runtime-configurable group name, so they get their prefix here.
+        let mut search_index = bundle.search;
+        for entry in &mut search_index {
+            if entry.api_method.is_some() {
+                entry.breadcrumb = format!("{api_group_name} > {}", entry.breadcrumb);
+            }
+        }
 
         let api_sidebar_entries = Self::build_api_sidebar_entries(&openapi_specs);
 
@@ -408,7 +290,7 @@ impl DocsRegistry {
 
     /// Get all available documentation paths.
     pub fn get_all_paths(&self) -> Vec<&str> {
-        self.parsed_docs.keys().copied().collect()
+        self.parsed_docs.keys().map(String::as_str).collect()
     }
 
     // ========================================================================
@@ -678,86 +560,6 @@ impl DocsRegistry {
             }
         })
     }
-
-    /// Build the search index from parsed docs and OpenAPI specs.
-    ///
-    /// Docs are indexed per section (split on h2–h4 headings); OpenAPI
-    /// operations stay page-level.
-    fn build_search_index(
-        nav: &NavConfig,
-        parsed_docs: &HashMap<&'static str, ParsedDoc>,
-        openapi_specs: &[(String, OpenApiSpec)],
-        api_group_name: &str,
-    ) -> Vec<SearchEntry> {
-        let mut entries = Vec::new();
-
-        // Index documentation pages from nav config, one entry per section.
-        for group in &nav.groups {
-            for page in &group.pages {
-                if let Some(doc) = parsed_docs.get(page.as_str()) {
-                    let title = if doc.frontmatter.title.is_empty() {
-                        page.split('/')
-                            .next_back()
-                            .unwrap_or(page)
-                            .replace('-', " ")
-                    } else {
-                        doc.frontmatter.title.clone()
-                    };
-                    let description = doc.frontmatter.description.clone().unwrap_or_default();
-
-                    let sections = split_into_sections(&doc.raw_markdown);
-                    let has_headings = sections.iter().any(|s| !s.heading.is_empty());
-                    for section in sections {
-                        let body = clean_markdown(&section.body);
-                        // Drop an empty intro once real sections exist; keep it
-                        // for a heading-less page so it stays findable by title.
-                        if section.heading.is_empty() && body.is_empty() && has_headings {
-                            continue;
-                        }
-                        entries.push(SearchEntry::new(
-                            page.clone(),
-                            section.anchor,
-                            title.clone(),
-                            section.heading,
-                            description.clone(),
-                            body,
-                            group.group.clone(),
-                            None,
-                        ));
-                    }
-                }
-            }
-        }
-
-        // Index API operations (page-level).
-        for (prefix, spec) in openapi_specs {
-            for op in &spec.operations {
-                let title = op
-                    .summary
-                    .clone()
-                    .unwrap_or_else(|| op.slug().replace('-', " "));
-                let description = op.description.clone().unwrap_or_default();
-                let tag = op
-                    .tags
-                    .first()
-                    .cloned()
-                    .unwrap_or_else(|| "Other".to_string());
-
-                entries.push(SearchEntry::new(
-                    format!("{prefix}/{}", op.slug()),
-                    String::new(),
-                    title,
-                    String::new(),
-                    description.clone(),
-                    clean_markdown(&description),
-                    format!("{api_group_name} > {tag}"),
-                    Some(op.method),
-                ));
-            }
-        }
-
-        entries
-    }
 }
 
 #[cfg(test)]
@@ -833,49 +635,53 @@ paths:
           description: OK
 "#;
 
-    fn content_map() -> HashMap<&'static str, &'static str> {
-        HashMap::from([
-            ("g/body-doc", BODY_DOC),
-            ("g/desc-doc", DESC_DOC),
-            ("g/title-doc", TITLE_DOC),
-            ("g/sections", SECTIONS_DOC),
-            ("getting-started/intro", INTRO),
-            ("api-reference/overview", OVERVIEW),
-        ])
+    const PAGES: &[(&str, &str)] = &[
+        ("g/body-doc", BODY_DOC),
+        ("g/desc-doc", DESC_DOC),
+        ("g/title-doc", TITLE_DOC),
+        ("g/sections", SECTIONS_DOC),
+        ("getting-started/intro", INTRO),
+        ("api-reference/overview", OVERVIEW),
+    ];
+
+    /// Build a real bundle with the build-time generator, exactly as `build.rs`
+    /// does, and hand it to the runtime as a `'static` string.
+    pub(crate) fn bundle(
+        nav: &str,
+        pages: &[(&str, &str)],
+        specs: &[(&str, &str)],
+    ) -> &'static str {
+        dioxus_docs_kit_build::docs_bundle_json(nav, pages, specs)
+            .expect("generate docs bundle")
+            .leak()
     }
 
     fn registry() -> DocsRegistry {
-        let config = DocsConfig::new(NAV, content_map());
         #[cfg(feature = "openapi")]
-        let config = config
-            .with_openapi("api-reference", PETS_SPEC)
-            .with_openapi("admin-api", ADMIN_SPEC);
-        config.build()
+        let specs: &[(&str, &str)] = &[("api-reference", PETS_SPEC), ("admin-api", ADMIN_SPEC)];
+        #[cfg(not(feature = "openapi"))]
+        let specs: &[(&str, &str)] = &[];
+        DocsConfig::new(bundle(NAV, PAGES, specs)).build()
     }
 
     #[test]
-    fn try_build_reports_nav_parse_error_with_detail() {
-        let Err(err) = DocsConfig::new("{ not json", HashMap::new()).try_build() else {
-            panic!("expected nav parse error");
+    fn try_build_reports_a_malformed_bundle() {
+        let Err(err) = DocsConfig::new("{ not json").try_build() else {
+            panic!("expected a bundle parse error");
         };
-        assert!(matches!(err, DocsKitError::NavParse(_)));
-        assert!(err.to_string().contains("_nav.json"));
+        assert!(matches!(err, DocsKitError::DocsBundleParse(_)));
+        assert!(err.to_string().contains("docs bundle"));
     }
 
     #[test]
-    #[cfg(feature = "openapi")]
-    fn try_build_reports_openapi_error_with_prefix() {
-        let Err(err) = DocsConfig::new(NAV, content_map())
-            .with_openapi("api-reference", "openapi: true")
-            .try_build()
-        else {
-            panic!("expected OpenAPI parse error");
-        };
-        match &err {
-            DocsKitError::OpenApi { prefix, .. } => assert_eq!(prefix, "api-reference"),
-            other => panic!("expected OpenApi error, got {other:?}"),
-        }
-        assert!(err.to_string().contains("api-reference"));
+    fn generator_reports_openapi_errors_with_the_prefix() {
+        let err = dioxus_docs_kit_build::docs_bundle_json(
+            NAV,
+            PAGES,
+            &[("api-reference", "openapi: true")],
+        )
+        .expect_err("expected an OpenAPI parse error");
+        assert!(err.contains("api-reference"), "got: {err}");
     }
 
     #[test]
@@ -889,45 +695,6 @@ paths:
     #[test]
     fn search_empty_query_returns_nothing() {
         assert!(registry().search_docs("  ").is_empty());
-    }
-
-    #[test]
-    fn sections_split_on_headings_with_intro_and_slugified_anchors() {
-        let sections = split_into_sections(
-            "Intro text.\n\n## Installation Steps\n\nRun it.\n\n### Advanced Setup\n\nTweak it.\n",
-        );
-        assert_eq!(sections.len(), 3);
-
-        // Intro section carries no heading/anchor.
-        assert_eq!(sections[0].heading, "");
-        assert_eq!(sections[0].anchor, "");
-        assert!(sections[0].body.contains("Intro text."));
-
-        // Heading sections carry slugify anchors that match the renderer's ids.
-        assert_eq!(sections[1].heading, "Installation Steps");
-        assert_eq!(sections[1].anchor, slugify("Installation Steps"));
-        assert_eq!(sections[1].anchor, "installation-steps");
-        assert!(sections[1].body.contains("Run it."));
-
-        assert_eq!(sections[2].heading, "Advanced Setup");
-        assert_eq!(sections[2].anchor, "advanced-setup");
-    }
-
-    #[test]
-    fn sections_skip_headings_inside_code_fences() {
-        let sections = split_into_sections(
-            "Intro.\n\n```md\n## Not A Heading\n```\n\n## Real Heading\n\nBody.\n",
-        );
-        let headings: Vec<&str> = sections.iter().map(|s| s.heading.as_str()).collect();
-        assert_eq!(headings, vec!["", "Real Heading"]);
-    }
-
-    #[test]
-    fn empty_leading_section_kept_only_when_page_has_no_headings() {
-        // A page whose body starts straight with a heading has no intro text.
-        let sections = split_into_sections("## First\n\nbody\n");
-        assert_eq!(sections[0].heading, "");
-        assert!(sections[0].body.trim().is_empty());
     }
 
     #[test]
@@ -1106,9 +873,8 @@ paths:
                 { "group": "G", "pages": ["guides/a&b"] }
             ]
         }"#;
-        let mut content_map = HashMap::new();
-        content_map.insert("guides/a&b", "---\ntitle: A and B\n---\n\nbody\n");
-        let registry = DocsConfig::new(nav, content_map).build();
+        let pages = &[("guides/a&b", "---\ntitle: A and B\n---\n\nbody\n")];
+        let registry = DocsConfig::new(bundle(nav, pages, &[])).build();
 
         let xml = registry.generate_sitemap("https://example.com", "/docs");
 

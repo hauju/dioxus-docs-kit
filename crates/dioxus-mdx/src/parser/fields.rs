@@ -86,7 +86,7 @@ pub(super) fn try_parse_response_field(content: &str) -> Option<(DocNode, &str)>
                 name,
                 field_type,
                 required,
-                content: String::new(),
+                content_html: String::new(),
                 expandable: None,
             }),
             &content[tag_end + 1..],
@@ -120,7 +120,7 @@ pub(super) fn try_parse_response_field(content: &str) -> Option<(DocNode, &str)>
             name,
             field_type,
             required,
-            content: content_text,
+            content_html: content_text,
             expandable,
         }),
         rest,
@@ -212,7 +212,7 @@ mod tests {
             assert!(f.required);
             // Content is now a Vec<DocNode>
             assert_eq!(f.content.len(), 1);
-            if let DocNode::Markdown(md) = &f.content[0] {
+            if let DocNode::Html(md) = &f.content[0] {
                 assert!(md.contains("project identifier"));
             } else {
                 panic!("Expected Markdown node in content");

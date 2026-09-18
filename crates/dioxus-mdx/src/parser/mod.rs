@@ -4,40 +4,65 @@
 //! extracting YAML frontmatter and converting custom components like Cards, Tabs,
 //! Steps, and Callouts into an intermediate representation for rendering.
 
-mod accordion;
-mod callout;
-mod card;
-mod code_group;
-mod content;
-mod fields;
-mod frontmatter;
-mod heading;
-#[cfg(feature = "openapi")]
-mod openapi_parser;
-#[cfg(feature = "openapi")]
-mod openapi_tag;
+// ── Value types (always compiled; no dependencies beyond serde) ───────────
 mod openapi_types;
-mod steps;
-mod tabs;
 mod types;
-mod update;
-mod utils;
 pub mod yaml_lite;
 
-pub use content::{get_raw_markdown, parse_mdx};
-pub use frontmatter::extract_frontmatter;
-pub use heading::strip_leading_h1;
-#[cfg(feature = "openapi")]
-pub use openapi_parser::{OpenApiError, parse_openapi};
+// ── Parsing (the `parse` feature; build-time only in a docs-kit app) ──────
+#[cfg(feature = "parse")]
+mod accordion;
+#[cfg(feature = "parse")]
+mod callout;
+#[cfg(feature = "parse")]
+mod card;
+#[cfg(feature = "parse")]
+mod code_group;
+#[cfg(feature = "parse")]
+mod content;
+#[cfg(feature = "parse")]
+mod fields;
+#[cfg(feature = "parse")]
+mod frontmatter;
+#[cfg(feature = "parse")]
+mod heading;
+#[cfg(feature = "openapi-parse")]
+mod openapi_parser;
+#[cfg(feature = "openapi-parse")]
+mod openapi_tag;
+#[cfg(feature = "parse")]
+mod render;
+#[cfg(feature = "parse")]
+mod steps;
+#[cfg(feature = "parse")]
+mod tabs;
+#[cfg(feature = "parse")]
+mod update;
+#[cfg(feature = "parse")]
+mod utils;
+
 pub use openapi_types::*;
 pub use types::*;
 pub use yaml_lite::{YamlLiteError, YamlMap, YamlValue, parse_yaml_lite};
+
+#[cfg(feature = "parse")]
+pub use content::parse_mdx;
+#[cfg(feature = "parse")]
+pub use frontmatter::extract_frontmatter;
+#[cfg(feature = "parse")]
+pub use heading::strip_leading_h1;
+#[cfg(feature = "openapi-parse")]
+pub use openapi_parser::{OpenApiError, parse_openapi};
+#[cfg(feature = "parse")]
+pub use render::{to_html, to_html_with_heading_ids};
 
 /// Parse a complete MDX document, extracting frontmatter and content.
 ///
 /// This is the main entry point for parsing MDX content. It extracts
 /// YAML frontmatter from the beginning of the document and parses the
-/// remaining content into a tree of `DocNode` elements.
+/// remaining content into a tree of `DocNode` elements whose prose is already
+/// rendered to HTML.
+#[cfg(feature = "parse")]
 pub fn parse_document(content: &str) -> ParsedDoc {
     let (frontmatter, remaining) = extract_frontmatter(content);
     // Consumer layouts render the frontmatter title in their own <h1>; drop a
@@ -45,8 +70,7 @@ pub fn parse_document(content: &str) -> ParsedDoc {
     let body = strip_leading_h1(remaining);
     // Frontmatter is already gone; parse_mdx would strip a second time and eat
     // the body up to the next `---`.
-    let nodes = content::parse_body(body);
-    let raw_markdown = get_raw_markdown(&nodes);
+    let (nodes, raw_markdown) = parse_body(body);
 
     ParsedDoc {
         frontmatter,
@@ -55,7 +79,26 @@ pub fn parse_document(content: &str) -> ParsedDoc {
     }
 }
 
-#[cfg(test)]
+/// Parse an MDX body whose frontmatter has already been removed.
+///
+/// Returns the rendered node tree plus the reconstructed Markdown source (the
+/// input minus imports and MDX component syntax), which feeds `llms.txt`, the
+/// search index and the table of contents.
+///
+/// Use this instead of [`parse_mdx`] when you extracted the frontmatter
+/// yourself, or a body starting with a thematic break gets mistaken for a
+/// second frontmatter block and everything up to the next `---` is discarded.
+#[cfg(feature = "parse")]
+pub fn parse_body(body: &str) -> (Vec<DocNode>, String) {
+    let mut nodes = content::parse_body_nodes(body);
+    // `get_raw_markdown` reads the Markdown still sitting in the prose fields,
+    // so it has to run before they are rendered to HTML.
+    let raw_markdown = content::get_raw_markdown(&nodes);
+    render::render_nodes(&mut nodes);
+    (nodes, raw_markdown)
+}
+
+#[cfg(all(test, feature = "parse"))]
 mod tests {
     use super::*;
 

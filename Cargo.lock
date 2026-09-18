@@ -1076,6 +1076,7 @@ version = "0.8.0"
 dependencies = [
  "dioxus",
  "dioxus-code",
+ "dioxus-docs-kit-build",
  "dioxus-free-icons",
  "dioxus-fullstack-core",
  "dioxus-mdx",
@@ -1091,6 +1092,7 @@ dependencies = [
 name = "dioxus-docs-kit-build"
 version = "0.8.0"
 dependencies = [
+ "dioxus-mdx",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -1377,6 +1379,7 @@ dependencies = [
  "openapiv3",
  "regex",
  "regex-lite",
+ "serde",
  "serde_json",
  "serde_yaml",
  "tracing",

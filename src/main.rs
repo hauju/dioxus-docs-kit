@@ -34,14 +34,10 @@ static WEBMCP_POLYFILL: Asset = asset!(
 // Documentation Registry
 // ============================================================================
 
-dioxus_docs_kit::doc_content_map!();
-
+// Pages, the OpenAPI spec and the search index are parsed by `build.rs`
+// (`dioxus_docs_kit_build::DocsBuild`); this only deserializes the result.
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
-        .with_openapi(
-            "api-reference",
-            include_str!("../docs/api-reference/petstore.yaml"),
-        )
+    DocsConfig::new(dioxus_docs_kit::docs_bundle!())
         .with_default_path("getting-started/introduction")
         .with_theme_toggle("light", "dark", "dark")
         .build()
@@ -51,10 +47,8 @@ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
 // Blog Registry
 // ============================================================================
 
-dioxus_docs_kit::blog_content_map!();
-
 static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-    BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+    BlogConfig::new(dioxus_docs_kit::blog_bundle!())
         .with_posts_per_page(9)
         .with_category_base_path("/blog/categories")
         .with_theme_toggle("light", "dark", "dark")
