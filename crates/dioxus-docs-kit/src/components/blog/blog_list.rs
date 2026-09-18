@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdChevronLeft, LdChevronRight};
+use dioxus_mdx::lucide::{Icon, LdChevronLeft, LdChevronRight};
 
 use crate::blog::hooks::{ActiveTag, CurrentPage};
 use crate::blog::registry::BlogRegistry;

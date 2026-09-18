@@ -1,7 +1,7 @@
 //! Responses list component for API endpoint documentation.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::ApiResponse;
 

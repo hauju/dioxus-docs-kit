@@ -112,6 +112,8 @@
 
 #[cfg(feature = "components")]
 pub mod components;
+#[cfg(feature = "components")]
+pub mod lucide;
 pub mod parser;
 #[cfg(feature = "parse")]
 mod re;

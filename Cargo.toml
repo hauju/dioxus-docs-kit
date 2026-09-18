@@ -17,7 +17,6 @@ homepage = "https://github.com/hauju/dioxus-docs-kit"
 [workspace.dependencies]
 dioxus = { version = "0.7.10", default-features = false }
 dioxus-fullstack-core = "0.7.10"
-dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 dioxus-code = { version = "0.1.2", default-features = false, features = ["runtime"] }
 dioxus-mdx = { version = "0.8.0", path = "crates/dioxus-mdx", default-features = false }
 dioxus-docs-kit = { version = "0.8.0", path = "crates/dioxus-docs-kit", default-features = false }
@@ -50,7 +49,6 @@ dioxus = { workspace = true, features = [
     "devtools",
     "logger",
 ] }
-dioxus-free-icons = { workspace = true }
 dioxus-docs-kit = { workspace = true }
 
 [build-dependencies]

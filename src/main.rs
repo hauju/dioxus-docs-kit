@@ -1,14 +1,13 @@
 use dioxus::prelude::*;
+use dioxus_docs_kit::lucide::{
+    Icon, LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdLock, LdMenu,
+    LdPackage, LdPalette, LdSearch, LdServer,
+};
 use dioxus_docs_kit::{
     BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
     BlogThemeToggle, Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
     DocsRegistry, DocsWebMcp, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
     use_blog_providers, use_docs_context, use_docs_providers,
-};
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{
-    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdLock, LdMenu, LdPackage,
-    LdPalette, LdSearch, LdServer,
 };
 use std::sync::LazyLock;
 
@@ -755,12 +754,12 @@ const CODE_SNIPPET: &str = r#"use dioxus_docs_kit::{
 };
 use std::sync::LazyLock;
 
-// build.rs: dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
-dioxus_docs_kit::doc_content_map!();
+// build.rs: dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+//     .with_openapi("api-reference", "docs/api.yaml")
+//     .generate();
 
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
-        .with_openapi("api-reference", include_str!("../docs/api.yaml"))
+    DocsConfig::new(dioxus_docs_kit::docs_bundle!())
         .with_default_path("getting-started/introduction")
         .with_theme_toggle("light", "dark", "dark")
         .build()
