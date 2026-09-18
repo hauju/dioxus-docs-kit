@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.8"
+dioxus-docs-kit = "0.9"
 ```
 
 ### 1. Parse your content in `build.rs`

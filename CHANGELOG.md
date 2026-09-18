@@ -5,7 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
 
-## [Unreleased]
+## [0.9.0] — 2026-09-18
 
 ### Changed
 
@@ -108,7 +108,7 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Added
 
-- `hl-lite` 0.8.0, published from this workspace:
+- `hl-lite` 0.9.0, published from this workspace:
   `highlight(Lang, &str) -> Vec<Span>`, `Lang::from_slug` / `Lang::from_path`,
   and `Kind::class`. The spans always concatenate back to the input, never split
   a `char`, and run to the end of the input on an unterminated construct.
