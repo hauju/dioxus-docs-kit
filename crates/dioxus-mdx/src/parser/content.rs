@@ -175,7 +175,7 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
         nodes.push(DocNode::CodeBlock(CodeBlockNode {
             language: block.language.map(str::to_string),
             filename: block.filename.map(str::to_string),
-            code: block.code.trim().to_string(),
+            code: block.dedented_code().trim().to_string(),
         }));
 
         last_end = block.end;
@@ -372,6 +372,24 @@ pub(super) fn get_raw_markdown(nodes: &[DocNode]) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn indented_fence_inside_component_is_dedented() {
+        let md = "<Steps>\n  <Step title=\"One\">\n    Text:\n\n    ```json\n    {\n      \"a\": [\n        1\n      ]\n    }\n    ```\n  </Step>\n</Steps>\n";
+        let nodes = parse_content(md);
+        let DocNode::Steps(steps) = &nodes[0] else {
+            panic!("expected Steps, got {:?}", nodes[0]);
+        };
+        let code = steps.steps[0]
+            .content
+            .iter()
+            .find_map(|n| match n {
+                DocNode::CodeBlock(cb) => Some(cb.code.as_str()),
+                _ => None,
+            })
+            .expect("code block in step");
+        assert_eq!(code, "{\n  \"a\": [\n    1\n  ]\n}");
+    }
+
     use super::*;
 
     #[test]

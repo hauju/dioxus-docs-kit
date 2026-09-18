@@ -62,7 +62,7 @@ fn parse_code_blocks(content: &str) -> Vec<CodeBlockNode> {
         .map(|block| CodeBlockNode {
             language: block.language.map(str::to_string),
             filename: block.filename.map(str::to_string),
-            code: block.code.trim().to_string(),
+            code: block.dedented_code().trim().to_string(),
         })
         .collect()
 }
