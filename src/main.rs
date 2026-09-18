@@ -330,17 +330,20 @@ fn SiteNavbar(
 
     rsx! {
         div { class: "navbar bg-base-200 border-b border-base-300 px-4 lg:px-8",
-            div { class: "flex-1 gap-2",
+            // `min-w-0` + `truncate`: without them the brand refuses to shrink
+            // and pushes the toggles off a 390px viewport.
+            div { class: "flex-1 gap-2 min-w-0",
                 if let Some(mut drawer) = drawer_open {
                     button {
                         class: "btn btn-ghost btn-sm btn-square lg:hidden docs-menu-btn",
+                        "aria-label": "Open navigation",
                         onclick: move |_| drawer.toggle(),
                         Icon { class: "size-5", icon: LdMenu }
                     }
                 }
                 Link {
                     to: Route::Home {},
-                    class: "text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity",
+                    class: "text-lg sm:text-xl font-semibold tracking-tight truncate hover:opacity-80 transition-opacity",
                     "Dioxus Docs Kit"
                 }
             }

@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 
 use crate::components::DocNodeRenderer;
 use crate::parser::{DocNode, TabsNode};
+use crate::text::slugify;
 
 /// Props for DocTabs component.
 #[derive(Props, Clone, PartialEq)]
@@ -24,6 +25,9 @@ pub fn DocTabs(props: DocTabsProps) -> Element {
                 for (i, tab) in props.tabs.tabs.iter().enumerate() {
                     button {
                         key: "{i}",
+                        // Anchor for the `#### {title}` heading the raw
+                        // markdown synthesises for the table of contents.
+                        id: slugify(&tab.title),
                         class: if active_tab() == i {
                             "px-4 py-2.5 text-sm font-medium text-primary border-b-2 border-primary -mb-px transition-colors"
                         } else {

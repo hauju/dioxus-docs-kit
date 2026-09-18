@@ -239,6 +239,7 @@ fn CopyButton(props: CopyButtonProps) -> Element {
     rsx! {
         button {
             class: "btn btn-ghost btn-xs opacity-60 hover:opacity-100 group-hover:opacity-100 transition-all duration-150 hover:bg-base-content/10",
+            "aria-label": if copied() { "Copied" } else { "Copy code" },
             "data-code": "{code}",
             onclick: move |_| {
                 // Use JavaScript for clipboard (client-side only)

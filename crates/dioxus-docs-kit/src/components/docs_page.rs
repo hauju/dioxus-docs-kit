@@ -90,7 +90,10 @@ pub fn DocsPageContent(path: String, article_footer: Option<Element>) -> Element
                     // Page header
                     header { class: "dk-article-header mb-8 pb-8 border-b border-base-300",
                         div { class: "flex items-start justify-between gap-4",
-                            h1 { class: "dk-article-title text-4xl font-bold tracking-tight mb-3",
+                            // `min-w-0` + `break-words`: a single long title word
+                            // otherwise refuses to shrink and pushes the
+                            // `shrink-0` copy button past the viewport.
+                            h1 { class: "dk-article-title text-4xl font-bold tracking-tight mb-3 min-w-0 break-words",
                                 "{doc.frontmatter.title}"
                             }
                             if !doc.raw_markdown.is_empty() {

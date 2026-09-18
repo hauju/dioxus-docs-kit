@@ -46,12 +46,14 @@ pub fn CopyPageButton(content: String) -> Element {
                     });
                 }
             },
+            // The label is hidden on phones: with it, the button plus a
+            // full-width title is wider than a 390px viewport.
             if copied() {
                 Icon { class: "size-4 text-success", icon: LdCheck }
-                span { class: "text-xs", "Copied!" }
+                span { class: "text-xs hidden sm:inline", "Copied!" }
             } else {
                 Icon { class: "size-4", icon: LdCopy }
-                span { class: "text-xs", "Copy page" }
+                span { class: "text-xs hidden sm:inline", "Copy page" }
             }
         }
     }

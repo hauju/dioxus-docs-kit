@@ -51,6 +51,7 @@ pub fn BlogLayout(
                             div { class: "flex-1 gap-2",
                                 button {
                                     class: "btn btn-ghost btn-sm btn-square lg:hidden",
+                                    "aria-label": "Open navigation",
                                     onclick: move |_| drawer_open.toggle(),
                                     Icon { class: "size-5", icon: LdMenu }
                                 }
