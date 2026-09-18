@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdClock;
+use dioxus_mdx::lucide::{Icon, LdClock};
 use dioxus_mdx::{DocContent, DocTableOfContents, extract_headers};
 
 use crate::BlogContext;

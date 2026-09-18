@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdMenu;
+use dioxus_mdx::lucide::{Icon, LdMenu};
 
 use crate::blog::registry::BlogRegistry;
 use crate::components::docs_layout::{DrawerOpen, SearchOpen};

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
+use dioxus_mdx::lucide::*;
 
 /// "Copy page" button for MDX documentation pages.
 ///

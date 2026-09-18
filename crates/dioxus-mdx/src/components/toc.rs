@@ -5,8 +5,8 @@
 //! - Tracks scroll position and highlights the current section
 //! - Uses IntersectionObserver for performant scroll tracking
 
+use crate::lucide::{Icon, LdList};
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::LdList};
 
 // `extract_headers` and `slugify` live in `crate::text` — free of dioxus and of
 // any regex engine — so the build-time bundle generator runs the same code the

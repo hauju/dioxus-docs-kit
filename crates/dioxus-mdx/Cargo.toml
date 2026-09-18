@@ -15,7 +15,6 @@ readme = "README.md"
 
 [dependencies]
 dioxus = { workspace = true, features = ["lib"], optional = true }
-dioxus-free-icons = { workspace = true, optional = true }
 dioxus-code = { workspace = true, optional = true }
 
 serde = { workspace = true }
@@ -28,6 +27,14 @@ regex = { version = "1.11", optional = true }
 regex-lite = { version = "0.1", optional = true }
 markdown = { version = "1.0", optional = true }
 openapiv3 = { version = "2.0", optional = true }
+
+# `dioxus-web`'s history implementation calls `window.location()` but only asks
+# for `web-sys/Location` from its own `devtools` feature, so a build that enables
+# `dioxus/web` without `dioxus/devtools` fails to compile it. Depending on
+# web-sys here unifies the feature back in. (It used to arrive by accident:
+# `dioxus-free-icons` re-enabled dioxus's default features, `devtools` among
+# them, in every consumer.)
+web-sys = { version = "0.3", optional = true, features = ["Location"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { workspace = true, optional = true }
@@ -56,14 +63,14 @@ default = [
 # The Dioxus renderer components. Turning this off leaves a plain Rust library
 # of the document types and (with `parse`) the MDX parser, with no `dioxus`
 # dependency at all — that is how `dioxus-docs-kit-build` uses this crate.
-components = ["dep:dioxus", "dep:dioxus-free-icons", "dep:gloo-timers"]
+components = ["dep:dioxus", "dep:gloo-timers"]
 
 # The MDX/Markdown parser, including Markdown -> HTML rendering. Pulls in
 # markdown-rs and a regex engine, so a docs-kit app leaves it off: its pages are
 # parsed at build time and shipped as a JSON bundle of already-rendered nodes.
 parse = ["dep:markdown", "dep:regex-lite"]
 
-web = ["components", "dioxus/web"]
+web = ["components", "dioxus/web", "dep:web-sys"]
 mermaid = ["components"]
 highlight = ["components", "dep:dioxus-code", "dep:regex"]
 
@@ -108,3 +115,8 @@ lang-yaml = ["highlight", "dioxus-code/lang-yaml"]
 # Deliberately not `all-features`: that would compile every `lang-*`
 # tree-sitter grammar just to render the docs.
 features = ["web", "mermaid", "highlight", "parse", "openapi-parse"]
+
+[package.metadata.cargo-machete]
+# Depended on purely to turn on `web-sys/Location` for `dioxus-web`; nothing in
+# this crate calls it, so machete cannot see the use.
+ignored = ["web-sys"]

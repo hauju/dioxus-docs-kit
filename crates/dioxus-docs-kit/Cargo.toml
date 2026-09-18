@@ -15,7 +15,6 @@ readme = "README.md"
 
 [dependencies]
 dioxus = { workspace = true, features = ["lib", "router"] }
-dioxus-free-icons = { workspace = true }
 # Renderer components only: the parser (`parse`) and the OpenAPI spec reader
 # (`openapi-parse`) run in `dioxus-docs-kit-build`, so markdown-rs, a regex
 # engine, `openapiv3` and `serde_yaml` never reach the client.

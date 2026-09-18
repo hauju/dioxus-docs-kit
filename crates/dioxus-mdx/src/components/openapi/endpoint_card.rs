@@ -1,7 +1,7 @@
 //! Endpoint card component for displaying a single API operation.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::ApiOperation;
 
