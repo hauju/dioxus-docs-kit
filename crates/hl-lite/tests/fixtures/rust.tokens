@@ -1,0 +1,655 @@
+Comment	//! Registry of parsed documentation pages.
+Plain	\n
+Comment	//!
+Plain	\n
+Comment	//! Mirrors the shape of `dioxus-docs-kit`'s own registry.
+Plain	\n\n
+Keyword	use
+Plain	 std
+Operator	::
+Plain	collections
+Operator	::
+Type	HashMap
+Punctuation	;
+Plain	\n\n
+Comment	/// A page as it was compiled into the binary.
+Plain	\n
+Attribute	#[derive(Debug, Clone, PartialEq)]
+Plain	\n
+Keyword	pub
+Plain	 
+Keyword	struct
+Plain	 
+Type	Page
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	pub
+Plain	 path
+Operator	:
+Plain	 
+Operator	&
+Constant	'a
+Plain	 
+Type	str
+Punctuation	,
+Plain	\n    
+Keyword	pub
+Plain	 title
+Operator	:
+Plain	 
+Type	String
+Punctuation	,
+Plain	\n    
+Keyword	pub
+Plain	 weight
+Operator	:
+Plain	 
+Type	u32
+Punctuation	,
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	const
+Plain	 
+Type	DEFAULT_TAB
+Operator	:
+Plain	 
+Operator	&
+Type	str
+Plain	 
+Operator	=
+Plain	 
+String	"Docs"
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	MAX_RESULTS
+Operator	:
+Plain	 
+Type	usize
+Plain	 
+Operator	=
+Plain	 
+Number	0x20
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	RATIO
+Operator	:
+Plain	 
+Type	f64
+Plain	 
+Operator	=
+Plain	 
+Number	1_618.0e-3
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	TAB
+Operator	:
+Plain	 
+Type	u8
+Plain	 
+Operator	=
+Plain	 
+String	b'\\t'
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	ARROW
+Operator	:
+Plain	 
+Type	char
+Plain	 
+Operator	=
+Plain	 
+String	'→'
+Punctuation	;
+Plain	\n\n
+Comment	/* A block comment\n   /* that nests, as Rust allows */\n   and keeps going. */
+Plain	\n\n
+Keyword	pub
+Plain	 
+Keyword	trait
+Plain	 
+Type	Render
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	fn
+Plain	 
+Function	render
+Punctuation	(
+Operator	&
+Keyword	self
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	String
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	impl
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Type	Render
+Plain	 
+Keyword	for
+Plain	 
+Type	Page
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	fn
+Plain	 
+Function	render
+Punctuation	(
+Operator	&
+Keyword	self
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	String
+Plain	 
+Punctuation	{
+Plain	\n        
+Function	format!
+Punctuation	(
+String	"{}: {}"
+Punctuation	,
+Plain	 
+Keyword	self
+Operator	.
+Plain	path
+Punctuation	,
+Plain	 
+Keyword	self
+Operator	.
+Plain	title
+Punctuation	)
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Attribute	#[derive(Default)]
+Plain	\n
+Keyword	pub
+Plain	 
+Keyword	struct
+Plain	 
+Type	Registry
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n    pages
+Operator	:
+Plain	 
+Type	HashMap
+Operator	<&
+Constant	'a
+Plain	 
+Type	str
+Punctuation	,
+Plain	 
+Type	Page
+Operator	<
+Constant	'a
+Operator	>>
+Punctuation	,
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	impl
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Type	Registry
+Operator	<
+Constant	'a
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n    
+Attribute	#[must_use]
+Plain	\n    
+Keyword	pub
+Plain	 
+Keyword	fn
+Plain	 
+Function	new
+Punctuation	()
+Plain	 
+Operator	->
+Plain	 
+Keyword	Self
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	Self
+Plain	 
+Punctuation	{
+Plain	\n            pages
+Operator	:
+Plain	 
+Type	HashMap
+Operator	::
+Function	new
+Punctuation	(),
+Plain	\n        
+Punctuation	}
+Plain	\n    
+Punctuation	}
+Plain	\n\n    
+Keyword	pub
+Plain	 
+Keyword	fn
+Plain	 
+Function	insert
+Punctuation	(
+Operator	&
+Keyword	mut
+Plain	 
+Keyword	self
+Punctuation	,
+Plain	 page
+Operator	:
+Plain	 
+Type	Page
+Operator	<
+Constant	'a
+Operator	>
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	Option
+Operator	<
+Type	Page
+Operator	<
+Constant	'a
+Operator	>>
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	self
+Operator	.
+Plain	pages
+Operator	.
+Function	insert
+Punctuation	(
+Plain	page
+Operator	.
+Plain	path
+Punctuation	,
+Plain	 page
+Punctuation	)
+Plain	\n    
+Punctuation	}
+Plain	\n\n    
+Comment	/// Look a page up, falling back to the index.
+Plain	\n    
+Keyword	pub
+Plain	 
+Keyword	fn
+Plain	 
+Function	get
+Punctuation	(
+Operator	&
+Keyword	self
+Punctuation	,
+Plain	 path
+Operator	:
+Plain	 
+Operator	&
+Type	str
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	Option
+Operator	<&
+Type	Page
+Operator	<
+Constant	'a
+Operator	>>
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	self
+Operator	.
+Plain	pages
+Operator	.
+Function	get
+Punctuation	(
+Plain	path
+Punctuation	)
+Operator	.
+Function	or_else
+Punctuation	(
+Operator	||
+Plain	 
+Keyword	self
+Operator	.
+Plain	pages
+Operator	.
+Function	get
+Punctuation	(
+String	"index"
+Punctuation	))
+Plain	\n    
+Punctuation	}
+Plain	\n\n    
+Keyword	pub
+Plain	 
+Keyword	fn
+Plain	 
+Function	search
+Punctuation	(
+Operator	&
+Keyword	self
+Punctuation	,
+Plain	 query
+Operator	:
+Plain	 
+Operator	&
+Type	str
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	Vec
+Operator	<&
+Type	Page
+Operator	<
+Constant	'a
+Operator	>>
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	let
+Plain	 needle 
+Operator	=
+Plain	 query
+Operator	.
+Function	to_lowercase
+Punctuation	();
+Plain	\n        
+Keyword	let
+Plain	 
+Keyword	mut
+Plain	 hits 
+Operator	=
+Plain	 
+Keyword	self
+Plain	\n            
+Operator	.
+Plain	pages\n            
+Operator	.
+Function	values
+Punctuation	()
+Plain	\n            
+Operator	.
+Function	filter
+Punctuation	(
+Operator	|
+Plain	p
+Operator	|
+Plain	 p
+Operator	.
+Plain	title
+Operator	.
+Function	to_lowercase
+Punctuation	()
+Operator	.
+Function	contains
+Punctuation	(
+Operator	&
+Plain	needle
+Punctuation	))
+Plain	\n            
+Operator	.
+Function	collect
+Operator	::<
+Type	Vec
+Operator	<
+Plain	_
+Operator	>>
+Punctuation	();
+Plain	\n        hits
+Operator	.
+Function	sort_by_key
+Punctuation	(
+Operator	|
+Plain	p
+Operator	|
+Plain	 p
+Operator	.
+Plain	weight
+Punctuation	);
+Plain	\n        hits
+Operator	.
+Function	truncate
+Punctuation	(
+Type	MAX_RESULTS
+Punctuation	);
+Plain	\n        hits\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	fn
+Plain	 
+Function	escape
+Punctuation	(
+Plain	raw
+Operator	:
+Plain	 
+Operator	&
+Type	str
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Type	String
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	let
+Plain	 pattern 
+Operator	=
+Plain	 
+String	r#"a "raw" string: \\d+"#
+Punctuation	;
+Plain	\n    
+Keyword	let
+Plain	 bytes 
+Operator	=
+Plain	 
+String	b"raw bytes\\n"
+Punctuation	;
+Plain	\n    
+Function	debug_assert!
+Punctuation	(
+Operator	!
+Plain	pattern
+Operator	.
+Function	is_empty
+Punctuation	()
+Plain	 
+Operator	&&
+Plain	 bytes
+Operator	.
+Function	len
+Punctuation	()
+Plain	 
+Operator	>
+Plain	 
+Number	1
+Punctuation	);
+Plain	\n    raw
+Operator	.
+Function	replace
+Punctuation	(
+String	'&'
+Punctuation	,
+Plain	 
+String	"&amp;"
+Punctuation	)
+Operator	.
+Function	replace
+Punctuation	(
+String	'<'
+Punctuation	,
+Plain	 
+String	"&lt;"
+Punctuation	)
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Attribute	#[cfg(test)]
+Plain	\n
+Keyword	mod
+Plain	 tests 
+Punctuation	{
+Plain	\n    
+Keyword	use
+Plain	 
+Keyword	super
+Operator	::*
+Punctuation	;
+Plain	\n\n    
+Attribute	#[test]
+Plain	\n    
+Keyword	fn
+Plain	 
+Function	falls_back_to_index
+Punctuation	()
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	let
+Plain	 
+Keyword	mut
+Plain	 registry 
+Operator	=
+Plain	 
+Type	Registry
+Operator	::
+Function	new
+Punctuation	();
+Plain	\n        registry
+Operator	.
+Function	insert
+Punctuation	(
+Type	Page
+Plain	 
+Punctuation	{
+Plain	\n            path
+Operator	:
+Plain	 
+String	"index"
+Punctuation	,
+Plain	\n            title
+Operator	:
+Plain	 
+Type	String
+Operator	::
+Function	from
+Punctuation	(
+String	"Home"
+Punctuation	),
+Plain	\n            weight
+Operator	:
+Plain	 
+Number	1
+Punctuation	,
+Plain	\n        
+Punctuation	});
+Plain	\n        
+Function	assert_eq!
+Punctuation	(
+Plain	registry
+Operator	.
+Function	get
+Punctuation	(
+String	"missing"
+Punctuation	)
+Operator	.
+Function	unwrap
+Punctuation	()
+Operator	.
+Plain	title
+Punctuation	,
+Plain	 
+String	"Home"
+Punctuation	);
+Plain	\n        
+Function	assert!
+Punctuation	(
+Function	escape
+Punctuation	(
+String	"a<b"
+Punctuation	)
+Operator	.
+Function	contains
+Punctuation	(
+String	"&lt;"
+Punctuation	));
+Plain	\n        
+Function	assert_eq!
+Punctuation	(
+Type	DEFAULT_TAB
+Punctuation	,
+Plain	 
+String	"Docs"
+Punctuation	);
+Plain	\n        
+Function	assert!
+Punctuation	(
+Type	RATIO
+Plain	 
+Operator	>
+Plain	 
+Number	1.0
+Plain	 
+Operator	||
+Plain	 
+Type	TAB
+Plain	 
+Operator	==
+Plain	 
+String	b'\\t'
+Plain	 
+Operator	||
+Plain	 
+Type	ARROW
+Plain	 
+Operator	==
+Plain	 
+String	'→'
+Punctuation	);
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n

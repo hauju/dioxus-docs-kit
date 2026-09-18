@@ -1,0 +1,83 @@
+Punctuation	---
+Plain	\ntitle: Getting started\ndescription: Install the kit and render your first page.\n
+Punctuation	---
+Plain	\n\n
+Keyword	# Getting started
+Plain	\n\nShip a documentation site from 
+Operator	**Markdown**
+Plain	 and 
+Operator	*Rust*
+Plain	 in about ten minutes.\nThe shell is a normal Dioxus component, so it drops into an app you already\nhave — see 
+Punctuation	[
+Plain	the architecture notes
+Punctuation	](
+Constant	/docs/concepts/architecture
+Punctuation	)
+Plain	 for how the\npieces fit.\n\n
+Keyword	## Install
+Plain	\n\n
+Punctuation	1.
+Plain	 Add the crate: 
+String	`cargo add dioxus-docs-kit`
+Plain	\n
+Punctuation	2.
+Plain	 Add the build helper to 
+String	`[build-dependencies]`
+Plain	\n
+Punctuation	3.
+Plain	 Create 
+String	`docs/_nav.json`
+Plain	\n\n
+Punctuation	>
+Plain	 
+Operator	**Note**
+Plain	\n
+Punctuation	>
+Plain	 The build script calls 
+String	`include_str!()`
+Plain	 for every page listed in\n
+Punctuation	>
+Plain	 
+String	`_nav.json`
+Plain	, so a path that does not exist fails the build.\n\n
+Keyword	### Wire up the content map
+Plain	\n\n
+String	```rust\nlet docs = DocsConfig::new(NAV_JSON, doc_content_map())\n    .with_openapi("/api", OPENAPI_YAML)\n    .build();\n```\n
+Plain	\nNothing inside that fence is highlighted as Rust by this lexer — the renderer\nsplits fences out first.\n\n
+Keyword	## What you get
+Plain	\n\n
+Punctuation	-
+Plain	 A sidebar grouped by 
+String	`tab`
+Plain	\n
+Punctuation	-
+Plain	 Full-text search with a 
+String	`⌘K`
+Plain	 modal\n
+Punctuation	-
+Plain	 
+String	`llms.txt`
+Plain	 and 
+String	`llms-full.txt`
+Plain	, generated from the same registry\n
+Punctuation	-
+Plain	 Dark and light themes\n\n
+Punctuation	***
+Plain	\n\n
+Punctuation	![
+Plain	The docs shell
+Punctuation	](
+Constant	/assets/hero.png
+Punctuation	)
+Plain	\n\n| Feature | Status |\n| ------- | ------ |\n| MDX     | stable |\n| OpenAPI | stable |\n| Search  | stable |\n\nSee the 
+Punctuation	[
+Plain	changelog
+Punctuation	](
+Constant	https://github.com/hauju/dioxus-docs-kit/blob/main/CHANGELOG.md
+Punctuation	)
+Plain	\nfor what moved in 
+String	`0.8.0`
+Plain	, and 
+String	`docs/_nav.json`
+Plain	 for the tab layout.\n\n
+String	~~~bash\ncargo add dioxus-docs-kit\n~~~\n

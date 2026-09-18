@@ -2,8 +2,21 @@
 
 All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
-apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-`dioxus-mdx`), which are released together from this workspace.
+apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
+`dioxus-mdx`, `hl-lite`), which are released together from this workspace.
+
+## [Unreleased]
+
+### Added
+
+- `hl-lite`: a new workspace crate — a syntax highlighter with no dependencies
+  at all, twelve hand-written byte-level lexers (Rust, Bash, CSS, Dockerfile,
+  HTML, JavaScript, JSON, Markdown, Python, TOML, TypeScript, YAML) behind a
+  `highlight(Lang, &str) -> Vec<Span>` call whose spans carry `hl-*` CSS
+  classes. It is the intended replacement for the `dioxus-code`/tree-sitter
+  path: ~48 KB of wasm (19 KB brotli) for every language at once, against
+  ~6 MB of C-compiled grammars, and no Homebrew-LLVM requirement for local
+  wasm builds. Nothing is wired into `dioxus-mdx` yet.
 
 ## [Unreleased]
 

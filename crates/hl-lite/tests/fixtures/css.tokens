@@ -1,0 +1,392 @@
+Comment	/* Documentation shell theme tokens. */
+Plain	\n
+Keyword	@import
+Plain	 
+Function	url
+Punctuation	(
+String	"https://fonts.example.test/inter.css"
+Punctuation	)
+Plain	 
+Function	layer
+Punctuation	(
+Plain	base
+Punctuation	);
+Plain	\n
+Keyword	@charset
+Plain	 
+String	"utf-8"
+Punctuation	;
+Plain	\n\n
+Tag	:root
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	--dk-bg
+Punctuation	:
+Plain	 
+Constant	#0b0f19
+Punctuation	;
+Plain	\n    
+Property	--dk-fg
+Punctuation	:
+Plain	 
+Function	hsl
+Punctuation	(
+Number	210
+Plain	 
+Number	20%
+Plain	 
+Number	96%
+Punctuation	);
+Plain	\n    
+Property	--dk-accent
+Punctuation	:
+Plain	 
+Constant	#5eead4
+Punctuation	;
+Plain	\n    
+Property	--dk-radius
+Punctuation	:
+Plain	 
+Number	0.5rem
+Punctuation	;
+Plain	\n    
+Property	--dk-gutter
+Punctuation	:
+Plain	 
+Number	16px
+Punctuation	;
+Plain	\n    
+Property	--dk-leading
+Punctuation	:
+Plain	 
+Number	1.65
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	:root
+Punctuation	[
+Attribute	data-theme
+Operator	=
+String	"light"
+Punctuation	]
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	--dk-bg
+Punctuation	:
+Plain	 
+Constant	#fff
+Punctuation	;
+Plain	\n    
+Property	--dk-fg
+Punctuation	:
+Plain	 
+Constant	#1f2933
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	html
+Punctuation	,
+Plain	\n
+Tag	body
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	margin
+Punctuation	:
+Plain	 
+Number	0
+Punctuation	;
+Plain	\n    
+Property	padding
+Punctuation	:
+Plain	 
+Number	0
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-gutter
+Punctuation	);
+Plain	\n    
+Property	background
+Punctuation	:
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-bg
+Punctuation	);
+Plain	\n    
+Property	color
+Punctuation	:
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-fg
+Punctuation	);
+Plain	\n    
+Property	font-family
+Punctuation	:
+Plain	 
+String	"Inter"
+Punctuation	,
+Plain	 system-ui
+Punctuation	,
+Plain	 sans-serif
+Punctuation	;
+Plain	\n    
+Property	line-height
+Punctuation	:
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-leading
+Punctuation	);
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	.docs-layout
+Plain	 
+Operator	>
+Plain	 
+Tag	.sidebar
+Plain	 
+Tag	a:hover
+Punctuation	,
+Plain	\n
+Tag	.docs-layout
+Plain	 
+Tag	.sidebar
+Plain	 
+Tag	a
+Punctuation	[
+Attribute	aria-current
+Operator	=
+String	"page"
+Punctuation	]
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	color
+Punctuation	:
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-accent
+Punctuation	);
+Plain	\n    
+Property	text-decoration
+Punctuation	:
+Plain	 underline
+Punctuation	;
+Plain	\n    
+Property	text-underline-offset
+Punctuation	:
+Plain	 
+Number	2px
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	.prose
+Plain	 
+Tag	pre
+Plain	 
+Tag	code
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	display
+Punctuation	:
+Plain	 block
+Punctuation	;
+Plain	\n    
+Property	overflow-x
+Punctuation	:
+Plain	 auto
+Punctuation	;
+Plain	\n    
+Property	padding
+Punctuation	:
+Plain	 
+Number	12px
+Plain	 
+Number	16px
+Punctuation	;
+Plain	\n    
+Property	border-radius
+Punctuation	:
+Plain	 
+Function	var
+Punctuation	(
+Variable	--dk-radius
+Punctuation	);
+Plain	\n    
+Property	background
+Punctuation	:
+Plain	 
+Function	rgba
+Punctuation	(
+Number	255
+Punctuation	,
+Plain	 
+Number	255
+Punctuation	,
+Plain	 
+Number	255
+Punctuation	,
+Plain	 
+Number	0.04
+Punctuation	);
+Plain	\n    
+Property	font-size
+Punctuation	:
+Plain	 
+Number	0.875em
+Plain	 
+Keyword	!important
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	.hl-keyword
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	color
+Punctuation	:
+Plain	 
+Constant	#c792ea
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	.hl-string
+Punctuation	,
+Plain	\n
+Tag	.hl-number
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	color
+Punctuation	:
+Plain	 
+Constant	#c3e88d
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Tag	.hl-comment
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	color
+Punctuation	:
+Plain	 
+Constant	#5c6773
+Punctuation	;
+Plain	\n    
+Property	font-style
+Punctuation	:
+Plain	 italic
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	@media
+Plain	 
+Punctuation	(
+Property	min-width
+Punctuation	:
+Plain	 
+Number	64rem
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n    
+Tag	.docs-layout
+Plain	 
+Punctuation	{
+Plain	\n        
+Property	display
+Punctuation	:
+Plain	 grid
+Punctuation	;
+Plain	\n        
+Property	grid-template-columns
+Punctuation	:
+Plain	 
+Number	18rem
+Plain	 
+Function	minmax
+Punctuation	(
+Number	0
+Punctuation	,
+Plain	 
+Number	1fr
+Punctuation	);
+Plain	\n        
+Property	gap
+Punctuation	:
+Plain	 
+Function	calc
+Punctuation	(
+Function	var
+Punctuation	(
+Variable	--dk-gutter
+Punctuation	)
+Plain	 
+Operator	*
+Plain	 
+Number	2
+Punctuation	);
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	@keyframes
+Plain	 fade-in 
+Punctuation	{
+Plain	\n    
+Tag	from
+Plain	 
+Punctuation	{
+Plain	\n        
+Property	opacity
+Punctuation	:
+Plain	 
+Number	0
+Punctuation	;
+Plain	\n        
+Property	transform
+Punctuation	:
+Plain	 
+Function	translateY
+Punctuation	(
+Number	-4px
+Punctuation	);
+Plain	\n    
+Punctuation	}
+Plain	\n    
+Tag	to
+Plain	 
+Punctuation	{
+Plain	\n        
+Property	opacity
+Punctuation	:
+Plain	 
+Number	1
+Punctuation	;
+Plain	\n        
+Property	transform
+Punctuation	:
+Plain	 none
+Punctuation	;
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n

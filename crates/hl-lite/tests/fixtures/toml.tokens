@@ -1,0 +1,325 @@
+Comment	# Workspace manifest for the docs kit.
+Plain	\n
+Tag	[workspace]
+Plain	\n
+Property	members
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+Plain	\n    
+String	"crates/dioxus-docs-kit"
+Punctuation	,
+Plain	\n    
+String	"crates/dioxus-mdx"
+Punctuation	,
+Plain	\n    
+String	"crates/hl-lite"
+Punctuation	,
+Plain	\n
+Punctuation	]
+Plain	\n
+Property	resolver
+Plain	 
+Operator	=
+Plain	 
+String	"2"
+Plain	\n\n
+Tag	[workspace.package]
+Plain	\n
+Property	version
+Plain	 
+Operator	=
+Plain	 
+String	"0.8.0"
+Plain	\n
+Property	edition
+Plain	 
+Operator	=
+Plain	 
+String	"2024"
+Plain	\n
+Property	rust-version
+Plain	 
+Operator	=
+Plain	 
+String	"1.88"
+Plain	\n
+Property	license
+Plain	 
+Operator	=
+Plain	 
+String	"MIT"
+Plain	\n
+Property	repository
+Plain	 
+Operator	=
+Plain	 
+String	"https://github.com/hauju/dioxus-docs-kit"
+Plain	\n\n
+Tag	[workspace.dependencies]
+Plain	\n
+Property	dioxus
+Plain	 
+Operator	=
+Plain	 
+Punctuation	{
+Plain	 
+Property	version
+Plain	 
+Operator	=
+Plain	 
+String	"0.7.10"
+Punctuation	,
+Plain	 
+Property	default-features
+Plain	 
+Operator	=
+Plain	 
+Constant	false
+Plain	 
+Punctuation	}
+Plain	\n
+Property	hl-lite
+Plain	 
+Operator	=
+Plain	 
+Punctuation	{
+Plain	 
+Property	version
+Plain	 
+Operator	=
+Plain	 
+String	"0.8.0"
+Punctuation	,
+Plain	 
+Property	path
+Plain	 
+Operator	=
+Plain	 
+String	"crates/hl-lite"
+Plain	 
+Punctuation	}
+Plain	\n
+Property	serde
+Plain	 
+Operator	=
+Plain	 
+Punctuation	{
+Plain	 
+Property	version
+Plain	 
+Operator	=
+Plain	 
+String	"1.0"
+Punctuation	,
+Plain	 
+Property	features
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+String	"derive"
+Punctuation	]
+Plain	 
+Punctuation	}
+Plain	\n\n
+Tag	[package]
+Plain	\n
+Property	name
+Plain	 
+Operator	=
+Plain	 
+String	"dioxus-docs-kit-example"
+Plain	\n
+Property	version
+Punctuation	.
+Property	workspace
+Plain	 
+Operator	=
+Plain	 
+Constant	true
+Plain	\n
+Property	publish
+Plain	 
+Operator	=
+Plain	 
+Constant	false
+Plain	\n
+Property	description
+Plain	 
+Operator	=
+Plain	 
+String	"""\nAn example app. Multi-line basic strings keep\ntheir newlines, and \\\\ escapes still work.\n"""
+Plain	\n
+Property	homepage
+Plain	 
+Operator	=
+Plain	 
+String	'https://dioxus-docs-kit.oxidt.com'
+Plain	\n
+Property	build-started
+Plain	 
+Operator	=
+Plain	 
+Number	2026-09-18T07:32:00Z
+Plain	\n
+Property	released
+Plain	 
+Operator	=
+Plain	 
+Number	1979-05-27
+Plain	\n
+Property	daily-at
+Plain	 
+Operator	=
+Plain	 
+Number	07:32:00
+Plain	\n
+Property	ratio
+Plain	 
+Operator	=
+Plain	 
+Number	1.618_034
+Plain	\n
+Property	port
+Plain	 
+Operator	=
+Plain	 
+Number	8080
+Plain	\n
+Property	retries
+Plain	 
+Operator	=
+Plain	 
+Number	-3
+Plain	\n
+Property	enabled
+Plain	 
+Operator	=
+Plain	 
+Constant	true
+Plain	\n
+Property	threshold
+Plain	 
+Operator	=
+Plain	 
+Constant	inf
+Plain	\n\n
+Tag	[features]
+Plain	\n
+Property	default
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+String	"web"
+Punctuation	,
+Plain	 
+String	"highlight"
+Punctuation	]
+Plain	\n
+Property	web
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+String	"dioxus/web"
+Punctuation	]
+Plain	\n
+Property	highlight
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[]
+Plain	\n\n
+Tag	[profile.wasm-release]
+Plain	\n
+Property	inherits
+Plain	 
+Operator	=
+Plain	 
+String	"release"
+Plain	\n
+Property	opt-level
+Plain	 
+Operator	=
+Plain	 
+String	"z"
+Plain	\n
+Property	lto
+Plain	 
+Operator	=
+Plain	 
+String	"fat"
+Plain	\n
+Property	codegen-units
+Plain	 
+Operator	=
+Plain	 
+Number	1
+Plain	\n
+Property	panic
+Plain	 
+Operator	=
+Plain	 
+String	"abort"
+Plain	\n\n
+Tag	[[bin]]
+Plain	\n
+Property	name
+Plain	 
+Operator	=
+Plain	 
+String	"server"
+Plain	\n
+Property	path
+Plain	 
+Operator	=
+Plain	 
+String	"src/main.rs"
+Plain	\n\n
+Tag	[[bin]]
+Plain	\n
+Property	name
+Plain	 
+Operator	=
+Plain	 
+String	"snapshot"
+Plain	\n
+Property	path
+Plain	 
+Operator	=
+Plain	 
+String	"tools/snapshot.rs"
+Plain	\n\n
+Tag	[package.metadata.docs.rs]
+Plain	\n
+Property	features
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+String	"web"
+Punctuation	,
+Plain	 
+String	"highlight"
+Punctuation	]
+Plain	\n
+Property	rustdoc-args
+Plain	 
+Operator	=
+Plain	 
+Punctuation	[
+String	"--cfg"
+Punctuation	,
+Plain	 
+String	"docsrs"
+Punctuation	]
+Plain	\n
+Property	"literal.key"
+Plain	 
+Operator	=
+Plain	 
+String	'no \\escapes here'
+Plain	\n

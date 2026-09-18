@@ -1,0 +1,530 @@
+Comment	// Client-side search glue for the docs shell.
+Plain	\n
+Keyword	import
+Plain	 
+Punctuation	{
+Plain	 createIndex
+Punctuation	,
+Plain	 tokenize 
+Punctuation	}
+Plain	 
+Keyword	from
+Plain	 
+String	"./search-index.js"
+Punctuation	;
+Plain	\n\n
+Keyword	const
+Plain	 
+Type	ENDPOINT
+Plain	 
+Operator	=
+Plain	 
+String	"/api/search"
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	LIMIT
+Plain	 
+Operator	=
+Plain	 
+Number	0x10
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	BIG
+Plain	 
+Operator	=
+Plain	 
+Number	9_007_199_254_740_991n
+Punctuation	;
+Plain	\n
+Keyword	const
+Plain	 
+Type	SLUG_RE
+Plain	 
+Operator	=
+Plain	 
+String	/^[a-z0-9]+(?:-[a-z0-9]+)*$/
+Punctuation	;
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	class
+Plain	 
+Type	SearchClient
+Plain	 
+Punctuation	{
+Plain	\n    #cache 
+Operator	=
+Plain	 
+Keyword	new
+Plain	 
+Function	Map
+Punctuation	();
+Plain	\n\n    
+Function	constructor
+Punctuation	(
+Plain	baseUrl
+Punctuation	,
+Plain	 
+Punctuation	{
+Plain	 limit 
+Operator	=
+Plain	 
+Type	LIMIT
+Punctuation	,
+Plain	 debounce 
+Operator	=
+Plain	 
+Number	120
+Plain	 
+Punctuation	}
+Plain	 
+Operator	=
+Plain	 
+Punctuation	{})
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	this
+Operator	.
+Plain	baseUrl 
+Operator	=
+Plain	 baseUrl
+Punctuation	;
+Plain	\n        
+Keyword	this
+Operator	.
+Plain	limit 
+Operator	=
+Plain	 limit
+Punctuation	;
+Plain	\n        
+Keyword	this
+Operator	.
+Plain	debounce 
+Operator	=
+Plain	 debounce
+Punctuation	;
+Plain	\n        
+Keyword	this
+Operator	.
+Plain	index 
+Operator	=
+Plain	 
+Function	createIndex
+Punctuation	();
+Plain	\n    
+Punctuation	}
+Plain	\n\n    
+Keyword	static
+Plain	 
+Function	isSlug
+Punctuation	(
+Plain	value
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	return
+Plain	 
+Keyword	typeof
+Plain	 value 
+Operator	===
+Plain	 
+String	"string"
+Plain	 
+Operator	&&
+Plain	 
+Type	SLUG_RE
+Operator	.
+Function	test
+Punctuation	(
+Plain	value
+Punctuation	);
+Plain	\n    
+Punctuation	}
+Plain	\n\n    
+Keyword	async
+Plain	 
+Function	query
+Punctuation	(
+Plain	text
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	const
+Plain	 key 
+Operator	=
+Plain	 text
+Operator	.
+Function	trim
+Punctuation	()
+Operator	.
+Function	toLowerCase
+Punctuation	();
+Plain	\n        
+Keyword	if
+Plain	 
+Punctuation	(
+Operator	!
+Plain	key
+Punctuation	)
+Plain	 
+Keyword	return
+Plain	 
+Punctuation	[];
+Plain	\n        
+Keyword	if
+Plain	 
+Punctuation	(
+Keyword	this
+Operator	.
+Plain	#cache
+Operator	.
+Function	has
+Punctuation	(
+Plain	key
+Punctuation	))
+Plain	 
+Punctuation	{
+Plain	\n            
+Keyword	return
+Plain	 
+Keyword	this
+Operator	.
+Plain	#cache
+Operator	.
+Function	get
+Punctuation	(
+Plain	key
+Punctuation	);
+Plain	\n        
+Punctuation	}
+Plain	\n\n        
+Keyword	const
+Plain	 url 
+Operator	=
+Plain	 
+String	`${
+Plain	this.baseUrl
+String	}${
+Plain	ENDPOINT
+String	}?q=${
+Plain	encodeURIComponent(key)
+String	}&n=${
+Plain	this.limit
+String	}`
+Punctuation	;
+Plain	\n        
+Keyword	const
+Plain	 response 
+Operator	=
+Plain	 
+Keyword	await
+Plain	 
+Function	fetch
+Punctuation	(
+Plain	url
+Punctuation	,
+Plain	 
+Punctuation	{
+Plain	\n            headers
+Punctuation	:
+Plain	 
+Punctuation	{
+Plain	 
+Type	Accept
+Punctuation	:
+Plain	 
+String	"application/json"
+Plain	 
+Punctuation	},
+Plain	\n        
+Punctuation	});
+Plain	\n        
+Keyword	if
+Plain	 
+Punctuation	(
+Operator	!
+Plain	response
+Operator	.
+Plain	ok
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n            
+Keyword	throw
+Plain	 
+Keyword	new
+Plain	 
+Function	Error
+Punctuation	(
+String	`search failed: ${
+Plain	response.status
+String	}`
+Punctuation	);
+Plain	\n        
+Punctuation	}
+Plain	\n\n        
+Keyword	const
+Plain	 
+Punctuation	{
+Plain	 hits 
+Operator	=
+Plain	 
+Punctuation	[]
+Plain	 
+Punctuation	}
+Plain	 
+Operator	=
+Plain	 
+Keyword	await
+Plain	 response
+Operator	.
+Function	json
+Punctuation	();
+Plain	\n        
+Keyword	const
+Plain	 results 
+Operator	=
+Plain	 hits\n            
+Operator	.
+Function	filter
+Punctuation	((
+Plain	hit
+Punctuation	)
+Plain	 
+Operator	=>
+Plain	 hit
+Operator	.
+Plain	score 
+Operator	>
+Plain	 
+Number	0.25
+Punctuation	)
+Plain	\n            
+Operator	.
+Function	map
+Punctuation	(({
+Plain	 path
+Punctuation	,
+Plain	 title
+Punctuation	,
+Plain	 score 
+Punctuation	})
+Plain	 
+Operator	=>
+Plain	 
+Punctuation	({
+Plain	\n                path
+Punctuation	,
+Plain	\n                title
+Punctuation	:
+Plain	 title 
+Operator	??
+Plain	 
+String	"Untitled"
+Punctuation	,
+Plain	\n                score
+Punctuation	:
+Plain	 
+Type	Math
+Operator	.
+Function	round
+Punctuation	(
+Plain	score 
+Operator	*
+Plain	 
+Number	100
+Punctuation	)
+Plain	 
+Operator	/
+Plain	 
+Number	100
+Punctuation	,
+Plain	\n            
+Punctuation	}))
+Plain	\n            
+Operator	.
+Function	slice
+Punctuation	(
+Number	0
+Punctuation	,
+Plain	 
+Keyword	this
+Operator	.
+Plain	limit
+Punctuation	);
+Plain	\n\n        
+Keyword	this
+Operator	.
+Plain	#cache
+Operator	.
+Function	set
+Punctuation	(
+Plain	key
+Punctuation	,
+Plain	 results
+Punctuation	);
+Plain	\n        
+Keyword	return
+Plain	 results
+Punctuation	;
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	function
+Plain	 
+Function	debounce
+Punctuation	(
+Plain	fn
+Punctuation	,
+Plain	 ms
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	let
+Plain	 timer 
+Operator	=
+Plain	 
+Constant	null
+Punctuation	;
+Plain	\n    
+Keyword	return
+Plain	 
+Punctuation	(
+Operator	...
+Plain	args
+Punctuation	)
+Plain	 
+Operator	=>
+Plain	 
+Punctuation	{
+Plain	\n        
+Function	clearTimeout
+Punctuation	(
+Plain	timer
+Punctuation	);
+Plain	\n        timer 
+Operator	=
+Plain	 
+Function	setTimeout
+Punctuation	(()
+Plain	 
+Operator	=>
+Plain	 
+Function	fn
+Punctuation	(
+Operator	...
+Plain	args
+Punctuation	),
+Plain	 ms
+Punctuation	);
+Plain	\n    
+Punctuation	};
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	const
+Plain	 client 
+Operator	=
+Plain	 
+Keyword	new
+Plain	 
+Function	SearchClient
+Punctuation	(
+Plain	location
+Operator	.
+Plain	origin
+Punctuation	);
+Plain	\n
+Keyword	const
+Plain	 onInput 
+Operator	=
+Plain	 
+Function	debounce
+Punctuation	(
+Keyword	async
+Plain	 
+Punctuation	(
+Plain	event
+Punctuation	)
+Plain	 
+Operator	=>
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	const
+Plain	 hits 
+Operator	=
+Plain	 
+Keyword	await
+Plain	 client
+Operator	.
+Function	query
+Punctuation	(
+Plain	event
+Operator	.
+Plain	target
+Operator	.
+Plain	value
+Punctuation	);
+Plain	\n    document
+Operator	.
+Function	dispatchEvent
+Punctuation	(
+Keyword	new
+Plain	 
+Function	CustomEvent
+Punctuation	(
+String	"docs:hits"
+Punctuation	,
+Plain	 
+Punctuation	{
+Plain	 detail
+Punctuation	:
+Plain	 hits 
+Punctuation	}));
+Plain	\n
+Punctuation	},
+Plain	 
+Number	150
+Punctuation	);
+Plain	\n\ndocument
+Operator	.
+Function	querySelector
+Punctuation	(
+String	"[data-search]"
+Punctuation	)
+Operator	?.
+Function	addEventListener
+Punctuation	(
+String	"input"
+Punctuation	,
+Plain	 onInput
+Punctuation	);
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	default
+Plain	 
+Punctuation	{
+Plain	 
+Type	SearchClient
+Punctuation	,
+Plain	 tokenize
+Punctuation	,
+Plain	 debounce
+Punctuation	,
+Plain	 
+Type	BIG
+Plain	 
+Punctuation	};
+Plain	\n

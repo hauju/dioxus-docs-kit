@@ -1,0 +1,265 @@
+Punctuation	{
+Plain	\n  
+Property	"$schema"
+Punctuation	:
+Plain	 
+String	"https://json.schemastore.org/nav.json"
+Punctuation	,
+Plain	\n  
+Property	"name"
+Punctuation	:
+Plain	 
+String	"dioxus-docs-kit"
+Punctuation	,
+Plain	\n  
+Property	"version"
+Punctuation	:
+Plain	 
+String	"0.8.0"
+Punctuation	,
+Plain	\n  
+Property	"private"
+Punctuation	:
+Plain	 
+Constant	false
+Punctuation	,
+Plain	\n  
+Property	"tabs"
+Punctuation	:
+Plain	 
+Punctuation	[
+String	"Docs"
+Punctuation	,
+Plain	 
+String	"Guides"
+Punctuation	,
+Plain	 
+String	"API Reference"
+Punctuation	,
+Plain	 
+String	"Changelog"
+Punctuation	],
+Plain	\n  
+Property	"defaultPath"
+Punctuation	:
+Plain	 
+String	"getting-started/introduction"
+Punctuation	,
+Plain	\n  
+Property	"theme"
+Punctuation	:
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	"mode"
+Punctuation	:
+Plain	 
+String	"dark"
+Punctuation	,
+Plain	\n    
+Property	"toggle"
+Punctuation	:
+Plain	 
+Constant	true
+Punctuation	,
+Plain	\n    
+Property	"accent"
+Punctuation	:
+Plain	 
+String	"#5eead4"
+Punctuation	,
+Plain	\n    
+Property	"radius"
+Punctuation	:
+Plain	 
+Number	0.5
+Punctuation	,
+Plain	\n    
+Property	"scale"
+Punctuation	:
+Plain	 
+Number	1e-3
+Punctuation	,
+Plain	\n    
+Property	"negative"
+Punctuation	:
+Plain	 
+Number	-12
+Plain	\n  
+Punctuation	},
+Plain	\n  
+Property	"groups"
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	\n    
+Punctuation	{
+Plain	\n      
+Property	"group"
+Punctuation	:
+Plain	 
+String	"Getting Started"
+Punctuation	,
+Plain	\n      
+Property	"tab"
+Punctuation	:
+Plain	 
+String	"Docs"
+Punctuation	,
+Plain	\n      
+Property	"pages"
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	\n        
+String	"getting-started/introduction"
+Punctuation	,
+Plain	\n        
+String	"getting-started/installation"
+Punctuation	,
+Plain	\n        
+String	"getting-started/quickstart"
+Plain	\n      
+Punctuation	]
+Plain	\n    
+Punctuation	},
+Plain	\n    
+Punctuation	{
+Plain	\n      
+Property	"group"
+Punctuation	:
+Plain	 
+String	"Components"
+Punctuation	,
+Plain	\n      
+Property	"tab"
+Punctuation	:
+Plain	 
+String	"Docs"
+Punctuation	,
+Plain	\n      
+Property	"icon"
+Punctuation	:
+Plain	 
+Constant	null
+Punctuation	,
+Plain	\n      
+Property	"pages"
+Punctuation	:
+Plain	 
+Punctuation	[
+String	"components/callout"
+Punctuation	,
+Plain	 
+String	"components/tabs"
+Punctuation	,
+Plain	 
+String	"components/code"
+Punctuation	]
+Plain	\n    
+Punctuation	},
+Plain	\n    
+Punctuation	{
+Plain	\n      
+Property	"group"
+Punctuation	:
+Plain	 
+String	"API Reference"
+Punctuation	,
+Plain	\n      
+Property	"tab"
+Punctuation	:
+Plain	 
+String	"API Reference"
+Punctuation	,
+Plain	\n      
+Property	"pages"
+Punctuation	:
+Plain	 
+Punctuation	[]
+Plain	\n    
+Punctuation	}
+Plain	\n  
+Punctuation	],
+Plain	\n  
+Property	"search"
+Punctuation	:
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	"enabled"
+Punctuation	:
+Plain	 
+Constant	true
+Punctuation	,
+Plain	\n    
+Property	"placeholder"
+Punctuation	:
+Plain	 
+String	"Search the docs…"
+Punctuation	,
+Plain	\n    
+Property	"shortcut"
+Punctuation	:
+Plain	 
+String	"⌘K"
+Punctuation	,
+Plain	\n    
+Property	"maxResults"
+Punctuation	:
+Plain	 
+Number	20
+Plain	\n  
+Punctuation	},
+Plain	\n  
+Property	"footer"
+Punctuation	:
+Plain	 
+Punctuation	{
+Plain	\n    
+Property	"links"
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	\n      
+Punctuation	{
+Plain	 
+Property	"label"
+Punctuation	:
+Plain	 
+String	"GitHub"
+Punctuation	,
+Plain	 
+Property	"href"
+Punctuation	:
+Plain	 
+String	"https://github.com/hauju/dioxus-docs-kit"
+Plain	 
+Punctuation	},
+Plain	\n      
+Punctuation	{
+Plain	 
+Property	"label"
+Punctuation	:
+Plain	 
+String	"Crates.io"
+Punctuation	,
+Plain	 
+Property	"href"
+Punctuation	:
+Plain	 
+String	"https://crates.io/crates/dioxus-docs-kit"
+Plain	 
+Punctuation	}
+Plain	\n    
+Punctuation	],
+Plain	\n    
+Property	"note"
+Punctuation	:
+Plain	 
+String	"Built with Rust \\"and\\" Dioxus"
+Plain	\n  
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n
