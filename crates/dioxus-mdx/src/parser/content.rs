@@ -11,7 +11,7 @@ use super::code_group::{
     try_parse_code_group, try_parse_request_example, try_parse_response_example,
 };
 use super::fields::{try_parse_expandable, try_parse_param_field, try_parse_response_field};
-#[cfg(feature = "openapi")]
+#[cfg(feature = "openapi-parse")]
 use super::openapi_tag::try_parse_openapi;
 use super::steps::try_parse_steps;
 use super::tabs::try_parse_tabs;
@@ -20,10 +20,10 @@ use super::utils::find_fenced_blocks;
 use crate::parser::frontmatter::extract_frontmatter;
 use crate::parser::types::*;
 
-/// Without the `openapi` feature there is no spec parser, so an `<OpenAPI>`
+/// Without the `openapi-parse` feature there is no spec parser, so an `<OpenAPI>`
 /// block takes the same path as any other unrecognised tag: it falls through to
 /// the markdown branch and its body renders as text.
-#[cfg(not(feature = "openapi"))]
+#[cfg(not(feature = "openapi-parse"))]
 fn try_parse_openapi(_content: &str) -> Option<(DocNode, &str)> {
     None
 }
@@ -33,20 +33,17 @@ static IMPORT_RE: LazyLock<Regex> =
 static HELPFUL_WIDGET_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"<SeggWatIsPageHelpful\s*/?>").unwrap());
 
-/// Parse MDX content into a tree of DocNodes.
+/// Parse MDX content into a tree of DocNodes with prose rendered to HTML.
 /// Automatically strips frontmatter and import statements.
 pub fn parse_mdx(content: &str) -> Vec<DocNode> {
     // Strip frontmatter if present
     let (_, content) = extract_frontmatter(content);
-    parse_body(content)
+    super::parse_body(content).0
 }
 
-/// Parse MDX content whose frontmatter has already been removed.
-///
-/// Callers that extracted the frontmatter themselves must use this instead of
-/// [`parse_mdx`], or a body starting with a thematic break gets mistaken for a
-/// second frontmatter block and everything up to the next `---` is discarded.
-pub(super) fn parse_body(content: &str) -> Vec<DocNode> {
+/// Parse MDX content whose frontmatter has already been removed, leaving prose
+/// as Markdown (see [`super::parse_body`], which renders it afterwards).
+pub(super) fn parse_body_nodes(content: &str) -> Vec<DocNode> {
     let content = strip_imports(content);
     let content = strip_helpful_widget(&content);
     parse_content(&content)
@@ -170,7 +167,7 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
         if block.start > last_end {
             let before = &content[last_end..block.start];
             if !before.trim().is_empty() {
-                nodes.push(DocNode::Markdown(before.trim().to_string()));
+                nodes.push(DocNode::Html(before.trim().to_string()));
             }
         }
 
@@ -188,13 +185,13 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
     if last_end < content.len() {
         let after = &content[last_end..];
         if !after.trim().is_empty() {
-            nodes.push(DocNode::Markdown(after.trim().to_string()));
+            nodes.push(DocNode::Html(after.trim().to_string()));
         }
     }
 
     // If no code blocks were found, return the original content as markdown
     if nodes.is_empty() && !content.trim().is_empty() {
-        nodes.push(DocNode::Markdown(content.trim().to_string()));
+        nodes.push(DocNode::Html(content.trim().to_string()));
     }
 
     nodes
@@ -244,13 +241,16 @@ fn find_next_component(content: &str) -> Option<usize> {
         .min()
 }
 
-/// Get raw markdown from parsed content (for fallback rendering).
-pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
+/// Reconstruct the Markdown source of a freshly parsed node tree.
+///
+/// Only valid before [`render::render_nodes`](super::render::render_nodes) has
+/// replaced the prose fields with HTML, hence `pub(super)`.
+pub(super) fn get_raw_markdown(nodes: &[DocNode]) -> String {
     let mut output = String::new();
 
     for node in nodes {
         match node {
-            DocNode::Markdown(md) => {
+            DocNode::Html(md) => {
                 output.push_str(md);
                 output.push_str("\n\n");
             }
@@ -258,15 +258,15 @@ pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
                 output.push_str(&format!(
                     "> **{}:** {}\n\n",
                     c.callout_type.as_str(),
-                    c.content
+                    c.content_html
                 ));
             }
             DocNode::Card(c) => {
-                output.push_str(&format!("**{}**\n{}\n\n", c.title, c.content));
+                output.push_str(&format!("**{}**\n{}\n\n", c.title, c.content_html));
             }
             DocNode::CardGroup(cg) => {
                 for card in &cg.cards {
-                    output.push_str(&format!("**{}**\n{}\n\n", card.title, card.content));
+                    output.push_str(&format!("**{}**\n{}\n\n", card.title, card.content_html));
                 }
             }
             DocNode::Tabs(t) => {
@@ -309,14 +309,14 @@ pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
                 let required = if f.required { " *(required)*" } else { "" };
                 output.push_str(&format!(
                     "**`{}`** _{}_{}: {}\n\n",
-                    f.name, f.field_type, required, f.content
+                    f.name, f.field_type, required, f.content_html
                 ));
                 if let Some(exp) = &f.expandable {
                     output.push_str(&format!("  **{}**\n", exp.title));
                     for field in &exp.fields {
                         output.push_str(&format!(
                             "  - `{}` _{}_: {}\n",
-                            field.name, field.field_type, field.content
+                            field.name, field.field_type, field.content_html
                         ));
                     }
                     output.push('\n');
@@ -327,7 +327,7 @@ pub fn get_raw_markdown(nodes: &[DocNode]) -> String {
                 for field in &e.fields {
                     output.push_str(&format!(
                         "- `{}` _{}_: {}\n",
-                        field.name, field.field_type, field.content
+                        field.name, field.field_type, field.content_html
                     ));
                 }
                 output.push('\n');
@@ -397,9 +397,9 @@ More content after."#;
 
         let nodes = parse_mdx(content);
         assert_eq!(nodes.len(), 3);
-        assert!(matches!(&nodes[0], DocNode::Markdown(_)));
+        assert!(matches!(&nodes[0], DocNode::Html(_)));
         assert!(matches!(&nodes[1], DocNode::Callout(_)));
-        assert!(matches!(&nodes[2], DocNode::Markdown(_)));
+        assert!(matches!(&nodes[2], DocNode::Html(_)));
     }
 
     #[test]
@@ -414,11 +414,11 @@ More text after."#;
         let nodes = parse_mdx(content);
         // Should have 3 nodes: Markdown, CodeBlock, Markdown
         assert_eq!(nodes.len(), 3);
-        assert!(matches!(&nodes[0], DocNode::Markdown(m) if m.contains("intro text")));
+        assert!(matches!(&nodes[0], DocNode::Html(m) if m.contains("intro text")));
         assert!(
             matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("html".to_string()))
         );
-        assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("More text")));
+        assert!(matches!(&nodes[2], DocNode::Html(m) if m.contains("More text")));
     }
 
     #[test]
@@ -439,15 +439,15 @@ End section."#;
         let nodes = parse_mdx(content);
         // Should have 5 nodes: Markdown, CodeBlock, Markdown, CodeBlock, Markdown
         assert_eq!(nodes.len(), 5);
-        assert!(matches!(&nodes[0], DocNode::Markdown(_)));
+        assert!(matches!(&nodes[0], DocNode::Html(_)));
         assert!(
             matches!(&nodes[1], DocNode::CodeBlock(cb) if cb.language == Some("js".to_string()))
         );
-        assert!(matches!(&nodes[2], DocNode::Markdown(_)));
+        assert!(matches!(&nodes[2], DocNode::Html(_)));
         assert!(
             matches!(&nodes[3], DocNode::CodeBlock(cb) if cb.language == Some("rust".to_string()))
         );
-        assert!(matches!(&nodes[4], DocNode::Markdown(_)));
+        assert!(matches!(&nodes[4], DocNode::Html(_)));
     }
 
     #[test]
@@ -464,7 +464,7 @@ graph TD
 After the diagram."#;
         let nodes = parse_mdx(content);
         assert_eq!(nodes.len(), 3);
-        assert!(matches!(&nodes[0], DocNode::Markdown(m) if m.contains("intro")));
+        assert!(matches!(&nodes[0], DocNode::Html(m) if m.contains("intro")));
         if let DocNode::CodeBlock(cb) = &nodes[1] {
             assert_eq!(cb.language, Some("mermaid".to_string()));
             assert!(cb.code.contains("graph TD"));
@@ -472,7 +472,7 @@ After the diagram."#;
         } else {
             panic!("Expected CodeBlock node, got {:?}", nodes[1]);
         }
-        assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("After")));
+        assert!(matches!(&nodes[2], DocNode::Html(m) if m.contains("After")));
     }
 
     #[test]
@@ -491,7 +491,7 @@ After the diagram."#;
         let nodes = parse_mdx(content);
         // Should have 3 nodes: Markdown, CodeBlock, Markdown
         assert_eq!(nodes.len(), 3);
-        assert!(matches!(&nodes[0], DocNode::Markdown(m) if m.contains("React colors")));
+        assert!(matches!(&nodes[0], DocNode::Html(m) if m.contains("React colors")));
         if let DocNode::CodeBlock(cb) = &nodes[1] {
             assert_eq!(cb.language, Some("html".to_string()));
             // Verify the full script tag is captured
@@ -501,7 +501,7 @@ After the diagram."#;
         } else {
             panic!("Expected CodeBlock node, got {:?}", nodes[1]);
         }
-        assert!(matches!(&nodes[2], DocNode::Markdown(m) if m.contains("Next Section")));
+        assert!(matches!(&nodes[2], DocNode::Html(m) if m.contains("Next Section")));
     }
 
     #[test]
@@ -610,7 +610,7 @@ After the diagram."#;
         } else {
             panic!("Expected CodeBlock node, got {:?}", nodes[0]);
         }
-        assert!(matches!(&nodes[1], DocNode::Markdown(m) if m.contains("After")));
+        assert!(matches!(&nodes[1], DocNode::Html(m) if m.contains("After")));
     }
 
     #[test]
@@ -635,7 +635,7 @@ After the diagram."#;
         let md = nodes
             .iter()
             .find_map(|n| match n {
-                DocNode::Markdown(m) => Some(m),
+                DocNode::Html(m) => Some(m),
                 _ => None,
             })
             .expect("expected Markdown");
@@ -645,7 +645,7 @@ After the diagram."#;
 
     /// An `<OpenAPI>` block with a valid spec becomes an `OpenApi` node.
     #[test]
-    #[cfg(feature = "openapi")]
+    #[cfg(feature = "openapi-parse")]
     fn openapi_block_parses_into_an_openapi_node() {
         let content = "<OpenAPI>\nopenapi: \"3.0.0\"\ninfo:\n  title: Test API\n  version: \"1.0.0\"\npaths: {}\n</OpenAPI>\n\nAfter.\n";
         let nodes = parse_mdx(content);
@@ -658,7 +658,7 @@ After the diagram."#;
     /// Without the feature there is no spec parser, so the block takes the
     /// unrecognised-tag path: it renders as markdown instead of panicking.
     #[test]
-    #[cfg(not(feature = "openapi"))]
+    #[cfg(not(feature = "openapi-parse"))]
     fn openapi_block_falls_back_to_markdown_without_the_feature() {
         let content = "<OpenAPI>\nopenapi: \"3.0.0\"\ninfo:\n  title: Test API\n  version: \"1.0.0\"\npaths: {}\n</OpenAPI>\n\nAfter.\n";
         let nodes = parse_mdx(content);
@@ -669,7 +669,7 @@ After the diagram."#;
         let md: String = nodes
             .iter()
             .filter_map(|n| match n {
-                DocNode::Markdown(m) => Some(m.as_str()),
+                DocNode::Html(m) => Some(m.as_str()),
                 _ => None,
             })
             .collect();

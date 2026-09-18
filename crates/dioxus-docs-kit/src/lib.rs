@@ -7,7 +7,18 @@
 //! Also includes a full blog engine with post listing, tag filtering,
 //! search, reading time, and MDX rendering.
 //!
+//! Content is parsed into a JSON bundle by `dioxus-docs-kit-build` in your
+//! `build.rs`; the app embeds that bundle and deserializes it once, so the wasm
+//! client never links an MDX, Markdown or YAML parser.
+//!
 //! ## Quick Start — Docs
+//!
+//! ```rust,ignore
+//! // build.rs
+//! dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+//!     .with_openapi("api-reference", "docs/api-reference/openapi.yaml")
+//!     .generate();
+//! ```
 //!
 //! ```rust,ignore
 //! use dioxus::prelude::*;
@@ -15,7 +26,7 @@
 //! use std::sync::LazyLock;
 //!
 //! static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-//!     DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
+//!     DocsConfig::new(dioxus_docs_kit::docs_bundle!())
 //!         .with_default_path("getting-started/introduction")
 //!         .build()
 //! });
@@ -24,14 +35,17 @@
 //! ## Quick Start — Blog
 //!
 //! ```rust,ignore
+//! // build.rs
+//! dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
+//! ```
+//!
+//! ```rust,ignore
 //! use dioxus::prelude::*;
 //! use dioxus_docs_kit::{BlogConfig, BlogRegistry, BlogContext, BlogLayout, BlogList, BlogPostView};
 //! use std::sync::LazyLock;
 //!
-//! dioxus_docs_kit::blog_content_map!();
-//!
 //! static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-//!     BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+//!     BlogConfig::new(dioxus_docs_kit::blog_bundle!())
 //!         .with_posts_per_page(9)
 //!         .build()
 //! });
@@ -66,6 +80,7 @@ mod wasm_sysroot_stderr {
 }
 
 pub mod blog;
+pub(crate) mod bundle;
 pub mod components;
 pub mod config;
 pub mod error;
@@ -322,42 +337,38 @@ pub use components::{
 // Macros
 // ============================================================================
 
-/// Generates a `doc_content_map()` function that returns a
-/// `HashMap<&'static str, &'static str>` from the build-script output.
-///
-/// Place this at module level in your `main.rs`:
+/// Embeds the docs bundle written by `dioxus-docs-kit-build` as a
+/// `&'static str`.
 ///
 /// ```rust,ignore
-/// dioxus_docs_kit::doc_content_map!();
+/// static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
+///     DocsConfig::new(dioxus_docs_kit::docs_bundle!()).build()
+/// });
 /// ```
 ///
 /// Requires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`
-/// that calls `dioxus_docs_kit_build::generate_content_map("docs/_nav.json")`.
+/// that calls `dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").generate()`.
 #[macro_export]
-macro_rules! doc_content_map {
+macro_rules! docs_bundle {
     () => {
-        fn doc_content_map() -> ::std::collections::HashMap<&'static str, &'static str> {
-            include!(concat!(env!("OUT_DIR"), "/doc_content_generated.rs"))
-        }
+        include_str!(concat!(env!("OUT_DIR"), "/docs_bundle.json"))
     };
 }
 
-/// Generates a `blog_content_map()` function that returns a
-/// `HashMap<&'static str, &'static str>` from the build-script output.
-///
-/// Place this at module level in your `main.rs`:
+/// Embeds the blog bundle written by `dioxus-docs-kit-build` as a
+/// `&'static str`.
 ///
 /// ```rust,ignore
-/// dioxus_docs_kit::blog_content_map!();
+/// static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
+///     BlogConfig::new(dioxus_docs_kit::blog_bundle!()).build()
+/// });
 /// ```
 ///
 /// Requires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`
-/// that calls `dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json")`.
+/// that calls `dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate()`.
 #[macro_export]
-macro_rules! blog_content_map {
+macro_rules! blog_bundle {
     () => {
-        fn blog_content_map() -> ::std::collections::HashMap<&'static str, &'static str> {
-            include!(concat!(env!("OUT_DIR"), "/blog_content_generated.rs"))
-        }
+        include_str!(concat!(env!("OUT_DIR"), "/blog_bundle.json"))
     };
 }

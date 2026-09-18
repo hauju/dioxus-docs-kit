@@ -20,12 +20,7 @@ pub struct DocResponseFieldProps {
 pub fn DocResponseField(props: DocResponseFieldProps) -> Element {
     let field = &props.field;
 
-    let description_html = if !field.content.is_empty() {
-        markdown::to_html_with_options(&field.content, &markdown::Options::gfm())
-            .unwrap_or_else(|_| field.content.clone())
-    } else {
-        String::new()
-    };
+    let description_html = field.content_html.clone();
 
     let indent_class = if props.depth > 0 {
         "ml-4 border-l-2 border-base-300 pl-4"

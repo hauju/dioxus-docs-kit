@@ -91,6 +91,9 @@ fn lower_char(c: char) -> char {
 ///
 /// Rare multi-char lowercase expansions (e.g. `İ`) fall back to the original
 /// char to keep the 1:1 char mapping; locale/typo folding is out of scope.
+///
+/// Folds the *query*; the index's `*_lower` fields are folded the same way by
+/// `dioxus-docs-kit-build`, which carries a copy of this function.
 pub(crate) fn search_lower(s: &str) -> String {
     s.chars().map(lower_char).collect()
 }
@@ -271,82 +274,6 @@ pub(crate) fn build_snippet(text: &str, terms: &[String], window: usize) -> Vec<
     segments
 }
 
-/// Collapse a section's raw markdown into plain-ish text for matching and
-/// snippet display: fenced code blocks are dropped, `[text](url)` links reduce
-/// to their text, the noisiest inline markers are stripped, and whitespace is
-/// collapsed to single spaces. Intentionally lightweight — not a full markdown
-/// renderer.
-pub(crate) fn clean_markdown(md: &str) -> String {
-    // Drop fenced code blocks wholesale (noise, and their `##` lines are not
-    // real headings).
-    let mut no_code = String::with_capacity(md.len());
-    let mut fence: Option<char> = None;
-    for line in md.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-            let marker = if trimmed.starts_with("```") { '`' } else { '~' };
-            match fence {
-                None => fence = Some(marker),
-                Some(open) if open == marker => fence = None,
-                Some(_) => {} // the other marker inside a fence is literal content
-            }
-            continue;
-        }
-        if fence.is_some() {
-            continue;
-        }
-        no_code.push_str(line);
-        no_code.push('\n');
-    }
-
-    // Collapse `[text](url)` to `text`, strip the noisiest inline markers, and
-    // squeeze runs of whitespace to a single space.
-    let mut out = String::with_capacity(no_code.len());
-    let mut prev_space = false;
-    let mut chars = no_code.chars().peekable();
-    while let Some(c) = chars.next() {
-        if c == '[' {
-            let mut text = String::new();
-            for tc in chars.by_ref() {
-                if tc == ']' {
-                    break;
-                }
-                text.push(tc);
-            }
-            if chars.peek() == Some(&'(') {
-                chars.next();
-                for uc in chars.by_ref() {
-                    if uc == ')' {
-                        break;
-                    }
-                }
-            }
-            for tc in text.chars() {
-                push_clean(&mut out, tc, &mut prev_space);
-            }
-        } else {
-            push_clean(&mut out, c, &mut prev_space);
-        }
-    }
-
-    out.trim().to_string()
-}
-
-fn push_clean(out: &mut String, c: char, prev_space: &mut bool) {
-    if matches!(c, '#' | '*' | '_' | '`' | '>' | '|' | '\\') {
-        return;
-    }
-    if c.is_whitespace() {
-        if !*prev_space {
-            out.push(' ');
-            *prev_space = true;
-        }
-    } else {
-        out.push(c);
-        *prev_space = false;
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -494,17 +421,5 @@ mod tests {
     #[test]
     fn snippet_empty_when_no_term_matches() {
         assert!(build_snippet("nothing here", &["zzz".to_string()], SNIPPET_WINDOW).is_empty());
-    }
-
-    #[test]
-    fn clean_markdown_drops_code_fences_and_strips_markers() {
-        let md =
-            "Intro **bold** text\n\n```rust\nlet x = 1;\n```\n\nSee [the docs](https://x.y) now";
-        let cleaned = clean_markdown(md);
-        assert!(!cleaned.contains("let x"), "code fence body dropped");
-        assert!(!cleaned.contains('*'), "emphasis markers stripped");
-        assert!(cleaned.contains("the docs"), "link text kept");
-        assert!(!cleaned.contains("https://"), "link target dropped");
-        assert!(!cleaned.contains('\n'), "whitespace collapsed");
     }
 }

@@ -1,35 +1,13 @@
 //! Main documentation renderer component.
 
-use std::sync::LazyLock;
-
 use dioxus::prelude::*;
 
-use super::slugify;
 use crate::components::{
     DocAccordionGroup, DocCallout, DocCardGroup, DocCodeBlock, DocCodeGroup, DocExpandable,
     DocParamField, DocRequestExample, DocResponseExample, DocResponseField, DocSteps, DocTabs,
     DocUpdate, OpenApiViewer,
 };
-use crate::parser::{CardGroupNode, DocNode, parse_mdx};
-
-static HEADING_RE: LazyLock<crate::re::Regex> =
-    LazyLock::new(|| crate::re::Regex::new(r"<(h[2-4])>(.*?)</h[2-4]>").unwrap());
-static HTML_TAG_RE: LazyLock<crate::re::Regex> =
-    LazyLock::new(|| crate::re::Regex::new(r"<[^>]+>").unwrap());
-
-/// Inject `id` attributes into heading tags so TOC anchor links work.
-fn inject_heading_ids(html: &str) -> String {
-    HEADING_RE
-        .replace_all(html, |caps: &crate::re::Captures| {
-            let tag = &caps[1];
-            let inner = &caps[2];
-            // Strip any inner HTML tags to get plain text for the slug
-            let plain = HTML_TAG_RE.replace_all(inner, "");
-            let id = slugify(&plain);
-            format!("<{tag} id=\"{id}\">{inner}</{tag}>")
-        })
-        .into_owned()
-}
+use crate::parser::{CardGroupNode, DocNode};
 
 /// Props for DocNodeRenderer component.
 #[derive(Props, Clone, PartialEq)]
@@ -42,14 +20,11 @@ pub struct DocNodeRendererProps {
 #[component]
 pub fn DocNodeRenderer(props: DocNodeRendererProps) -> Element {
     match &props.node {
-        DocNode::Markdown(md) => {
-            let html = markdown::to_html_with_options(md, &markdown::Options::gfm())
-                .unwrap_or_else(|_| md.clone());
-            let html = inject_heading_ids(&html);
+        DocNode::Html(html) => {
             rsx! {
                 div {
                     class: "prose-content",
-                    dangerous_inner_html: html,
+                    dangerous_inner_html: html.clone(),
                 }
             }
         }
@@ -57,7 +32,7 @@ pub fn DocNodeRenderer(props: DocNodeRendererProps) -> Element {
             rsx! {
                 DocCallout {
                     callout_type: callout.callout_type,
-                    content: callout.content.clone(),
+                    content_html: callout.content_html.clone(),
                 }
             }
         }
@@ -164,15 +139,18 @@ pub fn DocContent(props: DocContentProps) -> Element {
 }
 
 /// Props for MdxContent component.
+#[cfg(feature = "parse")]
 #[derive(Props, Clone, PartialEq)]
 pub struct MdxContentProps {
     /// Raw MDX content to parse and render.
     pub content: String,
 }
 
-/// Parse and render MDX content.
+/// Parse and render MDX content *at runtime*.
 ///
-/// This is the main entry point for rendering MDX in Dioxus applications.
+/// Needs the `parse` feature (on by default), which links the MDX parser and
+/// markdown-rs into the binary. A docs-kit app does not use this: its content
+/// is parsed at build time and rendered through [`DocContent`].
 ///
 /// # Example
 ///
@@ -187,19 +165,23 @@ pub struct MdxContentProps {
 ///     }
 /// }
 /// ```
+#[cfg(feature = "parse")]
 #[component]
 pub fn MdxContent(props: MdxContentProps) -> Element {
-    let nodes = parse_mdx(&props.content);
+    let nodes = crate::parser::parse_mdx(&props.content);
 
     rsx! {
         DocContent { nodes: nodes }
     }
 }
 
-/// Parse and render MDX content (legacy alias).
+/// Parse and render MDX content at runtime (legacy alias).
+///
+/// Needs the `parse` feature (on by default).
+#[cfg(feature = "parse")]
 #[component]
 pub fn MdxRenderer(content: String) -> Element {
-    let nodes = parse_mdx(&content);
+    let nodes = crate::parser::parse_mdx(&content);
 
     rsx! {
         DocContent { nodes: nodes }

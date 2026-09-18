@@ -131,7 +131,6 @@ fn method_badge(method: HttpMethod) -> (&'static str, &'static str) {
 mod tests {
     use super::*;
     use crate::config::DocsConfig;
-    use std::collections::HashMap;
 
     /// Registry with `pages` pages that all match the query "widget".
     ///
@@ -139,27 +138,30 @@ mod tests {
     /// `&'static DocsRegistry` the component would get from context.
     fn wide_registry(pages: usize) -> &'static DocsRegistry {
         let mut nav_pages: Vec<String> = Vec::new();
-        let mut map: HashMap<&'static str, &'static str> = HashMap::new();
+        let mut sources: Vec<(String, String)> = Vec::new();
 
         for i in 0..pages {
-            let path: &'static str = Box::leak(format!("g/page-{i}").into_boxed_str());
-            let body: &'static str = Box::leak(
-                format!("---\ntitle: Widget {i}\n---\n\nThe widget keyword appears here.\n")
-                    .into_boxed_str(),
-            );
+            let path = format!("g/page-{i}");
             nav_pages.push(format!("\"{path}\""));
-            map.insert(path, body);
+            sources.push((
+                path,
+                format!("---\ntitle: Widget {i}\n---\n\nThe widget keyword appears here.\n"),
+            ));
         }
 
-        let nav: &'static str = Box::leak(
-            format!(
-                r#"{{ "groups": [ {{ "group": "G", "pages": [{}] }} ] }}"#,
-                nav_pages.join(",")
-            )
-            .into_boxed_str(),
+        let nav = format!(
+            r#"{{ "groups": [ {{ "group": "G", "pages": [{}] }} ] }}"#,
+            nav_pages.join(",")
         );
+        let pages: Vec<(&str, &str)> = sources
+            .iter()
+            .map(|(path, body)| (path.as_str(), body.as_str()))
+            .collect();
+        let bundle = dioxus_docs_kit_build::docs_bundle_json(&nav, &pages, &[])
+            .expect("generate docs bundle")
+            .leak();
 
-        Box::leak(Box::new(DocsConfig::new(nav, map).build()))
+        Box::leak(Box::new(DocsConfig::new(bundle).build()))
     }
 
     #[test]

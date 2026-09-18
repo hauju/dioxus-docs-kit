@@ -16,7 +16,10 @@ readme = "README.md"
 [dependencies]
 dioxus = { workspace = true, features = ["lib", "router"] }
 dioxus-free-icons = { workspace = true }
-dioxus-mdx = { workspace = true }
+# Renderer components only: the parser (`parse`) and the OpenAPI spec reader
+# (`openapi-parse`) run in `dioxus-docs-kit-build`, so markdown-rs, a regex
+# engine, `openapiv3` and `serde_yaml` never reach the client.
+dioxus-mdx = { workspace = true, features = ["components"] }
 dioxus-code = { workspace = true, optional = true }
 dioxus-fullstack-core = { workspace = true, optional = true }
 serde = { workspace = true }
@@ -24,6 +27,12 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 webmcp-rs = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
+
+[dev-dependencies]
+# Tests build real content bundles with the same code `build.rs` runs, so the
+# runtime types are exercised against genuine generator output. Dev-only: it
+# never reaches a consumer's dependency graph.
+dioxus-docs-kit-build = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { workspace = true }
@@ -50,6 +59,10 @@ web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server", "dep:dioxus-fullstack-core"]
 mermaid = ["dioxus-mdx/mermaid"]
 highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
+# The API-reference machinery: endpoint pages, the API sidebar and the search
+# entries for operations. Costs no extra dependencies since 0.9.0 — the spec is
+# parsed by `dioxus-docs-kit-build` — but leaving it off drops that code and
+# makes the registry ignore any specs in the bundle.
 openapi = ["dioxus-mdx/openapi"]
 # Register the site's docs as WebMCP tools for an in-browser agent
 # (`DocsWebMcp`). Off by default: it pulls `webmcp-rs` + `schemars`, and a

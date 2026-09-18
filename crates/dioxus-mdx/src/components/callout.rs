@@ -10,8 +10,8 @@ use crate::parser::CalloutType;
 pub struct DocCalloutProps {
     /// Type of callout (Tip, Note, Warning, Info).
     pub callout_type: CalloutType,
-    /// Content to display (rendered as markdown).
-    pub content: String,
+    /// Body HTML, rendered from Markdown at build time.
+    pub content_html: String,
 }
 
 /// Callout box component styled with DaisyUI alerts.
@@ -34,9 +34,7 @@ pub fn DocCallout(props: DocCalloutProps) -> Element {
         CalloutType::Info => ("bg-info/5", "border-info/40", "text-info", "shadow-info/5"),
     };
 
-    // Render markdown content
-    let html = markdown::to_html_with_options(&props.content, &markdown::Options::gfm())
-        .unwrap_or_else(|_| props.content.clone());
+    let html = props.content_html.clone();
 
     rsx! {
         div {

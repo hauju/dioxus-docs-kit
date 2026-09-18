@@ -7,13 +7,19 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "Build-time helper for dioxus-docs-kit: generates content maps from _nav.json"
+description = "Build-time helper for dioxus-docs-kit: parses docs, blog posts and OpenAPI specs into an embeddable content bundle"
 documentation = "https://docs.rs/dioxus-docs-kit-build"
 keywords = ["dioxus", "documentation", "build-script"]
 categories = ["development-tools::build-utils"]
 readme = "README.md"
 
 [dependencies]
+# `default-features = false` keeps `dioxus` (and every renderer dependency) out
+# of consumers' build-dependency graph: this pulls only the parser and the
+# document value types.
+dioxus-mdx = { workspace = true, features = ["parse", "openapi-parse"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Only for validating docs frontmatter *shapes* (reporting the ones the runtime
+# subset rejects); the frontmatter itself is parsed with `parse_yaml_lite`.
 serde_yaml = { workspace = true }

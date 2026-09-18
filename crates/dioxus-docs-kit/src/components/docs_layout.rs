@@ -343,7 +343,6 @@ mod tests {
     use super::initial_tab;
     use crate::config::DocsConfig;
     use crate::registry::DocsRegistry;
-    use std::collections::HashMap;
 
     const NAV: &str = r#"{
         "tabs": ["Docs", "API Reference"],
@@ -372,11 +371,18 @@ paths:
 "#;
 
     fn registry() -> &'static DocsRegistry {
-        let map = HashMap::from([("getting-started/intro", INTRO)]);
-        let config = DocsConfig::new(NAV, map);
         #[cfg(feature = "openapi")]
-        let config = config.with_openapi("api-reference", SPEC);
-        Box::leak(Box::new(config.build()))
+        let specs: &[(&str, &str)] = &[("api-reference", SPEC)];
+        #[cfg(not(feature = "openapi"))]
+        let specs: &[(&str, &str)] = &[];
+        let bundle = dioxus_docs_kit_build::docs_bundle_json(
+            NAV,
+            &[("getting-started/intro", INTRO)],
+            specs,
+        )
+        .expect("generate docs bundle")
+        .leak();
+        Box::leak(Box::new(DocsConfig::new(bundle).build()))
     }
 
     #[test]

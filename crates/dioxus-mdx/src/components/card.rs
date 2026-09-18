@@ -59,13 +59,7 @@ pub struct DocCardProps {
 /// Individual card component.
 #[component]
 pub fn DocCard(props: DocCardProps) -> Element {
-    // Render markdown content
-    let html = if !props.card.content.is_empty() {
-        markdown::to_html_with_options(&props.card.content, &markdown::Options::gfm())
-            .unwrap_or_else(|_| props.card.content.clone())
-    } else {
-        String::new()
-    };
+    let html = props.card.content_html.clone();
 
     let card_content = rsx! {
         div { class: "bg-base-300 hover:border-primary/50 transition-colors duration-150 border border-base-content/10 rounded-lg h-full",

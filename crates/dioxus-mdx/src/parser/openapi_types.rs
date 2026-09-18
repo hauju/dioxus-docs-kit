@@ -2,55 +2,63 @@
 //!
 //! These types provide a simplified view of OpenAPI specs for rendering.
 
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::BTreeMap;
 
 /// Parsed OpenAPI specification.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OpenApiSpec {
     /// API info (title, version, description).
     pub info: ApiInfo,
     /// Server URLs.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub servers: Vec<ApiServer>,
     /// API operations grouped by tag.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub operations: Vec<ApiOperation>,
     /// Unique tags in order of appearance.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<ApiTag>,
     /// Reusable schema definitions.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub schemas: BTreeMap<String, SchemaDefinition>,
 }
 
 /// API metadata.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ApiInfo {
     /// API title.
     pub title: String,
     /// API version.
     pub version: String,
     /// API description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
 /// Server configuration.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiServer {
     /// Server URL.
     pub url: String,
     /// Server description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
 /// Tag metadata.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiTag {
     /// Tag name.
     pub name: String,
     /// Tag description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
 /// HTTP method.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum HttpMethod {
     Get,
@@ -118,27 +126,35 @@ impl HttpMethod {
 }
 
 /// API endpoint operation.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiOperation {
     /// Unique operation ID.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub operation_id: Option<String>,
     /// HTTP method.
     pub method: HttpMethod,
     /// URL path.
     pub path: String,
     /// Short summary.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
     /// Full description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Tags for grouping.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
     /// Parameters (path, query, header).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub parameters: Vec<ApiParameter>,
     /// Request body.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub request_body: Option<ApiRequestBody>,
     /// Response definitions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub responses: Vec<ApiResponse>,
     /// Whether the endpoint is deprecated.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub deprecated: bool,
 }
 
@@ -264,7 +280,7 @@ fn slugify_operation_id(id: &str) -> String {
 }
 
 /// Parameter location.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ParameterLocation {
     Path,
@@ -307,54 +323,65 @@ impl ParameterLocation {
 }
 
 /// API parameter.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiParameter {
     /// Parameter name.
     pub name: String,
     /// Parameter location.
     pub location: ParameterLocation,
     /// Parameter description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Whether the parameter is required.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub required: bool,
     /// Whether the parameter is deprecated.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub deprecated: bool,
     /// Parameter schema.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaDefinition>,
     /// Example value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub example: Option<String>,
 }
 
 /// Request body definition.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiRequestBody {
     /// Description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Whether the body is required.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub required: bool,
     /// Content by media type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub content: Vec<MediaTypeContent>,
 }
 
 /// Content for a specific media type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MediaTypeContent {
     /// Media type (e.g., "application/json").
     pub media_type: String,
     /// Schema for the content.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaDefinition>,
     /// Example value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub example: Option<String>,
 }
 
 /// API response definition.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiResponse {
     /// HTTP status code or "default".
     pub status_code: String,
     /// Response description.
     pub description: String,
     /// Content by media type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub content: Vec<MediaTypeContent>,
 }
 
@@ -372,7 +399,7 @@ impl ApiResponse {
 }
 
 /// Schema type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum SchemaType {
     String,
@@ -402,37 +429,51 @@ impl SchemaType {
 }
 
 /// Schema definition for a type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SchemaDefinition {
     /// Schema type.
     pub schema_type: SchemaType,
     /// Format (e.g., "int64", "email", "date-time").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub format: Option<String>,
     /// Description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// For arrays, the item schema.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub items: Option<Box<SchemaDefinition>>,
     /// For objects, property schemas.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub properties: BTreeMap<String, SchemaDefinition>,
     /// Required property names.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required: Vec<String>,
     /// Reference name (for $ref).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ref_name: Option<String>,
     /// Enum values.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub enum_values: Vec<String>,
     /// Example value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub example: Option<String>,
     /// Default value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default: Option<String>,
     /// Nullable flag.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub nullable: bool,
     /// Additional properties schema (for objects).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub additional_properties: Option<Box<SchemaDefinition>>,
     /// OneOf schemas.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub one_of: Vec<SchemaDefinition>,
     /// AnyOf schemas.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub any_of: Vec<SchemaDefinition>,
     /// AllOf schemas.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub all_of: Vec<SchemaDefinition>,
 }
 
