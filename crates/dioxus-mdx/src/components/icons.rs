@@ -17,94 +17,100 @@ pub fn MdxIcon(
     #[props(default = "size-5".to_string())]
     class: String,
 ) -> Element {
-    let icon_class = class;
+    rsx! { Icon { class, icon: lucide_for(&name) } }
+}
 
-    match name.as_str() {
-        "code" => rsx! { Icon { class: icon_class, icon: LdCode } },
-        "brain-circuit" | "brain" => rsx! { Icon { class: icon_class, icon: LdBrainCircuit } },
-        "folder" => rsx! { Icon { class: icon_class, icon: LdFolder } },
-        "list" => rsx! { Icon { class: icon_class, icon: LdList } },
-        "file" => rsx! { Icon { class: icon_class, icon: LdFile } },
-        "plus" | "plus-circle" => rsx! { Icon { class: icon_class, icon: LdPlus } },
-        "pen" | "pencil" => rsx! { Icon { class: icon_class, icon: LdPencil } },
-        "trash" | "trash-alt" => rsx! { Icon { class: icon_class, icon: LdTrash } },
-        "thumbs-up" => rsx! { Icon { class: icon_class, icon: LdThumbsUp } },
-        "star" => rsx! { Icon { class: icon_class, icon: LdStar } },
-        "chart-bar" | "chart-line" | "chart-simple" => {
-            rsx! { Icon { class: icon_class, icon: LdBarChart } }
-        }
-        "book" => rsx! { Icon { class: icon_class, icon: LdBook } },
-        "puzzle-piece" => rsx! { Icon { class: icon_class, icon: LdPuzzle } },
-        "shield-check" => rsx! { Icon { class: icon_class, icon: LdShieldCheck } },
-        "list-check" => rsx! { Icon { class: icon_class, icon: LdListChecks } },
-        "palette" => rsx! { Icon { class: icon_class, icon: LdPalette } },
-        "rocket" => rsx! { Icon { class: icon_class, icon: LdRocket } },
-        "settings" | "cog" => rsx! { Icon { class: icon_class, icon: LdSettings } },
-        "user-plus" => rsx! { Icon { class: icon_class, icon: LdUserPlus } },
-        "folder-plus" => rsx! { Icon { class: icon_class, icon: LdFolderPlus } },
-        "paste" | "clipboard-paste" => rsx! { Icon { class: icon_class, icon: LdClipboardPaste } },
-        "browser" | "globe" => rsx! { Icon { class: icon_class, icon: LdGlobe } },
-        "cart-shopping" | "shopping-cart" => {
-            rsx! { Icon { class: icon_class, icon: LdShoppingCart } }
-        }
-        "circle-question" | "help" => rsx! { Icon { class: icon_class, icon: LdCircleHelp } },
-        "circle-exclamation" | "alert" => rsx! { Icon { class: icon_class, icon: LdCircleAlert } },
-        "react" | "atom" => rsx! { Icon { class: icon_class, icon: LdAtom } },
-        "vuejs" | "vue" | "component" => rsx! { Icon { class: icon_class, icon: LdComponent } },
-        "angular" | "triangle" => rsx! { Icon { class: icon_class, icon: LdTriangle } },
-        "wordpress" | "pen-tool" => rsx! { Icon { class: icon_class, icon: LdPenTool } },
-        "ghost" => rsx! { Icon { class: icon_class, icon: LdGhost } },
-        "newspaper" => rsx! { Icon { class: icon_class, icon: LdNewspaper } },
-        "github" => rsx! { Icon { class: icon_class, icon: LdGithub } },
-        "shield" => rsx! { Icon { class: icon_class, icon: LdShield } },
-        "key" => rsx! { Icon { class: icon_class, icon: LdKey } },
-        "clock" => rsx! { Icon { class: icon_class, icon: LdClock } },
-        "eye-slash" | "eye-off" => rsx! { Icon { class: icon_class, icon: LdEyeOff } },
-        "arrows-left-right" | "arrow-left-right" => {
-            rsx! { Icon { class: icon_class, icon: LdArrowLeftRight } }
-        }
-        "mobile" | "smartphone" => rsx! { Icon { class: icon_class, icon: LdSmartphone } },
-        "lightbulb" => rsx! { Icon { class: icon_class, icon: LdLightbulb } },
-        "info" => rsx! { Icon { class: icon_class, icon: LdInfo } },
-        "warning" | "triangle-alert" => rsx! { Icon { class: icon_class, icon: LdTriangleAlert } },
-        "check" => rsx! { Icon { class: icon_class, icon: LdCheck } },
-        "copy" => rsx! { Icon { class: icon_class, icon: LdCopy } },
-        "chevron-down" => rsx! { Icon { class: icon_class, icon: LdChevronDown } },
-        "chevron-right" => rsx! { Icon { class: icon_class, icon: LdChevronRight } },
-        "arrow-right" => rsx! { Icon { class: icon_class, icon: LdArrowRight } },
+/// Map an MDX `icon="…"` name to a vendored Lucide icon.
+///
+/// Unrecognised names fall back to [`LdCircle`], which is a blank ring — so
+/// every name the docs actually use needs an arm here.
+fn lucide_for(name: &str) -> LucideIcon {
+    match name {
+        "code" => LdCode,
+        "brain-circuit" | "brain" => LdBrainCircuit,
+        "folder" => LdFolder,
+        "list" => LdList,
+        "file" => LdFile,
+        "plus" | "plus-circle" => LdPlus,
+        "pen" | "pencil" => LdPencil,
+        "trash" | "trash-alt" => LdTrash,
+        "thumbs-up" => LdThumbsUp,
+        "star" => LdStar,
+        "chart-bar" | "chart-line" | "chart-simple" => LdBarChart,
+        "book" => LdBook,
+        "puzzle-piece" => LdPuzzle,
+        "shield-check" => LdShieldCheck,
+        "list-check" => LdListChecks,
+        "palette" => LdPalette,
+        "rocket" => LdRocket,
+        "settings" | "cog" => LdSettings,
+        "user-plus" => LdUserPlus,
+        "folder-plus" => LdFolderPlus,
+        "paste" | "clipboard-paste" => LdClipboardPaste,
+        "browser" | "globe" => LdGlobe,
+        "cart-shopping" | "shopping-cart" => LdShoppingCart,
+        "circle-question" | "help" => LdCircleHelp,
+        "circle-exclamation" | "alert" => LdCircleAlert,
+        "react" | "atom" => LdAtom,
+        "vuejs" | "vue" | "component" => LdComponent,
+        "angular" | "triangle" => LdTriangle,
+        "wordpress" | "pen-tool" => LdPenTool,
+        "ghost" => LdGhost,
+        "newspaper" => LdNewspaper,
+        "github" => LdGithub,
+        "shield" => LdShield,
+        "key" => LdKey,
+        "clock" => LdClock,
+        "eye-slash" | "eye-off" => LdEyeOff,
+        "arrows-left-right" | "arrow-left-right" => LdArrowLeftRight,
+        "mobile" | "smartphone" => LdSmartphone,
+        "lightbulb" => LdLightbulb,
+        "info" => LdInfo,
+        "warning" | "triangle-alert" => LdTriangleAlert,
+        "check" => LdCheck,
+        "copy" => LdCopy,
+        "chevron-down" => LdChevronDown,
+        "chevron-right" => LdChevronRight,
+        "arrow-right" => LdArrowRight,
         // Additional icons for docs
-        "users" | "team" => rsx! { Icon { class: icon_class, icon: LdUsers } },
-        "robot" | "bot" => rsx! { Icon { class: icon_class, icon: LdBot } },
-        "code-branch" | "git-branch" | "branch" => {
-            rsx! { Icon { class: icon_class, icon: LdGitBranch } }
-        }
-        "link" => rsx! { Icon { class: icon_class, icon: LdLink } },
-        "image" | "picture" => rsx! { Icon { class: icon_class, icon: LdImage } },
-        "camera" | "screenshot" => rsx! { Icon { class: icon_class, icon: LdCamera } },
-        "terminal" | "command" => rsx! { Icon { class: icon_class, icon: LdTerminal } },
-        "download" => rsx! { Icon { class: icon_class, icon: LdDownload } },
-        "upload" => rsx! { Icon { class: icon_class, icon: LdUpload } },
-        "database" => rsx! { Icon { class: icon_class, icon: LdDatabase } },
-        "server" => rsx! { Icon { class: icon_class, icon: LdServer } },
-        "cloud" => rsx! { Icon { class: icon_class, icon: LdCloud } },
-        "mail" | "email" | "envelope" => rsx! { Icon { class: icon_class, icon: LdMail } },
-        "lock" | "unlock" => rsx! { Icon { class: icon_class, icon: LdLock } },
-        "search" | "magnifying-glass" => rsx! { Icon { class: icon_class, icon: LdSearch } },
-        "home" | "house" => rsx! { Icon { class: icon_class, icon: LdHome } },
-        "external-link" => rsx! { Icon { class: icon_class, icon: LdExternalLink } },
-        "refresh" | "rotate" => rsx! { Icon { class: icon_class, icon: LdRefreshCw } },
-        "play" => rsx! { Icon { class: icon_class, icon: LdPlay } },
-        "pause" => rsx! { Icon { class: icon_class, icon: LdPause } },
-        "stop" | "square" => rsx! { Icon { class: icon_class, icon: LdSquare } },
-        "message" | "comment" => rsx! { Icon { class: icon_class, icon: LdMessageSquare } },
-        "bell" | "notification" => rsx! { Icon { class: icon_class, icon: LdBell } },
-        "tag" | "label" => rsx! { Icon { class: icon_class, icon: LdTag } },
-        "bookmark" => rsx! { Icon { class: icon_class, icon: LdBookmark } },
-        "heart" | "favorite" => rsx! { Icon { class: icon_class, icon: LdHeart } },
-        "filter" => rsx! { Icon { class: icon_class, icon: LdFilter } },
-        "sort" | "arrow-up-down" => rsx! { Icon { class: icon_class, icon: LdArrowUpDown } },
-        "zap" | "bolt" | "lightning" => rsx! { Icon { class: icon_class, icon: LdZap } },
-        _ => rsx! { Icon { class: icon_class, icon: LdCircle } },
+        "users" | "team" => LdUsers,
+        "robot" | "bot" => LdBot,
+        "code-branch" | "git-branch" | "branch" => LdGitBranch,
+        "link" => LdLink,
+        "image" | "picture" => LdImage,
+        "camera" | "screenshot" => LdCamera,
+        "terminal" | "command" => LdTerminal,
+        "download" => LdDownload,
+        "upload" => LdUpload,
+        "database" => LdDatabase,
+        "server" => LdServer,
+        "cloud" => LdCloud,
+        "mail" | "email" | "envelope" => LdMail,
+        "lock" | "unlock" => LdLock,
+        "search" | "magnifying-glass" => LdSearch,
+        "home" | "house" => LdHome,
+        "external-link" => LdExternalLink,
+        "refresh" | "rotate" => LdRefreshCw,
+        "play" => LdPlay,
+        "pause" => LdPause,
+        "stop" | "square" => LdSquare,
+        "message" | "comment" => LdMessageSquare,
+        "bell" | "notification" => LdBell,
+        "tag" | "label" => LdTag,
+        "bookmark" => LdBookmark,
+        "heart" | "favorite" => LdHeart,
+        "filter" => LdFilter,
+        "sort" | "arrow-up-down" => LdArrowUpDown,
+        "zap" | "bolt" | "lightning" => LdZap,
+        // Names the example docs and blog use that had no arm before.
+        "file-text" | "file-lines" => LdFileText,
+        "layout" | "layout-dashboard" => LdLayoutDashboard,
+        "code-2" | "square-code" => LdSquareCode,
+        "list-ordered" => LdListOrdered,
+        "message-circle" => LdMessageCircle,
+        "panel-left" | "sidebar" => LdPanelLeft,
+        "user" | "account" => LdUser,
+        _ => LdCircle,
     }
 }
 
@@ -123,5 +129,48 @@ pub fn CalloutIcon(
         "warning" => rsx! { Icon { class, icon: LdTriangleAlert } },
         "info" => rsx! { Icon { class, icon: LdInfo } },
         _ => rsx! { Icon { class, icon: LdInfo } },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every `icon="…"` name the example content uses, captured from
+    /// `grep -rhno 'icon="[^"]*"' docs blog | sort -u` at the repo root.
+    const USED_IN_DOCS: &[&str] = &[
+        "arrow-right",
+        "book",
+        "clock",
+        "code",
+        "code-2",
+        "file-text",
+        "layout",
+        "list",
+        "list-ordered",
+        "message-circle",
+        "palette",
+        "panel-left",
+        "rocket",
+        "search",
+        "server",
+        "shield",
+        "star",
+        "tag",
+        "user",
+        "zap",
+    ];
+
+    /// An unmapped name renders a blank ring, which reads as a broken icon.
+    #[test]
+    fn every_documented_icon_name_is_mapped() {
+        for name in USED_IN_DOCS {
+            assert_ne!(lucide_for(name), LdCircle, "icon name {name:?} is unmapped");
+        }
+    }
+
+    #[test]
+    fn unknown_names_fall_back() {
+        assert_eq!(lucide_for("not-a-real-icon"), LdCircle);
     }
 }
