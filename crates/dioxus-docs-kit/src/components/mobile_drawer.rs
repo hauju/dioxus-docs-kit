@@ -48,6 +48,7 @@ pub fn MobileDrawer(mut open: Signal<bool>) -> Element {
                 span { class: "font-semibold text-sm", "Navigation" }
                 button {
                     class: "btn btn-ghost btn-xs btn-square",
+                    "aria-label": "Close navigation",
                     onclick: move |_| open.set(false),
                     Icon { class: "size-4", icon: LdX }
                 }
