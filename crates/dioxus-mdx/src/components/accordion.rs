@@ -1,7 +1,7 @@
 //! Accordion component for collapsible documentation sections.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::components::{DocNodeRenderer, MdxIcon};
 use crate::parser::{AccordionGroupNode, DocNode};

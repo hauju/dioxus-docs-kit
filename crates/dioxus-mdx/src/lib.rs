@@ -111,6 +111,7 @@
 //! ```
 
 pub mod components;
+pub mod lucide;
 pub mod parser;
 mod re;
 

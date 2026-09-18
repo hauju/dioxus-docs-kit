@@ -1,8 +1,7 @@
 //! Hooks and components shared between the docs and blog surfaces.
 
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdMoon, LdSun};
+use dioxus_mdx::lucide::{Icon, LdMoon, LdSun};
 
 use super::docs_layout::CurrentTheme;
 use crate::config::ThemeConfig;

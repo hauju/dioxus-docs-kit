@@ -1,8 +1,7 @@
 //! Generic search modal shell shared by the docs and blog search modals.
 
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdSearch, LdX};
+use dioxus_mdx::lucide::{Icon, LdSearch, LdX};
 
 use crate::search::SnippetSegment;
 

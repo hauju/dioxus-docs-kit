@@ -94,7 +94,9 @@ Route enum (main.rs):
 - **Tailwind CSS 4** + **DaisyUI 5** (dark theme default, light theme available)
 - `@tailwindcss/typography` for prose content
 - Input: `tailwind.css` → processed by `@tailwindcss/cli`
-- Icons: `dioxus-free-icons` with `lucide` feature
+- Icons: Lucide SVGs vendored in `crates/dioxus-mdx/src/lucide.rs` — `Icon { class, icon: LdX }`,
+  re-exported as `dioxus_docs_kit::lucide`. Regenerate with `scripts/vendor-lucide-icons.py`
+  after adding a new `Ld*` name; nothing generates it at build time
 - **Safelist pattern**: when crates are git/crates.io deps, Tailwind can't scan `~/.cargo/` — ship `safelist.html` files with all CSS classes (especially dynamic ones from match arms like `HttpMethod::badge_class()`)
 
 ### Key Conventions

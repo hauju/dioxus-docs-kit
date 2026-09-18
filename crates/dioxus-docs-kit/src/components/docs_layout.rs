@@ -1,10 +1,9 @@
 use dioxus::prelude::*;
 #[cfg(feature = "highlight")]
 use dioxus_code::CodeTheme;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdMenu;
 #[cfg(feature = "highlight")]
 use dioxus_mdx::CodeThemeOverride;
+use dioxus_mdx::lucide::{Icon, LdMenu};
 
 use crate::DocsContext;
 #[cfg(feature = "highlight")]
@@ -322,7 +321,7 @@ pub fn DocsLayout(
 /// Reusable search button component for headers.
 #[component]
 pub fn SearchButton(search_open: Signal<bool>) -> Element {
-    use dioxus_free_icons::icons::ld_icons::LdSearch;
+    use dioxus_mdx::lucide::LdSearch;
 
     rsx! {
         button {

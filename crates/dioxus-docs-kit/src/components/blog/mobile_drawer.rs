@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdX;
+use dioxus_mdx::lucide::{Icon, LdX};
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;

@@ -2,10 +2,10 @@
 //!
 //! Features syntax highlighting for common programming languages.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
 #[cfg(feature = "highlight")]
 use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 #[cfg(feature = "mermaid")]
 use super::mermaid::MermaidDiagram;

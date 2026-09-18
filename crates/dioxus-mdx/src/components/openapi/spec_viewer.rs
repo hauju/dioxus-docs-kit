@@ -2,8 +2,8 @@
 
 use std::collections::BTreeMap;
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::{ApiOperation, ApiTag, OpenApiSpec, SchemaDefinition};
 
