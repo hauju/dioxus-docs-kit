@@ -1,0 +1,249 @@
+Comment	#!/usr/bin/env bash
+Plain	\n
+Comment	# Build and deploy the documentation site.
+Plain	\n
+Function	set
+Plain	 
+Attribute	-euo
+Plain	 pipefail\n\n
+Variable	VERSION
+Operator	=
+String	"
+Variable	${1:-$(git describe --tags --always)}
+String	"
+Plain	\n
+Variable	OUT_DIR
+Operator	=
+Plain	dist\n
+Function	readonly
+Plain	 
+Variable	REGISTRY
+Operator	=
+String	"ghcr.io/hauju"
+Plain	\n
+Variable	count
+Operator	=
+Plain	0\n\nusage
+Punctuation	()
+Plain	 
+Punctuation	{
+Plain	\n    
+Function	cat
+Plain	 
+Operator	<<
+String	'EOF'
+Plain	\n
+String	usage: deploy.sh [--dry-run] [VERSION]\n  $HOME is not expanded in a quoted heredoc.\nEOF\n
+Punctuation	}
+Plain	\n\nlog
+Punctuation	()
+Plain	 
+Punctuation	{
+Plain	\n    
+Function	local
+Plain	 
+Variable	level
+Operator	=
+Variable	$1
+Plain	\n    
+Function	shift
+Plain	\n    
+Function	printf
+Plain	 
+String	'[%s] %s\\n'
+Plain	 
+String	"
+Variable	$level
+String	"
+Plain	 
+String	"
+Variable	$*
+String	"
+Plain	 
+Operator	>&
+Number	2
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	if
+Plain	 
+Punctuation	[
+Plain	 
+Variable	$#
+Plain	 
+Attribute	-gt
+Plain	 
+Number	2
+Plain	 
+Punctuation	];
+Plain	 
+Keyword	then
+Plain	\n    usage\n    
+Function	exit
+Plain	 
+Number	1
+Plain	\n
+Keyword	fi
+Plain	\n\n
+Keyword	for
+Plain	 target 
+Keyword	in
+Plain	 web server
+Punctuation	;
+Plain	 
+Keyword	do
+Plain	\n    log info 
+String	"building 
+Variable	${target}
+String	 for 
+Variable	${VERSION}
+String	"
+Plain	\n    
+Keyword	case
+Plain	 
+String	"
+Variable	$target
+String	"
+Plain	 
+Keyword	in
+Plain	\n        web
+Punctuation	)
+Plain	\n            
+Function	dx
+Plain	 bundle 
+Attribute	--web
+Plain	 
+Attribute	--release
+Plain	 
+Attribute	--debug-symbols
+Plain	 false\n            
+Punctuation	;;
+Plain	\n        server
+Punctuation	)
+Plain	\n            
+Function	cargo
+Plain	 build 
+Attribute	--release
+Plain	 
+Attribute	--features
+Plain	 server\n            
+Punctuation	;;
+Plain	\n        
+Operator	*
+Punctuation	)
+Plain	\n            log error 
+String	"unknown target: 
+Variable	$target
+String	"
+Plain	\n            
+Function	exit
+Plain	 
+Number	2
+Plain	\n            
+Punctuation	;;
+Plain	\n    
+Keyword	esac
+Plain	\n    
+Variable	count
+Operator	=
+Variable	$((count + 1))
+Plain	\n
+Keyword	done
+Plain	\n\n
+Comment	# A '#' inside a string is not a comment, and neither is $#.
+Plain	\n
+Function	echo
+Plain	 
+String	"built 
+Variable	$count
+String	 target(s) # really"
+Plain	\n\n
+Keyword	while
+Plain	 
+Function	read
+Plain	 
+Attribute	-r
+Plain	 line
+Punctuation	;
+Plain	 
+Keyword	do
+Plain	\n    
+Keyword	if
+Plain	 
+Punctuation	[[
+Plain	 
+String	"
+Variable	$line
+String	"
+Plain	 
+Operator	==
+Plain	 
+Operator	*.
+Plain	wasm 
+Punctuation	]];
+Plain	 
+Keyword	then
+Plain	\n        
+Variable	size
+Operator	=
+Variable	$(wc -c <"$line")
+Plain	\n        log info 
+String	"
+Variable	$line
+String	 is 
+Variable	$size
+String	 bytes"
+Plain	\n    
+Keyword	fi
+Plain	\n
+Keyword	done
+Plain	 
+Operator	<
+Plain	 
+Operator	<
+Punctuation	(
+Function	find
+Plain	 
+String	"
+Variable	$OUT_DIR
+String	"
+Plain	 
+Attribute	-type
+Plain	 f
+Punctuation	)
+Plain	\n\n
+Function	cat
+Plain	 
+Operator	<<-
+String	EOT
+Plain	\n
+String	\tDeploying to ${REGISTRY}.\n\tTabs before this line are stripped.\nEOT\n
+Plain	\n
+Function	curl
+Plain	 
+Attribute	-fsSL
+Plain	 
+Attribute	-X
+Plain	 POST 
+String	"https://example.test/deploy?tag=
+Variable	$VERSION
+String	"
+Plain	 
+Operator	\\
+Plain	\n    
+Attribute	-H
+Plain	 
+String	'Content-Type: application/json'
+Plain	 
+Operator	\\
+Plain	\n    
+Attribute	-d
+Plain	 
+String	"{\\"version\\": \\"
+Variable	$VERSION
+String	\\"}"
+Plain	\n\n
+Function	exit
+Plain	 
+Number	0
+Plain	\n

@@ -1,0 +1,16 @@
+[package]
+name = "hl-lite"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Tiny dependency-free syntax highlighter: hand-written lexers for 12 languages"
+documentation = "https://docs.rs/hl-lite"
+keywords = ["syntax-highlighting", "highlighter", "tokenizer", "wasm", "docs"]
+categories = ["text-processing", "parsing", "web-programming"]
+readme = "README.md"
+
+[dependencies]

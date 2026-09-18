@@ -1,0 +1,587 @@
+Comment	// Types and helpers for the generated OpenAPI client.
+Plain	\n
+Keyword	import
+Plain	 
+Keyword	type
+Plain	 
+Punctuation	{
+Plain	 
+Type	Operation
+Punctuation	,
+Plain	 
+Type	Schema
+Plain	 
+Punctuation	}
+Plain	 
+Keyword	from
+Plain	 
+String	"./openapi"
+Punctuation	;
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	type
+Plain	 
+Type	HttpMethod
+Plain	 
+Operator	=
+Plain	 
+String	"get"
+Plain	 
+Operator	|
+Plain	 
+String	"post"
+Plain	 
+Operator	|
+Plain	 
+String	"put"
+Plain	 
+Operator	|
+Plain	 
+String	"patch"
+Plain	 
+Operator	|
+Plain	 
+String	"delete"
+Punctuation	;
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	interface
+Plain	 
+Type	Endpoint
+Operator	<
+Type	T
+Plain	 
+Operator	=
+Plain	 
+Type	unknown
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	readonly
+Plain	 operationId
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	;
+Plain	\n    
+Keyword	readonly
+Plain	 method
+Punctuation	:
+Plain	 
+Type	HttpMethod
+Punctuation	;
+Plain	\n    
+Keyword	readonly
+Plain	 path
+Punctuation	:
+Plain	 
+String	`/${
+Plain	string
+String	}`
+Punctuation	;
+Plain	\n    summary
+Operator	?
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	;
+Plain	\n    tags
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	[];
+Plain	\n    response
+Punctuation	:
+Plain	 
+Type	T
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	enum
+Plain	 
+Type	Status
+Plain	 
+Punctuation	{
+Plain	\n    
+Type	Draft
+Plain	 
+Operator	=
+Plain	 
+String	"draft"
+Punctuation	,
+Plain	\n    
+Type	Published
+Plain	 
+Operator	=
+Plain	 
+String	"published"
+Punctuation	,
+Plain	\n    
+Type	Archived
+Plain	 
+Operator	=
+Plain	 
+String	"archived"
+Punctuation	,
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	type
+Plain	 
+Type	Awaitable
+Operator	<
+Type	T
+Operator	>
+Plain	 
+Operator	=
+Plain	 
+Type	T
+Plain	 
+Operator	|
+Plain	 
+Type	Promise
+Operator	<
+Type	T
+Operator	>
+Punctuation	;
+Plain	\n
+Keyword	type
+Plain	 
+Type	KeysOf
+Operator	<
+Type	T
+Operator	>
+Plain	 
+Operator	=
+Plain	 
+Keyword	keyof
+Plain	 
+Type	T
+Plain	 
+Operator	&
+Plain	 
+Type	string
+Punctuation	;
+Plain	\n\n
+Keyword	const
+Plain	 
+Type	DEFAULT_TIMEOUT
+Plain	 
+Operator	=
+Plain	 
+Number	10_000
+Punctuation	;
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	abstract
+Plain	 
+Keyword	class
+Plain	 
+Type	Client
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	protected
+Plain	 
+Function	constructor
+Punctuation	(
+Plain	\n        
+Keyword	private
+Plain	 
+Keyword	readonly
+Plain	 baseUrl
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	,
+Plain	\n        
+Keyword	private
+Plain	 timeout
+Punctuation	:
+Plain	 
+Type	number
+Plain	 
+Operator	=
+Plain	 
+Type	DEFAULT_TIMEOUT
+Punctuation	,
+Plain	\n    
+Punctuation	)
+Plain	 
+Punctuation	{}
+Plain	\n\n    
+Keyword	abstract
+Plain	 
+Function	authorize
+Punctuation	():
+Plain	 
+Type	Awaitable
+Operator	<
+Type	Record
+Operator	<
+Type	string
+Punctuation	,
+Plain	 
+Type	string
+Operator	>>
+Punctuation	;
+Plain	\n\n    
+Keyword	async
+Plain	 call
+Operator	<
+Type	T
+Operator	>
+Punctuation	(
+Plain	endpoint
+Punctuation	:
+Plain	 
+Type	Endpoint
+Operator	<
+Type	T
+Operator	>
+Punctuation	,
+Plain	 body
+Operator	?
+Punctuation	:
+Plain	 
+Type	unknown
+Punctuation	):
+Plain	 
+Type	Promise
+Operator	<
+Type	T
+Operator	>
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	const
+Plain	 controller 
+Operator	=
+Plain	 
+Keyword	new
+Plain	 
+Function	AbortController
+Punctuation	();
+Plain	\n        
+Keyword	const
+Plain	 timer 
+Operator	=
+Plain	 
+Function	setTimeout
+Punctuation	(()
+Plain	 
+Operator	=>
+Plain	 controller
+Operator	.
+Function	abort
+Punctuation	(),
+Plain	 
+Keyword	this
+Operator	.
+Plain	timeout
+Punctuation	);
+Plain	\n        
+Keyword	try
+Plain	 
+Punctuation	{
+Plain	\n            
+Keyword	const
+Plain	 headers 
+Operator	=
+Plain	 
+Keyword	await
+Plain	 
+Keyword	this
+Operator	.
+Function	authorize
+Punctuation	();
+Plain	\n            
+Keyword	const
+Plain	 res 
+Operator	=
+Plain	 
+Keyword	await
+Plain	 
+Function	fetch
+Punctuation	(
+Keyword	this
+Operator	.
+Plain	baseUrl 
+Operator	+
+Plain	 endpoint
+Operator	.
+Plain	path
+Punctuation	,
+Plain	 
+Punctuation	{
+Plain	\n                method
+Punctuation	:
+Plain	 endpoint
+Operator	.
+Plain	method
+Operator	.
+Function	toUpperCase
+Punctuation	(),
+Plain	\n                headers
+Punctuation	:
+Plain	 
+Punctuation	{
+Plain	 
+String	"content-type"
+Punctuation	:
+Plain	 
+String	"application/json"
+Punctuation	,
+Plain	 
+Operator	...
+Plain	headers 
+Punctuation	},
+Plain	\n                body
+Punctuation	:
+Plain	 body 
+Operator	===
+Plain	 
+Constant	undefined
+Plain	 
+Operator	?
+Plain	 
+Constant	null
+Plain	 
+Punctuation	:
+Plain	 
+Type	JSON
+Operator	.
+Function	stringify
+Punctuation	(
+Plain	body
+Punctuation	),
+Plain	\n                signal
+Punctuation	:
+Plain	 controller
+Operator	.
+Plain	signal
+Punctuation	,
+Plain	\n            
+Punctuation	});
+Plain	\n            
+Keyword	if
+Plain	 
+Punctuation	(
+Operator	!
+Plain	res
+Operator	.
+Plain	ok
+Punctuation	)
+Plain	 
+Keyword	throw
+Plain	 
+Keyword	new
+Plain	 
+Function	ApiError
+Punctuation	(
+Plain	res
+Operator	.
+Plain	status
+Punctuation	,
+Plain	 endpoint
+Operator	.
+Plain	operationId
+Punctuation	);
+Plain	\n            
+Keyword	return
+Plain	 
+Punctuation	(
+Keyword	await
+Plain	 res
+Operator	.
+Function	json
+Punctuation	())
+Plain	 
+Keyword	as
+Plain	 
+Type	T
+Punctuation	;
+Plain	\n        
+Punctuation	}
+Plain	 
+Keyword	finally
+Plain	 
+Punctuation	{
+Plain	\n            
+Function	clearTimeout
+Punctuation	(
+Plain	timer
+Punctuation	);
+Plain	\n        
+Punctuation	}
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	class
+Plain	 
+Type	ApiError
+Plain	 
+Keyword	extends
+Plain	 
+Type	Error
+Plain	 
+Punctuation	{
+Plain	\n    
+Function	constructor
+Punctuation	(
+Plain	\n        
+Keyword	public
+Plain	 
+Keyword	readonly
+Plain	 status
+Punctuation	:
+Plain	 
+Type	number
+Punctuation	,
+Plain	\n        
+Keyword	public
+Plain	 
+Keyword	readonly
+Plain	 operationId
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	,
+Plain	\n    
+Punctuation	)
+Plain	 
+Punctuation	{
+Plain	\n        
+Keyword	super
+Punctuation	(
+String	`${
+Plain	operationId
+String	} failed with ${
+Plain	status
+String	}`
+Punctuation	);
+Plain	\n        
+Keyword	this
+Operator	.
+Plain	name 
+Operator	=
+Plain	 
+String	"ApiError"
+Punctuation	;
+Plain	\n    
+Punctuation	}
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	function
+Plain	 
+Function	isEndpoint
+Punctuation	(
+Plain	value
+Punctuation	:
+Plain	 
+Type	unknown
+Punctuation	):
+Plain	 value 
+Keyword	is
+Plain	 
+Type	Endpoint
+Plain	 
+Punctuation	{
+Plain	\n    
+Keyword	return
+Plain	 
+Keyword	typeof
+Plain	 value 
+Operator	===
+Plain	 
+String	"object"
+Plain	 
+Operator	&&
+Plain	 value 
+Operator	!==
+Plain	 
+Constant	null
+Plain	 
+Operator	&&
+Plain	 
+String	"operationId"
+Plain	 
+Keyword	in
+Plain	 value
+Punctuation	;
+Plain	\n
+Punctuation	}
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	const
+Plain	 slugify 
+Operator	=
+Plain	 
+Punctuation	(
+Plain	input
+Punctuation	:
+Plain	 
+Type	string
+Punctuation	):
+Plain	 
+Type	string
+Plain	 
+Operator	=>
+Plain	\n    input\n        
+Operator	.
+Function	replace
+Punctuation	(
+String	/([a-z0-9])([A-Z])/g
+Punctuation	,
+Plain	 
+String	"$1-$2"
+Punctuation	)
+Plain	\n        
+Operator	.
+Function	replace
+Punctuation	(
+String	/[^a-zA-Z0-9]+/g
+Punctuation	,
+Plain	 
+String	"-"
+Punctuation	)
+Plain	\n        
+Operator	.
+Function	toLowerCase
+Punctuation	();
+Plain	\n\n
+Keyword	export
+Plain	 
+Keyword	type
+Plain	 
+Type	OperationMap
+Plain	 
+Operator	=
+Plain	 
+Type	Record
+Operator	<
+Type	KeysOf
+Operator	<
+Type	Schema
+Operator	>
+Punctuation	,
+Plain	 
+Type	Operation
+Operator	>
+Punctuation	;
+Plain	\n

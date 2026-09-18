@@ -1,0 +1,234 @@
+Punctuation	---
+Plain	\n
+Comment	# Continuous integration for the docs kit.
+Plain	\n
+Property	name
+Punctuation	:
+Plain	 CI\n
+Property	on
+Punctuation	:
+Plain	\n  
+Property	push
+Punctuation	:
+Plain	\n    
+Property	branches
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	main
+Punctuation	]
+Plain	\n  
+Property	pull_request
+Punctuation	:
+Plain	\n    
+Property	branches
+Punctuation	:
+Plain	\n      
+Punctuation	-
+Plain	 main\n      
+Punctuation	-
+Plain	 
+String	"release/*"
+Plain	\n\n
+Property	env
+Punctuation	:
+Plain	\n  
+Property	CARGO_TERM_COLOR
+Punctuation	:
+Plain	 always\n  
+Property	RUST_VERSION
+Punctuation	:
+Plain	 
+String	"1.96.0"
+Plain	\n  
+Property	DX_VERSION
+Punctuation	:
+Plain	 0.7.10\n  
+Property	RUSTFLAGS
+Punctuation	:
+Plain	 -D warnings\n\n
+Property	defaults
+Punctuation	:
+Plain	 
+Variable	&defaults
+Plain	\n  
+Property	run
+Punctuation	:
+Plain	\n    
+Property	shell
+Punctuation	:
+Plain	 bash\n    
+Property	working-directory
+Punctuation	:
+Plain	 .\n\n
+Property	jobs
+Punctuation	:
+Plain	\n  
+Property	check
+Punctuation	:
+Plain	\n    
+Property	name
+Punctuation	:
+Plain	 fmt
+Punctuation	,
+Plain	 clippy
+Punctuation	,
+Plain	 test\n    
+Property	runs-on
+Punctuation	:
+Plain	 ubuntu-latest\n    
+Property	timeout-minutes
+Punctuation	:
+Plain	 
+Number	30
+Plain	\n    
+Property	defaults
+Punctuation	:
+Plain	 
+Variable	*defaults
+Plain	\n    
+Property	strategy
+Punctuation	:
+Plain	\n      
+Property	fail-fast
+Punctuation	:
+Plain	 
+Constant	false
+Plain	\n      
+Property	matrix
+Punctuation	:
+Plain	\n        
+Property	toolchain
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	stable
+Punctuation	,
+Plain	 1.88.0
+Punctuation	]
+Plain	\n    
+Property	steps
+Punctuation	:
+Plain	\n      
+Punctuation	-
+Plain	 
+Property	uses
+Punctuation	:
+Plain	 actions/checkout@v4\n      
+Punctuation	-
+Plain	 
+Property	name
+Punctuation	:
+Plain	 Install Rust\n        
+Property	uses
+Punctuation	:
+Plain	 dtolnay/rust-toolchain@master\n        
+Property	with
+Punctuation	:
+Plain	\n          
+Property	toolchain
+Punctuation	:
+Plain	 $
+Punctuation	{{
+Plain	 matrix.toolchain 
+Punctuation	}}
+Plain	\n          
+Property	components
+Punctuation	:
+Plain	 rustfmt
+Punctuation	,
+Plain	 clippy\n      
+Punctuation	-
+Plain	 
+Property	name
+Punctuation	:
+Plain	 Tailwind\n        
+Property	run
+Punctuation	:
+Plain	 
+Operator	|
+String	\n          bun install --frozen-lockfile\n          bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
+Plain	\n      
+Punctuation	-
+Plain	 
+Property	name
+Punctuation	:
+Plain	 Lint\n        
+Property	run
+Punctuation	:
+Plain	 
+Operator	>
+String	\n          cargo clippy --workspace --all-targets --all-features\n          -- -D warnings
+Plain	\n      
+Punctuation	-
+Plain	 
+Property	name
+Punctuation	:
+Plain	 Test\n        
+Property	run
+Punctuation	:
+Plain	 cargo test --workspace\n        
+Property	env
+Punctuation	:
+Plain	\n          
+Property	HL_LITE_UPDATE
+Punctuation	:
+Plain	 
+Constant	~
+Plain	\n\n  
+Property	deploy
+Punctuation	:
+Plain	\n    
+Property	needs
+Punctuation	:
+Plain	 
+Punctuation	[
+Plain	check
+Punctuation	]
+Plain	\n    
+Property	if
+Punctuation	:
+Plain	 github.ref == 'refs/heads/main'\n    
+Property	runs-on
+Punctuation	:
+Plain	 ubuntu-latest\n    
+Property	concurrency
+Punctuation	:
+Plain	 
+Punctuation	{
+Property	group
+Punctuation	:
+Plain	 deploy
+Punctuation	,
+Plain	 
+Property	cancel-in-progress
+Punctuation	:
+Plain	 
+Constant	true
+Punctuation	}
+Plain	\n    
+Property	steps
+Punctuation	:
+Plain	\n      
+Punctuation	-
+Plain	 
+Property	name
+Punctuation	:
+Plain	 Trigger Coolify\n        
+Property	run
+Punctuation	:
+Plain	 curl -fsS -X POST "$WEBHOOK"\n        
+Property	env
+Punctuation	:
+Plain	\n          
+Property	WEBHOOK
+Punctuation	:
+Plain	 
+Type	!!str
+Plain	 $
+Punctuation	{{
+Plain	 secrets.COOLIFY_WEBHOOK 
+Punctuation	}}
+Plain	\n
+Punctuation	...
+Plain	\n

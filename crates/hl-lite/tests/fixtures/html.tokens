@@ -1,0 +1,388 @@
+Keyword	<!DOCTYPE html>
+Plain	\n
+Punctuation	<
+Tag	html
+Plain	 
+Attribute	lang
+Operator	=
+String	"en"
+Plain	 
+Attribute	data-theme
+Operator	=
+String	"dark"
+Punctuation	>
+Plain	\n
+Punctuation	<
+Tag	head
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	meta
+Plain	 
+Attribute	charset
+Operator	=
+String	"utf-8"
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	meta
+Plain	 
+Attribute	name
+Operator	=
+String	"viewport"
+Plain	 
+Attribute	content
+Operator	=
+String	"width=device-width, initial-scale=1"
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	title
+Punctuation	>
+Plain	dioxus-docs-kit 
+Constant	&mdash;
+Plain	 documentation
+Punctuation	</
+Tag	title
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	link
+Plain	 
+Attribute	rel
+Operator	=
+String	"stylesheet"
+Plain	 
+Attribute	href
+Operator	=
+String	"/assets/tailwind.css"
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	link
+Plain	 
+Attribute	rel
+Operator	=
+String	"icon"
+Plain	 
+Attribute	type
+Operator	=
+String	"image/svg+xml"
+Plain	 
+Attribute	href
+Operator	=
+String	"/assets/favicon.svg"
+Punctuation	>
+Plain	\n    
+Comment	<!-- The polyfill must load before the wasm starts. -->
+Plain	\n    
+Punctuation	<
+Tag	script
+Plain	 
+Attribute	src
+Operator	=
+String	"/assets/webmcp-polyfill.js"
+Plain	 
+Attribute	defer
+Punctuation	></
+Tag	script
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	style
+Punctuation	>
+Plain	\n        body { margin: 0; background: #0b0f19; }\n    
+Punctuation	</
+Tag	style
+Punctuation	>
+Plain	\n
+Punctuation	</
+Tag	head
+Punctuation	>
+Plain	\n
+Punctuation	<
+Tag	body
+Plain	 
+Attribute	class
+Operator	=
+String	"antialiased"
+Punctuation	>
+Plain	\n    
+Punctuation	<
+Tag	header
+Plain	 
+Attribute	id
+Operator	=
+String	"top"
+Plain	 
+Attribute	class
+Operator	=
+String	"navbar"
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	a
+Plain	 
+Attribute	href
+Operator	=
+String	"/"
+Plain	 
+Attribute	aria-label
+Operator	=
+String	"Home"
+Punctuation	>
+Plain	\n            
+Punctuation	<
+Tag	svg
+Plain	 
+Attribute	width
+Operator	=
+String	"24"
+Plain	 
+Attribute	height
+Operator	=
+String	"24"
+Plain	 
+Attribute	viewBox
+Operator	=
+String	"0 0 24 24"
+Plain	 
+Attribute	fill
+Operator	=
+String	"none"
+Punctuation	>
+Plain	\n                
+Punctuation	<
+Tag	path
+Plain	 
+Attribute	d
+Operator	=
+String	"M4 12h16M12 4v16"
+Plain	 
+Attribute	stroke
+Operator	=
+String	"currentColor"
+Plain	 
+Attribute	stroke-width
+Operator	=
+String	"2"
+Plain	 
+Punctuation	/>
+Plain	\n            
+Punctuation	</
+Tag	svg
+Punctuation	>
+Plain	\n        
+Punctuation	</
+Tag	a
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	nav
+Punctuation	>
+Plain	\n            
+Punctuation	<
+Tag	ul
+Punctuation	>
+Plain	\n                
+Punctuation	<
+Tag	li
+Punctuation	><
+Tag	a
+Plain	 
+Attribute	href
+Operator	=
+String	"/docs"
+Punctuation	>
+Plain	Docs
+Punctuation	</
+Tag	a
+Punctuation	></
+Tag	li
+Punctuation	>
+Plain	\n                
+Punctuation	<
+Tag	li
+Punctuation	><
+Tag	a
+Plain	 
+Attribute	href
+Operator	=
+String	"/blog"
+Punctuation	>
+Plain	Blog
+Punctuation	</
+Tag	a
+Punctuation	></
+Tag	li
+Punctuation	>
+Plain	\n                
+Punctuation	<
+Tag	li
+Punctuation	><
+Tag	a
+Plain	 
+Attribute	href
+Operator	=
+String	"https://github.com/hauju/dioxus-docs-kit"
+Plain	 
+Attribute	rel
+Operator	=
+String	"noopener"
+Punctuation	>
+Plain	GitHub
+Punctuation	</
+Tag	a
+Punctuation	></
+Tag	li
+Punctuation	>
+Plain	\n            
+Punctuation	</
+Tag	ul
+Punctuation	>
+Plain	\n        
+Punctuation	</
+Tag	nav
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	button
+Plain	 
+Attribute	type
+Operator	=
+String	"button"
+Plain	 
+Attribute	data-search
+Plain	 
+Attribute	disabled
+Punctuation	>
+Plain	Search 
+Constant	&#8984;
+Plain	K
+Punctuation	</
+Tag	button
+Punctuation	>
+Plain	\n    
+Punctuation	</
+Tag	header
+Punctuation	>
+Plain	\n\n    
+Punctuation	<
+Tag	main
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	h1
+Punctuation	>
+Plain	Ship docs with Dioxus 
+Constant	&amp;
+Plain	 Rust
+Punctuation	</
+Tag	h1
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	p
+Punctuation	>
+Plain	\n            Markdown in, wasm out 
+Constant	&mdash;
+Plain	 no JavaScript build step, and\n            
+Punctuation	<
+Tag	em
+Punctuation	>
+Plain	every
+Punctuation	</
+Tag	em
+Punctuation	>
+Plain	 page is prerendered.\n        
+Punctuation	</
+Tag	p
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	table
+Punctuation	>
+Plain	\n            
+Punctuation	<
+Tag	tr
+Punctuation	><
+Tag	th
+Punctuation	>
+Plain	Crate
+Punctuation	</
+Tag	th
+Punctuation	><
+Tag	th
+Punctuation	>
+Plain	Size
+Punctuation	</
+Tag	th
+Punctuation	></
+Tag	tr
+Punctuation	>
+Plain	\n            
+Punctuation	<
+Tag	tr
+Punctuation	><
+Tag	td
+Punctuation	>
+Plain	hl-lite
+Punctuation	</
+Tag	td
+Punctuation	><
+Tag	td
+Punctuation	>
+Constant	&lt;
+Plain	 100
+Constant	&nbsp;
+Plain	KB
+Punctuation	</
+Tag	td
+Punctuation	></
+Tag	tr
+Punctuation	>
+Plain	\n        
+Punctuation	</
+Tag	table
+Punctuation	>
+Plain	\n        
+Punctuation	<
+Tag	img
+Plain	 
+Attribute	src
+Operator	=
+String	"/assets/hero.png"
+Plain	 
+Attribute	alt
+Operator	=
+String	"Screenshot of the docs shell"
+Plain	 
+Attribute	loading
+Operator	=
+String	lazy
+Punctuation	>
+Plain	\n    
+Punctuation	</
+Tag	main
+Punctuation	>
+Plain	\n\n    
+Punctuation	<
+Tag	script
+Plain	 
+Attribute	type
+Operator	=
+String	"module"
+Punctuation	>
+Plain	\n        // Left as plain text: a < b must not open a tag.\n        const ready = document.readyState !== "loading";\n        if (ready) init();\n    
+Punctuation	</
+Tag	script
+Punctuation	>
+Plain	\n
+Punctuation	</
+Tag	body
+Punctuation	>
+Plain	\n
+Punctuation	</
+Tag	html
+Punctuation	>
+Plain	\n

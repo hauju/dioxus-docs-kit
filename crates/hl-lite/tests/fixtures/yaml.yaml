@@ -1,0 +1,63 @@
+---
+# Continuous integration for the docs kit.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - main
+      - "release/*"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.96.0"
+  DX_VERSION: 0.7.10
+  RUSTFLAGS: -D warnings
+
+defaults: &defaults
+  run:
+    shell: bash
+    working-directory: .
+
+jobs:
+  check:
+    name: fmt, clippy, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: *defaults
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, 1.88.0]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+      - name: Tailwind
+        run: |
+          bun install --frozen-lockfile
+          bunx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
+      - name: Lint
+        run: >
+          cargo clippy --workspace --all-targets --all-features
+          -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+        env:
+          HL_LITE_UPDATE: ~
+
+  deploy:
+    needs: [check]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: {group: deploy, cancel-in-progress: true}
+    steps:
+      - name: Trigger Coolify
+        run: curl -fsS -X POST "$WEBHOOK"
+        env:
+          WEBHOOK: !!str ${{ secrets.COOLIFY_WEBHOOK }}
+...

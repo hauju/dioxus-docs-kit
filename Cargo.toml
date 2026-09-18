@@ -3,6 +3,7 @@ members = [
     "crates/dioxus-docs-kit",
     "crates/dioxus-docs-kit-build",
     "crates/dioxus-mdx",
+    "crates/hl-lite",
 ]
 
 [workspace.package]
@@ -21,6 +22,7 @@ dioxus-code = { version = "0.1.2", default-features = false, features = ["runtim
 dioxus-mdx = { version = "0.8.0", path = "crates/dioxus-mdx", default-features = false }
 dioxus-docs-kit = { version = "0.8.0", path = "crates/dioxus-docs-kit", default-features = false }
 dioxus-docs-kit-build = { version = "0.8.0", path = "crates/dioxus-docs-kit-build" }
+hl-lite = { version = "0.8.0", path = "crates/hl-lite" }
 serde = { version = "1.0", features = ["derive"] }
 schemars = "1"
 webmcp-rs = { version = "0.1", default-features = false, features = ["schema", "dioxus"] }

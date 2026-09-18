@@ -1,0 +1,175 @@
+Comment	# syntax=docker/dockerfile:1.7
+Plain	\n
+Comment	# Build the wasm client and the fullstack server, then ship only the server.
+Plain	\n
+Keyword	ARG
+Plain	 RUST_VERSION
+Operator	=
+Number	1.96.0
+Plain	\n
+Keyword	ARG
+Plain	 DX_VERSION
+Operator	=
+Number	0.7.10
+Plain	\n\n
+Keyword	FROM
+Plain	 rust
+Operator	:
+Variable	${RUST_VERSION}
+Plain	-slim-bookworm 
+Keyword	AS
+Plain	 builder\n\n
+Keyword	ENV
+Plain	 CARGO_TERM_COLOR
+Operator	=
+Plain	never 
+Operator	\\
+Plain	\n    DEBIAN_FRONTEND
+Operator	=
+Plain	noninteractive\n\n
+Keyword	RUN
+Plain	 apt-get update 
+Operator	\\
+Plain	\n    
+Operator	&&
+Plain	 apt-get install 
+Attribute	-y
+Plain	 
+Attribute	--no-install-recommends
+Plain	 
+Operator	\\
+Plain	\n        ca-certificates curl clang pkg-config 
+Operator	\\
+Plain	\n    
+Operator	&&
+Plain	 rm 
+Attribute	-rf
+Plain	 /var/lib/apt/lists/*\n\n
+Keyword	RUN
+Plain	 rustup target add wasm32-unknown-unknown\n
+Keyword	RUN
+Plain	 cargo install dioxus-cli 
+Attribute	--version
+Plain	 
+String	"$DX_VERSION"
+Plain	 
+Attribute	--locked
+Plain	\n\n
+Keyword	WORKDIR
+Plain	 /app\n\n
+Keyword	COPY
+Plain	 
+Attribute	--link
+Plain	 Cargo.toml Cargo.lock ./\n
+Keyword	COPY
+Plain	 
+Attribute	--link
+Plain	 crates ./crates\n
+Keyword	COPY
+Plain	 
+Attribute	--link
+Plain	 src ./src\n
+Keyword	COPY
+Plain	 
+Attribute	--from
+Operator	=
+Plain	assets /dist ./assets\n\n
+Keyword	RUN
+Plain	 
+Attribute	--mount
+Operator	=
+Plain	type
+Operator	=
+Plain	cache
+Operator	,
+Plain	target
+Operator	=
+Plain	/usr/local/cargo/registry 
+Operator	\\
+Plain	\n    dx bundle 
+Attribute	--web
+Plain	 
+Attribute	--release
+Plain	 
+Attribute	--debug-symbols
+Plain	 false\n\n
+Keyword	FROM
+Plain	 debian
+Operator	:
+Plain	bookworm-slim 
+Keyword	AS
+Plain	 runtime\n
+Keyword	LABEL
+Plain	 org.opencontainers.image.source
+Operator	=
+String	"https://github.com/hauju/dioxus-docs-kit"
+Plain	\n\n
+Keyword	RUN
+Plain	 useradd 
+Attribute	--create-home
+Plain	 
+Attribute	--uid
+Plain	 
+Number	10001
+Plain	 app\n
+Keyword	USER
+Plain	 app\n
+Keyword	WORKDIR
+Plain	 /srv\n\n
+Keyword	COPY
+Plain	 
+Attribute	--from
+Operator	=
+Plain	builder 
+Attribute	--chown
+Operator	=
+Plain	app
+Operator	:
+Plain	app /app/target/dx/web/release/web /srv\n\n
+Keyword	EXPOSE
+Plain	 
+Number	8080
+Plain	\n
+Keyword	ENV
+Plain	 PORT
+Operator	=
+Number	8080
+Plain	 IP
+Operator	=
+Number	0.0.0.0
+Plain	\n
+Keyword	STOPSIGNAL
+Plain	 SIGTERM\n\n
+Keyword	HEALTHCHECK
+Plain	 
+Attribute	--interval
+Operator	=
+Number	30s
+Plain	 
+Attribute	--timeout
+Operator	=
+Number	3s
+Plain	 
+Attribute	--retries
+Operator	=
+Number	3
+Plain	 
+Operator	\\
+Plain	\n    CMD 
+Operator	[
+String	"/srv/server"
+Operator	,
+Plain	 
+String	"--health"
+Operator	]
+Plain	\n\n
+Keyword	ENTRYPOINT
+Plain	 
+Operator	[
+String	"/srv/server"
+Operator	]
+Plain	\n
+Keyword	CMD
+Plain	 
+Operator	[]
+Plain	\n

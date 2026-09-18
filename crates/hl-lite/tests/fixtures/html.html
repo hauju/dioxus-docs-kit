@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>dioxus-docs-kit &mdash; documentation</title>
+    <link rel="stylesheet" href="/assets/tailwind.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <!-- The polyfill must load before the wasm starts. -->
+    <script src="/assets/webmcp-polyfill.js" defer></script>
+    <style>
+        body { margin: 0; background: #0b0f19; }
+    </style>
+</head>
+<body class="antialiased">
+    <header id="top" class="navbar">
+        <a href="/" aria-label="Home">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="2" />
+            </svg>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="/docs">Docs</a></li>
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="https://github.com/hauju/dioxus-docs-kit" rel="noopener">GitHub</a></li>
+            </ul>
+        </nav>
+        <button type="button" data-search disabled>Search &#8984;K</button>
+    </header>
+
+    <main>
+        <h1>Ship docs with Dioxus &amp; Rust</h1>
+        <p>
+            Markdown in, wasm out &mdash; no JavaScript build step, and
+            <em>every</em> page is prerendered.
+        </p>
+        <table>
+            <tr><th>Crate</th><th>Size</th></tr>
+            <tr><td>hl-lite</td><td>&lt; 100&nbsp;KB</td></tr>
+        </table>
+        <img src="/assets/hero.png" alt="Screenshot of the docs shell" loading=lazy>
+    </main>
+
+    <script type="module">
+        // Left as plain text: a < b must not open a tag.
+        const ready = document.readyState !== "loading";
+        if (ready) init();
+    </script>
+</body>
+</html>

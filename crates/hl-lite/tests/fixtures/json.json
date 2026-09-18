@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json.schemastore.org/nav.json",
+  "name": "dioxus-docs-kit",
+  "version": "0.8.0",
+  "private": false,
+  "tabs": ["Docs", "Guides", "API Reference", "Changelog"],
+  "defaultPath": "getting-started/introduction",
+  "theme": {
+    "mode": "dark",
+    "toggle": true,
+    "accent": "#5eead4",
+    "radius": 0.5,
+    "scale": 1e-3,
+    "negative": -12
+  },
+  "groups": [
+    {
+      "group": "Getting Started",
+      "tab": "Docs",
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/installation",
+        "getting-started/quickstart"
+      ]
+    },
+    {
+      "group": "Components",
+      "tab": "Docs",
+      "icon": null,
+      "pages": ["components/callout", "components/tabs", "components/code"]
+    },
+    {
+      "group": "API Reference",
+      "tab": "API Reference",
+      "pages": []
+    }
+  ],
+  "search": {
+    "enabled": true,
+    "placeholder": "Search the docs…",
+    "shortcut": "⌘K",
+    "maxResults": 20
+  },
+  "footer": {
+    "links": [
+      { "label": "GitHub", "href": "https://github.com/hauju/dioxus-docs-kit" },
+      { "label": "Crates.io", "href": "https://crates.io/crates/dioxus-docs-kit" }
+    ],
+    "note": "Built with Rust \"and\" Dioxus"
+  }
+}

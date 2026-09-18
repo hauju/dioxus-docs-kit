@@ -1,0 +1,436 @@
+String	"""Generate an OpenAPI spec snapshot for the docs site.\n\nRun with ``python tools/snapshot.py --out docs/openapi.yaml``.\n"""
+Plain	\n\n
+Keyword	from
+Plain	 __future__ 
+Keyword	import
+Plain	 annotations\n\n
+Keyword	import
+Plain	 json\n
+Keyword	import
+Plain	 sys\n
+Keyword	from
+Plain	 dataclasses 
+Keyword	import
+Plain	 dataclass
+Punctuation	,
+Plain	 field\n
+Keyword	from
+Plain	 pathlib 
+Keyword	import
+Plain	 Path\n\nDEFAULT_OUT 
+Operator	=
+Plain	 
+Function	Path
+Punctuation	(
+String	"docs/openapi.yaml"
+Punctuation	)
+Plain	\nTIMEOUT 
+Operator	=
+Plain	 
+Number	30.0
+Plain	\nRETRIES 
+Operator	=
+Plain	 
+Number	0x03
+Plain	\nMASK 
+Operator	=
+Plain	 
+Number	0b1010_1010
+Plain	\n\n\n
+Attribute	@dataclass
+Punctuation	(
+Plain	frozen
+Operator	=
+Constant	True
+Punctuation	)
+Plain	\n
+Keyword	class
+Plain	 
+Type	Endpoint
+Punctuation	:
+Plain	\n    operation_id
+Punctuation	:
+Plain	 
+Function	str
+Plain	\n    method
+Punctuation	:
+Plain	 
+Function	str
+Plain	\n    path
+Punctuation	:
+Plain	 
+Function	str
+Plain	\n    tags
+Punctuation	:
+Plain	 
+Function	list
+Punctuation	[
+Function	str
+Punctuation	]
+Plain	 
+Operator	=
+Plain	 
+Function	field
+Punctuation	(
+Plain	default_factory
+Operator	=
+Function	list
+Punctuation	)
+Plain	\n\n    
+Attribute	@property
+Plain	\n    
+Keyword	def
+Plain	 
+Function	slug
+Punctuation	(
+Constant	self
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Function	str
+Punctuation	:
+Plain	\n        
+Keyword	return
+Plain	 
+String	f"{self.method.lower()}-{self.operation_id}"
+Plain	\n\n    
+Keyword	def
+Plain	 
+Function	__str__
+Punctuation	(
+Constant	self
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Function	str
+Punctuation	:
+Plain	\n        
+Keyword	return
+Plain	 
+String	f"{self.method:>6} {self.path}"
+Plain	\n\n\n
+Keyword	class
+Plain	 
+Type	SpecError
+Punctuation	(
+Plain	RuntimeError
+Punctuation	):
+Plain	\n    
+String	"""Raised when the upstream spec cannot be parsed."""
+Plain	\n\n\n
+Keyword	def
+Plain	 
+Function	load
+Punctuation	(
+Plain	path
+Punctuation	:
+Plain	 Path
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Function	dict
+Punctuation	:
+Plain	\n    
+Comment	# A '#' inside a string is not a comment.
+Plain	\n    
+Keyword	if
+Plain	 
+Keyword	not
+Plain	 path
+Operator	.
+Function	exists
+Punctuation	():
+Plain	\n        
+Keyword	raise
+Plain	 
+Function	SpecError
+Punctuation	(
+String	f"missing spec: {path!r} # not a comment"
+Punctuation	)
+Plain	\n    
+Keyword	with
+Plain	 path
+Operator	.
+Function	open
+Punctuation	(
+Plain	encoding
+Operator	=
+String	"utf-8"
+Punctuation	)
+Plain	 
+Keyword	as
+Plain	 handle
+Punctuation	:
+Plain	\n        
+Keyword	return
+Plain	 json
+Operator	.
+Function	load
+Punctuation	(
+Plain	handle
+Punctuation	)
+Plain	\n\n\n
+Keyword	def
+Plain	 
+Function	endpoints
+Punctuation	(
+Plain	spec
+Punctuation	:
+Plain	 
+Function	dict
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Function	list
+Punctuation	[
+Plain	Endpoint
+Punctuation	]:
+Plain	\n    found 
+Operator	=
+Plain	 
+Punctuation	[]
+Plain	\n    
+Keyword	for
+Plain	 path
+Punctuation	,
+Plain	 item 
+Keyword	in
+Plain	 
+Function	sorted
+Punctuation	(
+Plain	spec
+Operator	.
+Function	get
+Punctuation	(
+String	"paths"
+Punctuation	,
+Plain	 
+Punctuation	{})
+Operator	.
+Function	items
+Punctuation	()):
+Plain	\n        
+Keyword	for
+Plain	 method
+Punctuation	,
+Plain	 operation 
+Keyword	in
+Plain	 item
+Operator	.
+Function	items
+Punctuation	():
+Plain	\n            
+Keyword	if
+Plain	 method
+Operator	.
+Function	upper
+Punctuation	()
+Plain	 
+Keyword	not
+Plain	 
+Keyword	in
+Plain	 
+Punctuation	{
+String	"GET"
+Punctuation	,
+Plain	 
+String	"POST"
+Punctuation	,
+Plain	 
+String	"PUT"
+Punctuation	,
+Plain	 
+String	"PATCH"
+Punctuation	,
+Plain	 
+String	"DELETE"
+Punctuation	}:
+Plain	\n                
+Keyword	continue
+Plain	\n            found
+Operator	.
+Function	append
+Punctuation	(
+Plain	\n                
+Function	Endpoint
+Punctuation	(
+Plain	\n                    operation_id
+Operator	=
+Plain	operation
+Punctuation	[
+String	"operationId"
+Punctuation	],
+Plain	\n                    method
+Operator	=
+Plain	method
+Punctuation	,
+Plain	\n                    path
+Operator	=
+Plain	path
+Punctuation	,
+Plain	\n                    tags
+Operator	=
+Plain	operation
+Operator	.
+Function	get
+Punctuation	(
+String	"tags"
+Punctuation	,
+Plain	 
+Punctuation	[]),
+Plain	\n                
+Punctuation	)
+Plain	\n            
+Punctuation	)
+Plain	\n    
+Keyword	return
+Plain	 found\n\n\n
+Keyword	def
+Plain	 
+Function	main
+Punctuation	(
+Plain	argv
+Punctuation	:
+Plain	 
+Function	list
+Punctuation	[
+Function	str
+Punctuation	]
+Plain	 
+Operator	|
+Plain	 
+Constant	None
+Plain	 
+Operator	=
+Plain	 
+Constant	None
+Punctuation	)
+Plain	 
+Operator	->
+Plain	 
+Function	int
+Punctuation	:
+Plain	\n    argv 
+Operator	=
+Plain	 argv 
+Keyword	if
+Plain	 argv 
+Keyword	is
+Plain	 
+Keyword	not
+Plain	 
+Constant	None
+Plain	 
+Keyword	else
+Plain	 sys
+Operator	.
+Plain	argv
+Punctuation	[
+Number	1
+Punctuation	:]
+Plain	\n    out 
+Operator	=
+Plain	 
+Function	Path
+Punctuation	(
+Plain	argv
+Punctuation	[
+Number	0
+Punctuation	])
+Plain	 
+Keyword	if
+Plain	 argv 
+Keyword	else
+Plain	 DEFAULT_OUT\n    
+Keyword	try
+Punctuation	:
+Plain	\n        spec 
+Operator	=
+Plain	 
+Function	load
+Punctuation	(
+Plain	out
+Operator	.
+Function	with_suffix
+Punctuation	(
+String	".json"
+Punctuation	))
+Plain	\n    
+Keyword	except
+Plain	 SpecError 
+Keyword	as
+Plain	 exc
+Punctuation	:
+Plain	\n        
+Function	print
+Punctuation	(
+String	f"error: {exc}"
+Punctuation	,
+Plain	 file
+Operator	=
+Plain	sys
+Operator	.
+Plain	stderr
+Punctuation	)
+Plain	\n        
+Keyword	return
+Plain	 
+Number	1
+Plain	\n\n    found 
+Operator	=
+Plain	 
+Function	endpoints
+Punctuation	(
+Plain	spec
+Punctuation	)
+Plain	\n    
+Function	print
+Punctuation	(
+String	f"{len(found)} endpoints -> {out}"
+Punctuation	)
+Plain	\n    
+Keyword	for
+Plain	 endpoint 
+Keyword	in
+Plain	 found
+Punctuation	:
+Plain	\n        
+Function	print
+Punctuation	(
+String	" "
+Punctuation	,
+Plain	 endpoint
+Punctuation	,
+Plain	 endpoint
+Operator	.
+Plain	slug
+Punctuation	,
+Plain	 sep
+Operator	=
+String	"\\t"
+Punctuation	)
+Plain	\n    
+Keyword	return
+Plain	 
+Number	0
+Plain	\n\n\n
+Keyword	if
+Plain	 
+Constant	__name__
+Plain	 
+Operator	==
+Plain	 
+String	"__main__"
+Punctuation	:
+Plain	\n    
+Keyword	raise
+Plain	 
+Function	SystemExit
+Punctuation	(
+Function	main
+Punctuation	())
+Plain	\n
