@@ -173,6 +173,23 @@
 }
 
 /* -------------------------------------------------------------------------- */
+/* Prose HTML — narrow viewports                                              */
+/* The markdown body is pre-rendered HTML, so there is no markup to hang      */
+/* utility classes off; long inline code and wide tables are tamed here or    */
+/* they push the whole page wider than the viewport.                          */
+/* -------------------------------------------------------------------------- */
+
+.prose-content code {
+    overflow-wrap: anywhere;
+}
+
+.prose-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Syntax highlighting — one rule per hl-lite token kind                      */
 /* Recolor a kind by overriding its `--dk-hl-*` token, not these rules.       */
 /* -------------------------------------------------------------------------- */

@@ -131,6 +131,32 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   are dedented by the opening fence's own indentation, as CommonMark specifies. Only
   the first line used to lose its indent, so every following line rendered shifted
   right by the component's nesting depth.
+- **Mermaid diagrams only survived the first page load.** Each `<MermaidDiagram>`
+  took its element id from a process-wide counter, which the server advances once
+  per request while the wasm client starts again at zero — from the second load
+  on, the client looked up `mermaid-0` while the hydrated markup said `mermaid-2`
+  and no diagram was drawn. The component now renders an id-less
+  `<pre class="mermaid">` and the client runs mermaid over
+  `pre.mermaid:not([data-processed])`, stashing each block's source in
+  `data-mermaid-src` so a theme switch can restore and redraw it. One shared
+  `MutationObserver` on `data-theme` now handles the whole page instead of one
+  per diagram.
+- **"On this page" links to `<Update>`, `<Accordion>` and `<Tab>` titles were
+  dead.** The table of contents synthesises a heading for each of them, but the
+  rendered title carried no `id`, so the anchor resolved to nothing. All three
+  now emit `id="{slugify(title)}"`.
+- **Unmapped `icon="…"` names rendered a blank circle.** `file-text`, `layout`,
+  `code-2`, `list-ordered`, `message-circle`, `panel-left` and `user` (plus
+  aliases) now map to real Lucide glyphs, and a test asserts that every name the
+  example content uses resolves to something other than the fallback.
+- A long `<Update label="…">` (`v0.3.x - v0.4.x`) wrapped to two lines inside
+  DaisyUI's fixed-height badge and spilled out of the pill.
+- **No horizontal scroll at 390px.** The navbar brand truncates instead of
+  pushing the toggles off-screen, prose inline code breaks with
+  `overflow-wrap: anywhere`, and prose tables scroll horizontally inside the
+  article instead of widening the page.
+- The code-block copy button and the mobile navigation toggle carry
+  `aria-label`s, so they announce with a name instead of as unlabelled buttons.
 - `dioxus-mdx` depends on `web-sys` with the `Location` feature under its `web`
   feature. `dioxus-web`'s history implementation calls `window.location()` but
   only requests `web-sys/Location` from its own `devtools` feature, so without
