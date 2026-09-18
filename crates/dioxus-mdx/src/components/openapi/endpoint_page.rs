@@ -92,7 +92,9 @@ pub fn EndpointPage(props: EndpointPageProps) -> Element {
                         span { class: "text-xs text-base-content/50 font-semibold uppercase tracking-wider",
                             "Base URL"
                         }
-                        code { class: "text-sm font-mono text-base-content/70 bg-base-200 px-2 py-1 rounded",
+                        // `break-all`: a base URL is one unbreakable token and
+                        // otherwise widens the page past a phone viewport.
+                        code { class: "text-sm font-mono text-base-content/70 bg-base-200 px-2 py-1 rounded break-all",
                             "{base_url}"
                         }
                     }

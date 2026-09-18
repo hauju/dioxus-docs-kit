@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 use crate::components::{DocNodeRenderer, MdxIcon};
 use crate::parser::{AccordionGroupNode, DocNode};
+use crate::text::slugify;
 
 /// Props for DocAccordionGroup component.
 #[derive(Props, Clone, PartialEq)]
@@ -64,8 +65,11 @@ pub fn DocAccordionItem(props: DocAccordionItemProps) -> Element {
                         MdxIcon { name: icon.clone(), class: "size-5".to_string() }
                     }
                 }
-                // Title
-                span { class: "flex-1 font-medium text-base-content",
+                // Title — the anchor the page's table of contents links to
+                // (the raw markdown synthesises a `### {title}` heading for it).
+                span {
+                    id: slugify(&props.title),
+                    class: "flex-1 font-medium text-base-content",
                     "{props.title}"
                 }
                 // Expand/collapse indicator with smooth rotation
