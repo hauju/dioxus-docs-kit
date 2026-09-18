@@ -12,7 +12,9 @@ env:
   IMAGE_NAME: oxidt/dioxus-docs-kit
   # Fail the build job when the raw (uncompressed) wasm grows past this. Retune
   # it deliberately when size work lands - see scripts/wasm-size.sh.
-  WASM_SIZE_LIMIT_BYTES: "8000000"
+  # ~2x the current raw wasm (1.48 MB since hl-lite replaced the tree-sitter
+  # grammars). A regression that doubles the bundle should fail the build.
+  WASM_SIZE_LIMIT_BYTES: "3000000"
 
 # Cancel superseded runs on rapid pushes to the same ref.
 concurrency:
@@ -62,11 +64,11 @@ jobs:
           git diff --exit-code crates/dioxus-docs-kit/assets/docs-kit.css
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - name: Run Clippy (highlight feature off)
+      - name: Run Clippy (web-only features)
         run: cargo clippy -p dioxus-mdx -p dioxus-docs-kit --no-default-features --features web --all-targets -- -D warnings
-      # Proves the highlight-off wasm build needs no C toolchain (no
-      # arborium/dioxus-code crates are pulled in at all).
-      - name: Check wasm build (highlight feature off)
+      # The leanest supported client build: no mermaid, no OpenAPI pages.
+      # Highlighting is always in (hl-lite has no dependencies of its own).
+      - name: Check wasm build (web-only features)
         run: cargo check -p dioxus-docs-kit --target wasm32-unknown-unknown --no-default-features --features web
 
   unused-dependencies:

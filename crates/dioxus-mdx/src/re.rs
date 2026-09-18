@@ -1,11 +1,8 @@
 //! Regex engine selection.
 //!
-//! With `highlight` on, `arborium-tree-sitter` already links the full `regex`
-//! crate, so using it here costs nothing extra. Without it, `regex-lite`
-//! provides the same API for the simple patterns this crate uses at a fraction
-//! of the code size.
+//! `regex-lite` provides the API the parser needs for its simple patterns at a
+//! fraction of the code size of the full `regex` crate — and since nothing else
+//! in the dependency graph links `regex` any more, nothing is shared by using
+//! it.
 
-#[cfg(feature = "highlight")]
-pub(crate) use regex::{Captures, Regex};
-#[cfg(not(feature = "highlight"))]
 pub(crate) use regex_lite::{Captures, Regex};

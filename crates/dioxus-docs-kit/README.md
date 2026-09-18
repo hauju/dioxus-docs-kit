@@ -305,8 +305,6 @@ community contribution.
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 - `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
-- `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain (or wasm `stderr` shim) is needed and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `dioxus-code` re-exports and `DocsConfig::with_code_theme[s]`.
-- `lang-*` — one tree-sitter grammar each, on top of `highlight`. Enabled by default: `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-typescript`, `lang-yaml`. Also available: `lang-rust` (a no-op — Rust always highlights), `lang-c-sharp`, `lang-cpp`, `lang-tsx`. Any other language goes through `dioxus-code` directly; see [Syntax Highlighting](#syntax-highlighting).
 - `openapi` (default) — renders API reference pages from OpenAPI specs. The spec is parsed by `dioxus-docs-kit-build`, so this costs no extra dependency; disabling it (`default-features = false`) drops the endpoint pages, the API sidebar and the API search entries, and the registry ignores any specs in the bundle. Docs pages and the blog are unaffected.
 - `server` — Axum route builders for crawler-facing endpoints
 
@@ -325,41 +323,57 @@ dioxus::server::serve(|| async {
 
 ## Syntax Highlighting
 
-Code blocks render through [`dioxus-code`](https://crates.io/crates/dioxus-code). Every language is a separate tree-sitter grammar compiled into your binary, so each one sits behind its own `lang-*` feature. Enabled by default:
+Code blocks are highlighted by [`hl-lite`](https://crates.io/crates/hl-lite),
+a dependency-free lexer set that ships with the kit. There is nothing to
+enable and no grammar to pick: twelve languages cost about 48 KB of wasm in
+total, no C is compiled, and no toolchain beyond `cargo` is required.
 
-`bash`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`, `python`, `rust`, `toml`, `typescript`, `yaml`
+`bash`, `css`, `dockerfile`, `html`, `javascript`, `json`, `markdown`,
+`python`, `rust`, `toml`, `typescript`, `yaml` — plus the usual fence aliases
+(`rs`, `sh`, `zsh`, `console`, `yml`, `jsx`, `tsx`, `jsonc`, `md`, `htm`, …).
+A fence whose language is unknown renders as plain, uncolored text in the same
+markup; a fence with no language falls back to the block's filename.
 
-Rust needs no feature of its own — `dioxus-code`'s `runtime` always compiles it, so `highlight` alone highlights Rust.
+### Colors
 
-`lang-c-sharp`, `lang-cpp` and `lang-tsx` exist too but are deliberately **off** by default: dropping the C# and C++ grammars cut this repo's own release wasm from 19.0 MB to 9.9 MB (data section 15.2 MB to 6.3 MB), and TSX (1.5 MB, React-only) followed. Turn them back on if your docs fence those languages:
+Each token is a `<span class="hl-{kind}">` inside `<pre class="dk-code">`, so
+colors live in CSS. `theme.css` defines one `--dk-hl-*` token per kind with a
+`light-dark()` pair (GitHub Light / Tokyo Night) that follows the active
+theme's `color-scheme`. Recolor any of them the way you would any other
+`--dk-*` token:
 
-```toml
-[dependencies]
-dioxus-docs-kit = { version = "0.8", features = ["lang-c-sharp", "lang-cpp", "lang-tsx"] }
+```css
+.dk-root {
+    --dk-hl-keyword: #d73a49;
+    --dk-hl-string:  #032f62;
+    --dk-hl-comment: #6a737d;
+}
 ```
 
-To trim the set down to what your docs actually fence:
+The full list: `--dk-hl-keyword`, `--dk-hl-string`, `--dk-hl-comment`,
+`--dk-hl-number`, `--dk-hl-type`, `--dk-hl-function`, `--dk-hl-attribute`,
+`--dk-hl-property`, `--dk-hl-tag`, `--dk-hl-operator`, `--dk-hl-punctuation`,
+`--dk-hl-constant`, `--dk-hl-variable`.
 
-```toml
-[dependencies]
-dioxus-docs-kit = { version = "0.8", default-features = false, features = [
-    "web", "mermaid", "highlight", "openapi", "lang-bash", "lang-json", "lang-toml",
-] }
+### Highlighting your own snippets
+
+`DocCodeBlock` is public, so any code outside a docs page renders identically:
+
+```rust
+use dioxus_docs_kit::{CodeBlockNode, DocCodeBlock};
+
+rsx! {
+    DocCodeBlock {
+        block: CodeBlockNode {
+            language: Some("rust".to_string()),
+            code: snippet,
+            filename: Some("main.rs".to_string()),
+        },
+    }
+}
 ```
 
-### Any other language
-
-The kit carries `lang-*` features only for the languages above. For anything else `dioxus-code` supports — Go, Zig, Kotlin, SQL, and ~90 more — add `dioxus-code` to your own `Cargo.toml` with the grammar you want. Cargo unifies that feature into the same `dioxus-code` the kit already depends on, so `Language::from_slug` (which the kit uses to resolve a fence) is compiled with the union of the features and picks the grammar up. No kit changes needed:
-
-```toml
-[dependencies]
-dioxus-docs-kit = "0.8"
-dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }
-```
-
-That route matches on `dioxus-code`'s canonical language slug, so use it in the fence (` ```go `). The friendly aliases (` ```c++ `, ` ```yml `, ` ```sh `) only exist for the languages the kit has its own feature for. See the [dioxus-code feature list](https://github.com/DioxusLabs/dioxus-code/blob/main/Cargo.toml) for every available flag.
-
-A fence whose grammar is not compiled into the build renders as plain, uncolored text in the same markup — it does not fail or fall back to an unrelated grammar.
+For raw access to the lexer, the kit re-exports it as `dioxus_docs_kit::hl`.
 
 ## Production build
 

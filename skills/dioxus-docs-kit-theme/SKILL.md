@@ -126,6 +126,7 @@ Create `crates/dioxus-docs-kit/examples/themes/<slug>.css`:
 | `--dk-radius-sm` / `--dk-radius` / `--dk-radius-lg` | rounded corners across cards, badges, buttons |
 | `--dk-font-body` / `--dk-font-heading` / `--dk-font-mono` | typography |
 | `--dk-article-width` | docs article column width (ch units recommended) |
+| `--dk-hl-*` (13) | syntax-highlighting token colors: `keyword`, `string`, `comment`, `number`, `type`, `function`, `attribute`, `property`, `tag`, `operator`, `punctuation`, `constant`, `variable` |
 
 Full canonical list with fallbacks lives in `crates/dioxus-docs-kit/theme.css` —
 read it before adding a new token to the surface.
@@ -136,6 +137,7 @@ read it before adding a new token to the surface.
 
 - `.dk-article h1-h4, .dk-article-title` → `font-family: var(--dk-font-heading)`
 - `.dk-root .dk-article` → `max-width: var(--dk-article-width)`
+- `.dk-code .hl-<kind>` → `color: var(--dk-hl-<kind>)`
 
 Every other visible color comes from DaisyUI's own `--color-*` tokens (referenced
 by Tailwind utility classes like `bg-base-100`, `text-primary`, `bg-base-200`).
@@ -239,6 +241,10 @@ In the browser:
 - If you override `--dk-font-heading` to a webfont, you're responsible for
   loading it (`<link>` in `index.html` or `@import` in the consuming site's
   CSS). The theme file doesn't ship fonts.
+- The `--dk-hl-*` defaults are `light-dark()` pairs that follow the theme's
+  `color-scheme`, so a single-mode preset inherits a matching code palette for
+  free. Override them only when the stock GitHub Light / Tokyo Night pair
+  clashes with your surface, and keep comments dimmer than code.
 - Keep `--dk-font-mono` even if your theme isn't mono-flavored. Code blocks
   read it.
 - `--dk-article-width` in `ch` is recommended over `rem` because it scales

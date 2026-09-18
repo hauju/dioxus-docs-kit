@@ -90,10 +90,13 @@ const SLUGS: &[(&str, Lang)] = &[
     ("shell", Lang::Bash),
     ("zsh", Lang::Bash),
     ("console", Lang::Bash),
+    ("terminal", Lang::Bash),
     ("css", Lang::Css),
     ("dockerfile", Lang::Dockerfile),
     ("docker", Lang::Dockerfile),
+    ("containerfile", Lang::Dockerfile),
     ("html", Lang::Html),
+    ("htm", Lang::Html),
     ("xml", Lang::Html),
     ("svg", Lang::Html),
     ("javascript", Lang::JavaScript),
@@ -135,6 +138,36 @@ impl Lang {
             .iter()
             .find(|(name, _)| name.eq_ignore_ascii_case(slug))
             .map(|&(_, lang)| lang)
+    }
+
+    /// Guess the language of a file name or path.
+    ///
+    /// Uses the extension, falling back to the base name for the files that
+    /// carry their language there rather than in a suffix.
+    ///
+    /// ```
+    /// # use hl_lite::Lang;
+    /// assert_eq!(Lang::from_path("src/main.rs"), Some(Lang::Rust));
+    /// assert_eq!(Lang::from_path("Dockerfile"), Some(Lang::Dockerfile));
+    /// assert_eq!(Lang::from_path("LICENSE"), None);
+    /// ```
+    #[must_use]
+    pub fn from_path(path: &str) -> Option<Lang> {
+        let name = path
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or(path)
+            .trim_end_matches(['.', ' ']);
+
+        if let Some((_, ext)) = name.rsplit_once('.')
+            && let Some(lang) = Lang::from_slug(ext)
+        {
+            return Some(lang);
+        }
+        // `Dockerfile`, `Containerfile`, and variants like `Dockerfile.ci`.
+        let stem = name.split('.').next().unwrap_or(name);
+        (stem.eq_ignore_ascii_case("dockerfile") || stem.eq_ignore_ascii_case("containerfile"))
+            .then_some(Lang::Dockerfile)
     }
 
     /// The canonical slug for this language.

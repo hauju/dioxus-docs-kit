@@ -15,15 +15,13 @@ readme = "README.md"
 
 [dependencies]
 dioxus = { workspace = true, features = ["lib"], optional = true }
-dioxus-code = { workspace = true, optional = true }
+# Only the renderer highlights code, so it rides with `components`.
+hl-lite = { workspace = true, optional = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true, optional = true }
 tracing = { workspace = true }
-# `regex` only when `highlight` is on: arborium-tree-sitter links it then anyway,
-# so sharing it is free. Every other build gets the much smaller `regex-lite`.
-regex = { version = "1.11", optional = true }
 regex-lite = { version = "0.1", optional = true }
 markdown = { version = "1.0", optional = true }
 openapiv3 = { version = "2.0", optional = true }
@@ -40,30 +38,12 @@ web-sys = { version = "0.3", optional = true, features = ["Location"] }
 gloo-timers = { workspace = true, optional = true }
 
 [features]
-default = [
-    "components",
-    "parse",
-    "web",
-    "mermaid",
-    "highlight",
-    "openapi-parse",
-    "lang-bash",
-    "lang-css",
-    "lang-dockerfile",
-    "lang-html",
-    "lang-javascript",
-    "lang-json",
-    "lang-markdown",
-    "lang-python",
-    "lang-toml",
-    "lang-typescript",
-    "lang-yaml",
-]
+default = ["components", "parse", "web", "mermaid", "openapi-parse"]
 
 # The Dioxus renderer components. Turning this off leaves a plain Rust library
 # of the document types and (with `parse`) the MDX parser, with no `dioxus`
 # dependency at all — that is how `dioxus-docs-kit-build` uses this crate.
-components = ["dep:dioxus", "dep:gloo-timers"]
+components = ["dep:dioxus", "dep:gloo-timers", "dep:hl-lite"]
 
 # The MDX/Markdown parser, including Markdown -> HTML rendering. Pulls in
 # markdown-rs and a regex engine, so a docs-kit app leaves it off: its pages are
@@ -72,7 +52,6 @@ parse = ["dep:markdown", "dep:regex-lite"]
 
 web = ["components", "dioxus/web", "dep:web-sys"]
 mermaid = ["components"]
-highlight = ["components", "dep:dioxus-code", "dep:regex"]
 
 # `openapi` is the value types plus the viewer components, which cost no extra
 # dependencies and are always compiled. `openapi-parse` adds the spec *parser*
@@ -81,40 +60,8 @@ highlight = ["components", "dep:dioxus-code", "dep:regex"]
 openapi = []
 openapi-parse = ["openapi", "parse", "dep:openapiv3", "dep:serde_yaml"]
 
-# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
-# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
-# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
-# your fences actually use: dropping just the C# and C++ grammars took this
-# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
-# compiled in renders as plain text.
-#
-# For a language not listed here, depend on `dioxus-code` directly with its
-# `lang-*` flag; cargo unifies the feature into this crate's copy of the
-# dependency and `Language::from_slug` picks the grammar up:
-#   dioxus-code = { version = "0.1", default-features = false, features = [
-#       "runtime", "lang-go",
-#   ] }
-lang-rust = ["highlight"]
-lang-bash = ["highlight", "dioxus-code/lang-bash"]
-lang-c-sharp = ["highlight", "dioxus-code/lang-c-sharp"]
-lang-cpp = ["highlight", "dioxus-code/lang-cpp"]
-lang-css = ["highlight", "dioxus-code/lang-css"]
-lang-dockerfile = ["highlight", "dioxus-code/lang-dockerfile"]
-lang-html = ["highlight", "dioxus-code/lang-html"]
-lang-javascript = ["highlight", "dioxus-code/lang-javascript"]
-lang-json = ["highlight", "dioxus-code/lang-json"]
-lang-markdown = ["highlight", "dioxus-code/lang-markdown"]
-lang-python = ["highlight", "dioxus-code/lang-python"]
-lang-toml = ["highlight", "dioxus-code/lang-toml"]
-lang-tsx = ["highlight", "dioxus-code/lang-tsx"]
-lang-typescript = ["highlight", "dioxus-code/lang-typescript"]
-lang-yaml = ["highlight", "dioxus-code/lang-yaml"]
-
 [package.metadata.docs.rs]
-# The default build already documents the highlight/mermaid code paths.
-# Deliberately not `all-features`: that would compile every `lang-*`
-# tree-sitter grammar just to render the docs.
-features = ["web", "mermaid", "highlight", "parse", "openapi-parse"]
+features = ["web", "mermaid", "parse", "openapi-parse"]
 
 [package.metadata.cargo-machete]
 # Depended on purely to turn on `web-sys/Location` for `dioxus-web`; nothing in

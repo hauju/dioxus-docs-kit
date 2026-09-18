@@ -74,16 +74,11 @@
 //!
 //! - `web` (default): Enables web-specific features like clipboard copy
 //! - `mermaid` (default): Renders ` ```mermaid ` fences as diagrams
-//! - `highlight` (default): Syntax highlighting via `dioxus-code`
-//! - `lang-*`: One tree-sitter grammar each. `highlight` alone highlights only
-//!   Rust; the default set adds `lang-bash`, `lang-css`, `lang-dockerfile`,
-//!   `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`,
-//!   `lang-python`, `lang-toml`, `lang-typescript` and `lang-yaml`.
-//!   `lang-c-sharp`, `lang-cpp` and `lang-tsx` exist but are off by default. For any other
-//!   language, depend on `dioxus-code` directly with its `lang-*` flag
-//!   (`features = ["runtime", "lang-go"]`); cargo unifies it into the copy this
-//!   crate uses, so `Language::from_slug` resolves the grammar.
-//!   A fence whose grammar is not compiled in renders as plain text.
+//!
+//! Syntax highlighting is always on and comes from `hl-lite`, which the
+//! `components` feature pulls in: no grammars to select, no C to compile, and
+//! token colors are CSS (`.hl-*` classes), not Rust. A fence whose language
+//! `hl_lite::Lang::from_slug` does not know renders as plain text.
 //! - `openapi` (default): Parses OpenAPI specs — `parse_openapi` and inline
 //!   `<OpenAPI>…</OpenAPI>` blocks. Turning it off drops `openapiv3` and
 //!   `serde_yaml` from the build; the `OpenApiSpec` types and the viewer
@@ -148,11 +143,10 @@ pub use parser::{
 #[cfg(feature = "openapi-parse")]
 pub use parser::{OpenApiError, parse_openapi};
 
-// Re-export the syntax-highlighting theme types so consumers can build a
-// `CodeThemeOverride` without depending on `dioxus-code` directly. Only available
-// with the `highlight` feature (default), which pulls in `dioxus-code`.
-#[cfg(feature = "highlight")]
-pub use dioxus_code::{CodeTheme, Theme};
+// The highlighter itself, so consumers can lex a snippet (or map a fence slug
+// to a language) without adding their own dependency on it.
+#[cfg(feature = "components")]
+pub use hl_lite as hl;
 
 // Re-export components
 #[cfg(feature = "components")]
@@ -168,11 +162,6 @@ pub use components::{
 // Runtime MDX parsing components need both features.
 #[cfg(all(feature = "components", feature = "parse"))]
 pub use components::{MdxContent, MdxRenderer};
-
-// `CodeThemeOverride` wraps a `dioxus-code` type, so it's only available with the
-// `highlight` feature (default).
-#[cfg(feature = "highlight")]
-pub use components::CodeThemeOverride;
 
 #[cfg(feature = "mermaid")]
 pub use components::MermaidDiagram;

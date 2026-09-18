@@ -5,8 +5,8 @@ use dioxus_docs_kit::lucide::{
 };
 use dioxus_docs_kit::{
     BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
-    BlogThemeToggle, Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
-    DocsRegistry, DocsWebMcp, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
+    BlogThemeToggle, CodeBlockNode, DocCodeBlock, DocsConfig, DocsContext, DocsLayout,
+    DocsPageContent, DocsRegistry, DocsWebMcp, SearchButton, SearchModal, ThemeToggle,
     use_blog_providers, use_docs_context, use_docs_providers,
 };
 use std::sync::LazyLock;
@@ -835,21 +835,14 @@ fn CodeSection() -> Element {
                         }
                     }
                 }
-                div { class: "rounded-xl border border-base-300 bg-base-200 overflow-hidden",
-                    div { class: "flex items-center gap-2 px-4 py-3 border-b border-base-300",
-                        div { class: "flex gap-1.5",
-                            div { class: "size-3 rounded-full bg-error/60" }
-                            div { class: "size-3 rounded-full bg-warning/60" }
-                            div { class: "size-3 rounded-full bg-success/60" }
-                        }
-                        span { class: "text-xs text-base-content/40 ml-2 font-mono", "main.rs" }
-                    }
-                    div { class: "dk-code-block-body bg-base-200",
-                        Code {
-                            src: SourceCode::new(Language::Rust, CODE_SNIPPET.to_string()),
-                            theme: CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT),
-                        }
-                    }
+                // The kit's own code block: same component the docs pages use,
+                // so the landing page demos the real thing.
+                DocCodeBlock {
+                    block: CodeBlockNode {
+                        language: Some("rust".to_string()),
+                        code: CODE_SNIPPET.to_string(),
+                        filename: Some("main.rs".to_string()),
+                    },
                 }
 
             }

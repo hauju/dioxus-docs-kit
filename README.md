@@ -44,7 +44,7 @@ web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 ```
 
-The kit's default features are `web` + `mermaid` + `highlight` + `openapi`, plus one `lang-*` syntax-highlighting grammar each for bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript and yaml (Rust is always highlighted; `lang-tsx`, `lang-c-sharp` and `lang-cpp` are available but off). If you disable default features, re-enable `mermaid`, `highlight`, `openapi` and the `lang-*` features your docs need, or ` ```mermaid ` fences stop rendering as diagrams, code blocks fall back to plain text, and API reference pages disappear.
+The kit's default features are `web` + `mermaid` + `openapi`. Syntax highlighting is always on and costs no features — it comes from [`hl-lite`](https://crates.io/crates/hl-lite), which lexes twelve languages in ~48 KB of wasm with no dependencies and no C. If you disable default features, re-enable `mermaid` and `openapi`, or ` ```mermaid ` fences stop rendering as diagrams and API reference pages disappear.
 
 ### 2. Set up `build.rs`
 

@@ -1,13 +1,7 @@
 use dioxus::prelude::*;
-#[cfg(feature = "highlight")]
-use dioxus_code::CodeTheme;
-#[cfg(feature = "highlight")]
-use dioxus_mdx::CodeThemeOverride;
 use dioxus_mdx::lucide::{Icon, LdMenu};
 
 use crate::DocsContext;
-#[cfg(feature = "highlight")]
-use crate::config::CodeThemeConfig;
 use crate::registry::DocsRegistry;
 
 /// Which tab a freshly mounted layout should show.
@@ -154,34 +148,10 @@ pub fn DocsLayout(
     use_context_provider(|| SearchOpen(search_open));
     use_context_provider(|| DrawerOpen(drawer_open));
 
-    // Theme state: hooks must be called unconditionally
-    // `current_theme` only feeds the code-theme override below, which is gated on the
-    // `highlight` feature; the hook itself must still run to provide `CurrentTheme`.
-    #[cfg_attr(not(feature = "highlight"), allow(unused_variables))]
-    let current_theme = super::shared::use_theme_provider(registry.theme.clone());
-
-    // Resolve the code-block syntax theme. When a light/dark toggle is configured, the
-    // choice tracks the active `data-theme` so code backgrounds match the site toggle
-    // rather than the reader's OS `prefers-color-scheme`. Provided reactively so blocks
-    // restyle when the theme switches. (See `CodeThemeOverride` in dioxus-mdx.)
-    #[cfg(feature = "highlight")]
-    {
-        let code_theme_config = registry.code_theme;
-        let toggle_dark = registry
-            .theme
-            .as_ref()
-            .and_then(|t| t.toggle_themes.as_ref())
-            .map(|(_, dark)| dark.clone());
-        let code_theme = use_memo(move || match code_theme_config {
-            CodeThemeConfig::Fixed(theme) => CodeTheme::fixed(theme),
-            CodeThemeConfig::Adaptive { light, dark } => match &toggle_dark {
-                Some(dark_name) if current_theme() == *dark_name => CodeTheme::fixed(dark),
-                Some(_) => CodeTheme::fixed(light),
-                None => CodeTheme::system(light, dark),
-            },
-        });
-        use_context_provider(|| CodeThemeOverride(code_theme.into()));
-    }
+    // Theme state: hooks must be called unconditionally. Code blocks take their
+    // colors from the `--dk-hl-*` CSS tokens, which follow the active theme's
+    // `color-scheme`, so nothing here has to know about highlighting.
+    super::shared::use_theme_provider(registry.theme.clone());
 
     let mut active_tab = use_signal(|| initial_tab(registry, &ctx.current_path.peek()));
     use_context_provider(|| ActiveTab(active_tab));
