@@ -137,6 +137,19 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   this a `dioxus/web` build that leaves `devtools` off fails to compile
   `dioxus-web`. Until now `dioxus-free-icons` masked the bug by re-enabling
   dioxus's defaults.
+- Prose inside a component body is dedented before it is parsed. A body was only
+  trimmed as a whole, so in a `<Step>`/`<Tab>`/`<Accordion>`/`<ParamField>`/
+  `<Update>`/`<Card>`/callout indented to nest in the source, every paragraph
+  after the first blank line kept its indent and CommonMark rendered it as an
+  indented code block.
+- An opening tag now ends at the first `>` outside a quoted attribute value.
+  `<ParamField type="Option<String>" required>` used to be cut in half at the
+  `>` inside the type: the badge showed a truncated type, a trailing `required`
+  was lost, and the rest of the tag leaked into the body as literal text.
+- Component tags inside inline code are left alone. A sentence mentioning
+  `` `<OpenAPI>` `` or `` `<Card>` `` was parsed as a real component, splitting
+  the paragraph into three nodes; a `` `</Card>` `` in prose could likewise
+  close the element it was written in.
 
 ### Migration
 

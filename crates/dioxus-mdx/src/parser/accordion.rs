@@ -1,7 +1,7 @@
 //! Accordion and AccordionGroup parser.
 
 use super::content::parse_content;
-use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
+use super::utils::{dedent, extract_attr, find_closing_tag, find_tag_end, skip_to_next_tag};
 use crate::parser::types::*;
 
 /// Try to parse an AccordionGroup component.
@@ -66,7 +66,7 @@ fn parse_accordions(content: &str) -> Vec<AccordionNode> {
 
 /// Parse a single Accordion element.
 fn parse_single_accordion(content: &str) -> Option<AccordionNode> {
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[10..tag_end]; // Skip "<Accordion"
 
     let title = extract_attr(tag_content, "title")?;
@@ -74,9 +74,9 @@ fn parse_single_accordion(content: &str) -> Option<AccordionNode> {
 
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "Accordion")?;
-    let inner = after_open[..close_idx].trim();
+    let inner = dedent(&after_open[..close_idx]);
     // Parse inner content recursively
-    let parsed_content = parse_content(inner);
+    let parsed_content = parse_content(inner.trim());
 
     Some(AccordionNode {
         title,
@@ -87,7 +87,7 @@ fn parse_single_accordion(content: &str) -> Option<AccordionNode> {
 
 /// Find where an Accordion element ends.
 fn find_accordion_end(content: &str) -> Option<usize> {
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "Accordion")?;
     Some(tag_end + 1 + close_idx + "</Accordion>".len())

@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 
 use crate::re::Regex;
 
-use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
+use super::utils::{dedent, extract_attr, find_closing_tag, find_tag_end, skip_to_next_tag};
 use crate::parser::types::*;
 
 static CARD_GROUP_OPEN_RE: LazyLock<Regex> =
@@ -126,7 +126,7 @@ fn parse_cards(content: &str) -> Vec<CardNode> {
 /// Parse a single Card element with flexible attribute handling.
 fn parse_single_card(content: &str) -> Option<CardNode> {
     // Find the end of the opening tag
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[5..tag_end]; // Skip "<Card"
 
     // Check if self-closing
@@ -143,7 +143,7 @@ fn parse_single_card(content: &str) -> Option<CardNode> {
         // Find closing </Card>
         let after_open = &content[tag_end + 1..];
         if let Some(close_idx) = find_closing_tag(after_open, "Card") {
-            after_open[..close_idx].trim().to_string()
+            dedent(&after_open[..close_idx]).trim().to_string()
         } else {
             String::new()
         }
@@ -159,7 +159,7 @@ fn parse_single_card(content: &str) -> Option<CardNode> {
 
 /// Find where a Card element ends (including closing tag).
 fn find_card_end(content: &str) -> Option<usize> {
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[5..tag_end];
 
     if tag_content.trim().ends_with('/') {

@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use crate::re::Regex;
 
 use super::content::parse_content;
-use super::utils::{find_closing_tag, skip_to_next_tag};
+use super::utils::{dedent, find_closing_tag, skip_to_next_tag};
 use crate::parser::types::*;
 
 static TAB_OPEN_RE: LazyLock<Regex> =
@@ -46,9 +46,9 @@ fn parse_tabs(content: &str) -> Vec<TabNode> {
 
             let after_open = &remaining[full_match.end()..];
             if let Some(close_idx) = find_closing_tag(after_open, "Tab") {
-                let inner = after_open[..close_idx].trim();
+                let inner = dedent(&after_open[..close_idx]);
                 // Parse inner content recursively
-                let parsed_content = parse_content(inner);
+                let parsed_content = parse_content(inner.trim());
                 tabs.push(TabNode {
                     title,
                     content: parsed_content,
@@ -141,5 +141,26 @@ mod tests {
             .expect("Tabs node");
         assert_eq!(tabs.tabs.len(), 1);
         assert_eq!(tabs.tabs[0].title, "Outer");
+    }
+
+    #[test]
+    fn indented_tab_prose_is_not_an_indented_code_block() {
+        let content = "<Tabs>\n  <Tab title=\"macOS\">\n    First paragraph.\n\n    Second paragraph.\n  </Tab>\n</Tabs>\n";
+
+        let nodes = parse_mdx(content);
+        let DocNode::Tabs(tabs) = &nodes[0] else {
+            panic!("expected Tabs, got {:?}", nodes[0]);
+        };
+        assert_eq!(
+            tabs.tabs[0].content.len(),
+            1,
+            "expected one prose node, got {:?}",
+            tabs.tabs[0].content
+        );
+        let DocNode::Html(html) = &tabs.tabs[0].content[0] else {
+            panic!("expected Html, got {:?}", tabs.tabs[0].content[0]);
+        };
+        assert!(!html.contains("<pre"), "prose rendered as code: {html}");
+        assert_eq!(html.matches("<p>").count(), 2, "got: {html}");
     }
 }

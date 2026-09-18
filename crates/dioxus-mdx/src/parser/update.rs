@@ -1,7 +1,7 @@
 //! Update (changelog entry) parser.
 
 use super::content::parse_content;
-use super::utils::{extract_attr, find_closing_tag};
+use super::utils::{dedent, extract_attr, find_closing_tag, find_tag_end};
 use crate::parser::types::*;
 
 /// Try to parse an Update (changelog) entry.
@@ -10,7 +10,7 @@ pub(super) fn try_parse_update(content: &str) -> Option<(DocNode, &str)> {
         return None;
     }
 
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[7..tag_end]; // Skip "<Update"
 
     let label = extract_attr(tag_content, "label")?;
@@ -18,11 +18,11 @@ pub(super) fn try_parse_update(content: &str) -> Option<(DocNode, &str)> {
 
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "Update")?;
-    let inner = after_open[..close_idx].trim();
+    let inner = dedent(&after_open[..close_idx]);
     let rest = &after_open[close_idx + "</Update>".len()..];
 
     // Parse inner content recursively
-    let parsed_content = parse_content(inner);
+    let parsed_content = parse_content(inner.trim());
 
     Some((
         DocNode::Update(UpdateNode {

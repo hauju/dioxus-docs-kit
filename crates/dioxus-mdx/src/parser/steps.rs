@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use crate::re::Regex;
 
 use super::content::parse_content;
-use super::utils::find_closing_tag;
+use super::utils::{dedent, find_closing_tag};
 use crate::parser::types::*;
 
 static STEP_RE: LazyLock<Regex> =
@@ -35,9 +35,9 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
 
     // First try <Step title="..."> format
     for caps in STEP_RE.captures_iter(content) {
-        let inner = caps.get(2).map(|m| m.as_str()).unwrap_or_default().trim();
+        let inner = dedent(caps.get(2).map(|m| m.as_str()).unwrap_or_default());
         // Parse inner content recursively
-        let parsed_content = parse_content(inner);
+        let parsed_content = parse_content(inner.trim());
         steps.push(StepNode {
             title: caps
                 .get(1)
@@ -71,9 +71,9 @@ fn parse_steps(content: &str) -> Vec<StepNode> {
             content.len()
         };
 
-        let step_content = content[start..end].trim();
+        let step_content = dedent(&content[start..end]);
         // Parse inner content recursively
-        let parsed_content = parse_content(step_content);
+        let parsed_content = parse_content(step_content.trim());
         steps.push(StepNode {
             title,
             content: parsed_content,
@@ -109,5 +109,30 @@ Second instruction.
         } else {
             panic!("Expected Steps node");
         }
+    }
+
+    #[test]
+    fn indented_step_prose_is_not_an_indented_code_block() {
+        // Both paragraphs sit four columns in so they nest under <Step>. With
+        // only the body as a whole trimmed, the one after the blank line keeps
+        // its indent and CommonMark renders it as a code block.
+        let content = "<Steps>\n  <Step title=\"Install\">\n    First paragraph.\n\n    Second paragraph.\n  </Step>\n</Steps>\n";
+
+        let nodes = parse_mdx(content);
+        let DocNode::Steps(steps) = &nodes[0] else {
+            panic!("expected Steps, got {:?}", nodes[0]);
+        };
+        assert_eq!(steps.steps.len(), 1);
+        assert_eq!(
+            steps.steps[0].content.len(),
+            1,
+            "expected one prose node, got {:?}",
+            steps.steps[0].content
+        );
+        let DocNode::Html(html) = &steps.steps[0].content[0] else {
+            panic!("expected Html, got {:?}", steps.steps[0].content[0]);
+        };
+        assert!(!html.contains("<pre"), "prose rendered as code: {html}");
+        assert_eq!(html.matches("<p>").count(), 2, "got: {html}");
     }
 }
