@@ -127,6 +127,10 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Fixed
 
+- Fenced code blocks indented inside a component (`<Step>`, `<Tab>`, `<Accordion>`, ...)
+  are dedented by the opening fence's own indentation, as CommonMark specifies. Only
+  the first line used to lose its indent, so every following line rendered shifted
+  right by the component's nesting depth.
 - `dioxus-mdx` depends on `web-sys` with the `Location` feature under its `web`
   feature. `dioxus-web`'s history implementation calls `window.location()` but
   only requests `web-sys/Location` from its own `devtools` feature, so without

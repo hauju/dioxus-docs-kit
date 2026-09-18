@@ -14,6 +14,31 @@ pub(super) struct FencedBlock<'a> {
     pub(super) filename: Option<&'a str>,
     /// Raw body between the fences (callers trim it).
     pub(super) code: &'a str,
+    /// Leading `[ \t]` count of the opening fence line. A fence nested in a
+    /// component (`<Step>`, `<Tab>`, ...) is usually indented with it, and per
+    /// CommonMark that much indentation is stripped from every body line.
+    pub(super) indent: usize,
+}
+
+impl FencedBlock<'_> {
+    /// The body with up to [`indent`](Self::indent) leading blanks removed from
+    /// each line, so an indented fence renders like one at column zero.
+    pub(super) fn dedented_code(&self) -> String {
+        if self.indent == 0 {
+            return self.code.to_string();
+        }
+        self.code
+            .split_inclusive('\n')
+            .map(|line| {
+                let strip = line
+                    .bytes()
+                    .take(self.indent)
+                    .take_while(|b| *b == b' ' || *b == b'\t')
+                    .count();
+                &line[strip..]
+            })
+            .collect()
+    }
 }
 
 /// Find all fenced code blocks (``` or ~~~) in `content`, line by line.
@@ -31,6 +56,7 @@ pub(super) fn find_fenced_blocks(content: &str) -> Vec<FencedBlock<'_>> {
         marker: char,
         start: usize,
         body_start: usize,
+        indent: usize,
         language: Option<&'a str>,
         filename: Option<&'a str>,
     }
@@ -55,6 +81,7 @@ pub(super) fn find_fenced_blocks(content: &str) -> Vec<FencedBlock<'_>> {
                         language: fence.language,
                         filename: fence.filename,
                         code: &content[fence.body_start..line_start],
+                        indent: fence.indent,
                     });
                     open = None;
                 }
@@ -65,6 +92,7 @@ pub(super) fn find_fenced_blocks(content: &str) -> Vec<FencedBlock<'_>> {
                         marker,
                         start: line_start,
                         body_start: line_end,
+                        indent: text.len() - text.trim_start_matches([' ', '\t']).len(),
                         language,
                         filename,
                     });
