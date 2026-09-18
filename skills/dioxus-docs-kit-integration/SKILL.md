@@ -5,7 +5,7 @@ description: >-
   sidebar navigation, full-text search, optional OpenAPI reference pages, an
   optional blog engine, SEO meta + sitemap, and theme switching (DaisyUI themes
   or dk-* CSS presets). Handles Cargo.toml dependencies, build.rs setup,
-  doc_content_map / blog_content_map macros, route/layout wiring with
+  docs_bundle / blog_bundle macros, route/layout wiring with
   use_docs_providers + use_blog_providers, Tailwind CSS safelist, and _nav.json
   creation. Use when: (1) Adding documentation to a Dioxus project, (2) Setting up
   dioxus-docs-kit in a new or existing app, (3) "add docs", "integrate docs-kit",
@@ -66,15 +66,19 @@ Create or extend `build.rs`:
 
 ```rust
 fn main() {
-    dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+        // Optional: .with_openapi("api-reference", "docs/api-reference/openapi.yaml")
+        .generate();
     // Only if adding the blog:
-    // dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json");
+    // dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
 }
 ```
 
-The generator reads the nav/manifest JSON and emits an `include_str!()` call
-for every listed `.mdx` file. If a path doesn't exist, the build fails at
-compile time.
+The generator reads the nav/manifest JSON, parses every listed `.mdx` file
+(rendering its prose to HTML) plus any OpenAPI spec, precomputes the search
+index, and writes one `$OUT_DIR/docs_bundle.json`. If a path doesn't exist, the
+build reports it at compile time. The client links no MDX, Markdown or YAML
+parser as a result.
 
 ## Step 3: Content files
 
@@ -157,7 +161,7 @@ featured: true
 Post body.
 ```
 
-## Step 4: Registry + macro
+## Step 4: Registry + bundle macro
 
 At module level in `src/main.rs`:
 
@@ -165,14 +169,10 @@ At module level in `src/main.rs`:
 use std::sync::LazyLock;
 use dioxus_docs_kit::{DocsConfig, DocsRegistry};
 
-dioxus_docs_kit::doc_content_map!();
-
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
+    DocsConfig::new(dioxus_docs_kit::docs_bundle!())
         .with_default_path("getting-started/introduction")
-        // Optional:
-        // .with_openapi("api-reference", include_str!("../docs/api-reference/openapi.yaml"))
-        // .with_theme_toggle("light", "dark", "dark")
+        // Optional: .with_theme_toggle("light", "dark", "dark")
         .build()
 });
 ```
@@ -182,15 +182,16 @@ If adding the blog, add a parallel block:
 ```rust
 use dioxus_docs_kit::{BlogConfig, BlogRegistry};
 
-dioxus_docs_kit::blog_content_map!();
-
 static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-    BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+    BlogConfig::new(dioxus_docs_kit::blog_bundle!())
         .with_posts_per_page(9)
         .with_theme_toggle("light", "dark", "dark")
         .build()
 });
 ```
+
+Keep `dioxus-docs-kit` and `dioxus-docs-kit-build` on the same version — the
+bundle carries a format version the runtime checks.
 
 ## Step 5: Routes
 

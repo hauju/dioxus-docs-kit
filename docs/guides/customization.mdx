@@ -10,7 +10,7 @@ icon: palette
 dioxus-docs-kit uses **Tailwind CSS 4** and **DaisyUI 5** for styling. The default theme is `dark`, but you can configure light/dark toggle via `DocsConfig`:
 
 ```rust
-DocsConfig::new(nav_json, content_map)
+DocsConfig::new(dioxus_docs_kit::docs_bundle!())
     .with_theme_toggle("light", "dark", "dark") // (light theme, dark theme, default)
     .build()
 ```
@@ -122,7 +122,7 @@ Navigation is defined in `docs/_nav.json`. The structure supports **tabs**, **gr
 - **pages** — Paths relative to the `docs/` directory (without `.mdx` extension)
 
 <Note>
-Each page path must correspond to a `.mdx` file in the `docs/` directory. The `build.rs` script reads `_nav.json` to generate `include_str!()` calls at compile time.
+Each page path must correspond to a `.mdx` file in the `docs/` directory. The `build.rs` script reads `_nav.json` and parses every listed page into the content bundle at compile time.
 </Note>
 
 ### Adding a New Page
@@ -148,7 +148,7 @@ Your content here.
   </Step>
 
   <Step title="Rebuild">
-    Run `dx serve` — the build script re-generates the content map automatically.
+    Run `dx serve` — the build script re-generates the content bundle automatically.
   </Step>
 </Steps>
 
@@ -156,22 +156,22 @@ Your content here.
 
 dioxus-docs-kit can render interactive API reference pages from OpenAPI 3.x YAML specs. Each endpoint gets its own page with a Mintlify-style two-column layout.
 
+The spec is parsed in `build.rs`, alongside your MDX pages:
+
 ```rust
-static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-    DocsConfig::new(nav_json, content_map)
-        .with_openapi(
-            "api-reference",
-            include_str!("../docs/api-reference/petstore.yaml"),
-        )
-        .build()
-});
+// build.rs
+fn main() {
+    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+        .with_openapi("api-reference", "docs/api-reference/petstore.yaml")
+        .generate();
+}
 ```
 
 - The first argument (`"api-reference"`) is the URL prefix for API pages
-- The second argument is the OpenAPI YAML content
+- The second argument is the path to the OpenAPI YAML (or JSON) file
 - Endpoint slugs are derived from `operationId` values (camelCase → kebab-case)
 - Sidebar entries are generated automatically, grouped by tag
-- Needs the `openapi` cargo feature (on by default). Turning it off removes `.with_openapi()` and drops `openapiv3` + `serde_yaml` from the build
+- Needs the `openapi` cargo feature on `dioxus-docs-kit` (on by default). Turning it off drops the endpoint pages and API sidebar; the parser itself lives in the build crate either way, so nothing extra ships to the browser
 
 <Note>
 You also need an `api-reference/overview` page in `_nav.json`. The individual endpoint pages are generated dynamically from the spec.

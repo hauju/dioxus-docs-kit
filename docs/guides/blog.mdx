@@ -85,20 +85,20 @@ Your post content in MDX format...
 
 <Steps>
   <Step title="Add the build script">
-    In your `build.rs`, add the blog content map generation alongside your docs generation:
+    In your `build.rs`, add the blog bundle alongside your docs bundle:
 
     ```rust
     fn main() {
-        dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
-        dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json");
+        dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").generate();
+        dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
     }
     ```
 
-    The blog directory is inferred from the manifest path parent (e.g. `"blog/_blog.json"` reads from `blog/`).
+    The blog directory is inferred from the manifest path parent (e.g. `"blog/_blog.json"` reads from `blog/`). Posts are parsed, drafts dropped and the search index built here, so the browser only deserializes the result.
   </Step>
 
   <Step title="Create the blog registry">
-    In `main.rs`, use the `blog_content_map!()` macro and build a `BlogRegistry`:
+    In `main.rs`, load the bundle with the `blog_bundle!()` macro and build a `BlogRegistry`:
 
     ```rust
     use dioxus_docs_kit::{
@@ -107,16 +107,11 @@ Your post content in MDX format...
     };
     use std::sync::LazyLock;
 
-    dioxus_docs_kit::blog_content_map!();
-
     static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-        BlogConfig::new(
-            include_str!("../blog/_blog.json"),
-            blog_content_map(),
-        )
-        .with_posts_per_page(9)
-        .with_theme_toggle("light", "dark", "dark")
-        .build()
+        BlogConfig::new(dioxus_docs_kit::blog_bundle!())
+            .with_posts_per_page(9)
+            .with_theme_toggle("light", "dark", "dark")
+            .build()
     });
     ```
   </Step>
@@ -303,7 +298,7 @@ Category pages give each topic a permanent URL, such as `/blog/categories/rust`.
 Enable category URLs when building the registry:
 
 ```rust
-BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
+BlogConfig::new(dioxus_docs_kit::blog_bundle!())
     .with_category_base_path("/blog/categories")
     .with_posts_per_page(9)
     .build()

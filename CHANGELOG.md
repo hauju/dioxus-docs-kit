@@ -5,6 +5,137 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking — all document parsing moves to build time.** `dioxus-docs-kit-build`
+  now parses every `.mdx` page and OpenAPI spec, renders each page's prose to
+  HTML, and precomputes the whole search index into a single JSON bundle
+  (`$OUT_DIR/docs_bundle.json`, `$OUT_DIR/blog_bundle.json`). The app embeds the
+  bundle with `docs_bundle!()` / `blog_bundle!()` and the registry deserializes
+  it once, on first use, instead of re-parsing every document on load.
+
+  The wasm client therefore links **no MDX parser, no `markdown` (markdown-rs),
+  no `regex`/`regex-lite`, no `openapiv3` and no `serde_yaml`/`unsafe-libyaml`**.
+  Measured on a 3-page template consumer (kit `web` only, `wasm-release` +
+  `wasm-opt -Oz`): **1,492,487 → 1,277,705 bytes** optimized
+  (**443,277 → 362,249** brotli, −18%). The kit's cost on top of a bare Dioxus
+  router app drops from 257 KB to 176 KB brotli. The bundle itself is larger
+  than the raw MDX it replaces (16.8 KB vs 9.6 KB for those 3 pages), which is
+  already included in those figures.
+
+- **Breaking — `dioxus-mdx` gains `components` and `parse` features, both in
+  `default`.** `components` gates `src/components/**` and is the only thing that
+  pulls `dioxus` in; `parse` gates the parser and its `markdown` + regex
+  dependencies. `default-features = false` now builds a plain Rust library of the
+  document types with no Dioxus at all, which is how the build crate uses it.
+- **Breaking — `dioxus-mdx`'s `openapi` feature is split.** `openapi` is now the
+  value types plus the viewer components (no dependencies, always available);
+  `openapi-parse` (in `default`) is the spec parser and pulls `openapiv3` +
+  `serde_yaml`. `dioxus-docs-kit`'s `openapi` feature is unchanged in name but
+  now only gates the API-reference rendering path.
+- **Breaking — the parsed AST carries HTML, not Markdown.** `DocNode::Markdown`
+  is now `DocNode::Html`, and the `content` field of `CalloutNode`, `CardNode`
+  and `ResponseFieldNode` is now `content_html`. All of them hold HTML rendered
+  at build time. `ParsedDoc::raw_markdown` is unchanged and still carries the
+  Markdown source (`llms.txt`, the copy-page button and the table of contents
+  read it).
+- **Breaking — `DocsKitError` variants changed**: `NavParse`, `BlogManifestParse`
+  and `OpenApi` are replaced by `DocsBundleParse`, `BlogBundleParse` and
+  `BundleVersion`. Nav and spec errors are now build-script failures.
+- The bundle carries a format version and the registry rejects one it does not
+  understand, so a mismatched `dioxus-docs-kit` / `dioxus-docs-kit-build` pair
+  fails with a message naming the problem instead of a field-by-field parse error.
+
+### Removed
+
+- `dioxus_docs_kit_build::generate_content_map`, `generate_content_map_with_validation`,
+  `generate_blog_content_map` and `generate_blog_content_map_with_validation`.
+- `dioxus_docs_kit::doc_content_map!()` and `blog_content_map!()`.
+- `DocsConfig::with_openapi` (moved to `DocsBuild::with_openapi` in `build.rs`).
+- `dioxus_mdx::get_raw_markdown` (it only made sense on an unrendered tree;
+  `parse_document` / the new `parse_body` return the Markdown source alongside
+  the nodes).
+- `dioxus_docs_kit::blog::types::{extract_blog_frontmatter, calculate_reading_time}`
+  and `BlogManifest` — blog frontmatter and reading time are computed at build time.
+
+### Added
+
+- `dioxus_docs_kit_build::{DocsBuild, BlogBuild}` builders, plus
+  `docs_bundle_json` / `blog_bundle_json` for content that does not come from the
+  filesystem.
+- `dioxus_docs_kit::{docs_bundle!, blog_bundle!}` macros.
+- `dioxus_mdx::parse_body`, `to_html`, `to_html_with_heading_ids`, and
+  `parse_atx_heading` / `strip_markdown_links` alongside the existing `slugify`
+  and `extract_headers` (all free of Dioxus and of any regex engine, so the build
+  crate and the browser agree on anchor ids by construction).
+- `Serialize`/`Deserialize` on the whole document AST (`ParsedDoc`,
+  `DocFrontmatter`, `DocNode` and every node type) and the OpenAPI value types.
+
+### Migration
+
+`build.rs` — parse the content instead of listing it:
+
+```diff
+ fn main() {
+-    dioxus_docs_kit_build::generate_content_map("docs/_nav.json");
+-    dioxus_docs_kit_build::generate_blog_content_map("blog/_blog.json");
++    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
++        // the spec's PATH now, parsed here instead of in the browser
++        .with_openapi("api-reference", "docs/api-reference/petstore.yaml")
++        .generate();
++    dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
+ }
+```
+
+With strict validation:
+
+```diff
+-use dioxus_docs_kit_build::{generate_content_map_with_validation, ValidationMode};
+-generate_content_map_with_validation("docs/_nav.json", ValidationMode::Strict);
++use dioxus_docs_kit_build::{DocsBuild, ValidationMode};
++DocsBuild::new("docs/_nav.json")
++    .with_validation(ValidationMode::Strict)
++    .generate();
+```
+
+`main.rs` — load the bundle instead of the content map:
+
+```diff
+-dioxus_docs_kit::doc_content_map!();
+-
+ static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
+-    DocsConfig::new(include_str!("../docs/_nav.json"), doc_content_map())
+-        .with_openapi("api-reference", include_str!("../docs/api-reference/petstore.yaml"))
++    DocsConfig::new(dioxus_docs_kit::docs_bundle!())
+         .with_default_path("getting-started/introduction")
+         .with_theme_toggle("light", "dark", "dark")
+         .build()
+ });
+
+-dioxus_docs_kit::blog_content_map!();
+-
+ static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
+-    BlogConfig::new(include_str!("../blog/_blog.json"), blog_content_map())
++    BlogConfig::new(dioxus_docs_kit::blog_bundle!())
+         .with_posts_per_page(9)
+         .build()
+ });
+```
+
+`with_theme`, `with_theme_toggle`, `with_default_path`, `with_api_group_name`,
+`with_code_theme[s]` and every `DocsRegistry` / `BlogRegistry` query method are
+unchanged.
+
+If you render `DocNode`s yourself, rename `DocNode::Markdown(md)` to
+`DocNode::Html(html)` and drop your `markdown::to_html*` call — the string is
+already HTML. Same for `CalloutNode`/`CardNode`/`ResponseFieldNode`'s
+`content` → `content_html`.
+
+If you used `dioxus-mdx` directly as a parser, depend on it with
+`default-features = false, features = ["parse"]` to skip Dioxus entirely.
+
 ## [0.8.0] — 2026-09-17
 
 ### Added

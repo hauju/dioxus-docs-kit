@@ -3,6 +3,13 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
+<Update label="Unreleased" description="Next release">
+- **Build-time content bundle**: every page and OpenAPI spec is parsed, rendered to HTML and indexed in `build.rs`, then shipped as one JSON bundle. The browser links no MDX parser, no markdown-rs, no regex engine, no `openapiv3` and no `serde_yaml`, and never re-parses a page — a template site's wasm drops from 443 KB to 362 KB brotli
+- **Breaking — new build/runtime API**: `DocsBuild::new("docs/_nav.json").with_openapi(prefix, spec_path).generate()` in `build.rs`, `DocsConfig::new(docs_bundle!())` in `main.rs` (likewise `BlogBuild` / `blog_bundle!()`). `generate_content_map`, `doc_content_map!()` and `DocsConfig::with_openapi` are gone — see the [integration guide](/docs/guides/integration)
+- **Breaking — AST carries HTML**: `DocNode::Markdown` is `DocNode::Html`, and callout/card/response-field `content` is `content_html`
+- **Breaking — `dioxus-mdx` features**: `components` (the Dioxus renderer) and `parse` (the parser) are separately switchable, and the spec parser moved from `openapi` to `openapi-parse`. `default-features = false` builds the crate with no Dioxus at all
+</Update>
+
 <Update label="v0.8.0" description="September 2026">
 - **WebMCP tools**: the opt-in `webmcp` feature adds `DocsWebMcp`, which registers `docs_search`, `docs_get_page`, `docs_list_pages` and `docs_get_api_operation` as read-only [WebMCP](https://github.com/webmachinelearning/webmcp) tools for an agent driving the browser. See the [WebMCP guide](/docs/guides/webmcp)
 </Update>
