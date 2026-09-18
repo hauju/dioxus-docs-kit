@@ -18,7 +18,6 @@ homepage = "https://github.com/hauju/dioxus-docs-kit"
 [workspace.dependencies]
 dioxus = { version = "0.7.10", default-features = false }
 dioxus-fullstack-core = "0.7.10"
-dioxus-code = { version = "0.1.2", default-features = false, features = ["runtime"] }
 dioxus-mdx = { version = "0.8.0", path = "crates/dioxus-mdx", default-features = false }
 dioxus-docs-kit = { version = "0.8.0", path = "crates/dioxus-docs-kit", default-features = false }
 dioxus-docs-kit-build = { version = "0.8.0", path = "crates/dioxus-docs-kit-build" }
@@ -57,55 +56,12 @@ dioxus-docs-kit = { workspace = true }
 dioxus-docs-kit-build = { workspace = true }
 
 [features]
-# The example enables only the grammars `docs/` actually fences (plus bash and
-# json, which the generated API reference pages use) rather than the kit default.
-default = [
-    "web",
-    "mermaid",
-    "highlight",
-    "openapi",
-    "lang-bash",
-    "lang-css",
-    "lang-json",
-    "lang-python",
-    "lang-typescript",
-    "webmcp",
-]
+default = ["web", "mermaid", "openapi", "webmcp"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
 mermaid = ["dioxus-docs-kit/mermaid"]
-highlight = ["dioxus-docs-kit/highlight"]
 openapi = ["dioxus-docs-kit/openapi"]
 webmcp = ["dioxus-docs-kit/webmcp"]
-
-# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
-# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
-# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
-# your fences actually use: dropping just the C# and C++ grammars took this
-# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
-# compiled in renders as plain text.
-#
-# For a language not listed here, depend on `dioxus-code` directly with its
-# `lang-*` flag; cargo unifies the feature into this crate's copy of the
-# dependency and `Language::from_slug` picks the grammar up:
-#   dioxus-code = { version = "0.1", default-features = false, features = [
-#       "runtime", "lang-go",
-#   ] }
-lang-rust = ["highlight", "dioxus-docs-kit/lang-rust"]
-lang-bash = ["highlight", "dioxus-docs-kit/lang-bash"]
-lang-c-sharp = ["highlight", "dioxus-docs-kit/lang-c-sharp"]
-lang-cpp = ["highlight", "dioxus-docs-kit/lang-cpp"]
-lang-css = ["highlight", "dioxus-docs-kit/lang-css"]
-lang-dockerfile = ["highlight", "dioxus-docs-kit/lang-dockerfile"]
-lang-html = ["highlight", "dioxus-docs-kit/lang-html"]
-lang-javascript = ["highlight", "dioxus-docs-kit/lang-javascript"]
-lang-json = ["highlight", "dioxus-docs-kit/lang-json"]
-lang-markdown = ["highlight", "dioxus-docs-kit/lang-markdown"]
-lang-python = ["highlight", "dioxus-docs-kit/lang-python"]
-lang-toml = ["highlight", "dioxus-docs-kit/lang-toml"]
-lang-tsx = ["highlight", "dioxus-docs-kit/lang-tsx"]
-lang-typescript = ["highlight", "dioxus-docs-kit/lang-typescript"]
-lang-yaml = ["highlight", "dioxus-docs-kit/lang-yaml"]
 
 # `dx` does not build with the plain `release` profile: it derives one per
 # bundle format, so `dx bundle --web --release` compiles the wasm client with

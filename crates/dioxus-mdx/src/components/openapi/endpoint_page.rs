@@ -1,8 +1,7 @@
 //! Two-column Mintlify-style endpoint page component.
 
 use dioxus::prelude::*;
-#[cfg(feature = "highlight")]
-use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
+use hl_lite::Lang;
 
 use crate::parser::{ApiOperation, OpenApiSpec};
 
@@ -11,40 +10,19 @@ use super::parameters_list::ParametersList;
 use super::request_body::RequestBodySection;
 use super::responses_list::ResponsesList;
 
-/// Language selector for the endpoint page's code samples, kept independent of
-/// `dioxus-code` so the markup compiles with the `highlight` feature disabled.
+/// Language selector for the endpoint page's code samples.
 enum SampleLang {
     Bash,
     Json,
 }
 
-/// Render a syntax-highlighted code sample using the fixed GitHub Light / Tokyo Night
-/// system theme (endpoint pages don't follow the site theme toggle).
-#[cfg(feature = "highlight")]
+/// Render a highlighted code sample in the same markup as a fenced block.
 fn code_sample(code: String, lang: SampleLang) -> Element {
-    // `from_slug` returns `None` when the grammar's `lang-*` feature is off, so
-    // the sample degrades to plain text instead of failing to compile.
-    let slug = match lang {
-        SampleLang::Bash => "bash",
-        SampleLang::Json => "json",
+    let language = match lang {
+        SampleLang::Bash => Lang::Bash,
+        SampleLang::Json => Lang::Json,
     };
-    let Some(language) = Language::from_slug(slug) else {
-        return crate::components::code::plain_code_block(&code);
-    };
-    let theme = CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT);
-    rsx! {
-        Code {
-            src: SourceCode::new(language, code),
-            theme,
-        }
-    }
-}
-
-/// Fallback code sample when the `highlight` feature is disabled: escaped plain text
-/// in the same `<pre class="dxc">` markup, without token coloring.
-#[cfg(not(feature = "highlight"))]
-fn code_sample(code: String, _lang: SampleLang) -> Element {
-    crate::components::code::plain_code_block(&code)
+    crate::components::code::code_block(&code, Some(language))
 }
 
 /// Props for EndpointPage component.

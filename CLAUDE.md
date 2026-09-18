@@ -40,7 +40,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 | `dioxus-docs-kit` | `crates/dioxus-docs-kit/` | **Reusable docs shell** — layout, sidebar, search, page nav, theme toggle, OpenAPI |
 | `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
 | `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
-| `hl-lite` | `crates/hl-lite/` | Zero-dependency syntax highlighter (12 hand-written lexers → `hl-*` spans); not yet wired into the renderer |
+| `hl-lite` | `crates/hl-lite/` | Zero-dependency syntax highlighter (12 hand-written lexers → `hl-*` spans); used by `dioxus-mdx`'s code blocks |
 
 **Dependency direction:** `dioxus-docs-kit` depends on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
 
@@ -102,15 +102,19 @@ Route enum (main.rs):
 - Icons: Lucide SVGs vendored in `crates/dioxus-mdx/src/lucide.rs` — `Icon { class, icon: LdX }`,
   re-exported as `dioxus_docs_kit::lucide`. Regenerate with `scripts/vendor-lucide-icons.py`
   after adding a new `Ld*` name; nothing generates it at build time
+- **Code block colors**: thirteen `--dk-hl-*` tokens in `crates/dioxus-docs-kit/theme.css`,
+  each a `light-dark()` pair (GitHub Light / Tokyo Night) that follows the DaisyUI
+  theme's `color-scheme`. The `.hl-*` rules need no safelist entry — they are plain
+  CSS, not Tailwind utilities. Rebuild the precompiled sheet with `just css`
 - **Safelist pattern**: when crates are git/crates.io deps, Tailwind can't scan `~/.cargo/` — ship `safelist.html` files with all CSS classes (especially dynamic ones from match arms like `HttpMethod::badge_class()`)
 
 ### Key Conventions
 
 - Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
 - `use_signal()` for local state, `use_context_provider()` for shared state
-- Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
-- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi", lang-*]` where the default `lang-*` set is bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript, yaml (`lang-c-sharp`/`lang-cpp`/`lang-tsx` exist but are off — C#+C++ were ~8 MB of wasm, TSX 1.5 MB; Rust is always highlighted). The example app's own `default` list is trimmed to what `docs/` fences: bash, css, json, python, typescript. Plus `server` (SeoRouter/Axum routes). `openapi` gates the API-reference rendering path only — the spec parser lives in the build crate. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
-- Cargo features (dioxus-mdx): `components` gates `src/components/**` and is the *only* thing that pulls `dioxus` in; `parse` gates `src/parser/**` implementation (markdown-rs + regex) while the AST types and `src/text.rs` are always compiled; `openapi` is types + viewer components (no deps), `openapi-parse` adds `openapiv3`/`serde_yaml`. Frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
+- Syntax highlighting: `hl-lite`, always on — no feature, no grammar selection, no C toolchain. `dioxus-mdx`'s `code_block` lexes the fence and emits `<pre class="dk-code">` with one `<span class="hl-{kind}">` per token; colors are the `--dk-hl-*` CSS tokens in `crates/dioxus-docs-kit/theme.css`, never Rust. An unknown language renders the same markup with no spans
+- Cargo features (docs-kit): `default = ["web", "mermaid", "openapi"]`, plus `server` (SeoRouter/Axum routes) and `webmcp`. `openapi` gates the API-reference rendering path only — the spec parser lives in the build crate. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
+- Cargo features (dioxus-mdx): `components` gates `src/components/**` and pulls in both `dioxus` and `hl-lite`; `parse` gates `src/parser/**` implementation (markdown-rs + regex) while the AST types and `src/text.rs` are always compiled; `openapi` is types + viewer components (no deps), `openapi-parse` adds `openapiv3`/`serde_yaml`. Frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
 - CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.10, Bun for Tailwind
 
 ---

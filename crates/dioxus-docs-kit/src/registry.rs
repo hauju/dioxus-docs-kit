@@ -4,8 +4,6 @@
 
 use crate::bundle::DocsBundle;
 use crate::components::seo::xml_escape;
-#[cfg(feature = "highlight")]
-use crate::config::CodeThemeConfig;
 use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
 use crate::search::Field;
@@ -123,9 +121,6 @@ pub struct DocsRegistry {
     pub api_group_name: String,
     /// Optional theme configuration.
     pub theme: Option<ThemeConfig>,
-    /// Syntax-highlighting theme for code blocks.
-    #[cfg(feature = "highlight")]
-    pub code_theme: CodeThemeConfig,
 }
 
 impl DocsRegistry {
@@ -160,8 +155,6 @@ impl DocsRegistry {
             .unwrap_or_else(|| "API Reference".to_string());
 
         let theme = config.theme_config().cloned();
-        #[cfg(feature = "highlight")]
-        let code_theme = config.code_theme_value();
 
         // Warn if OpenAPI specs were registered but no nav group matches api_group_name
         if !openapi_specs.is_empty() && !nav.groups.iter().any(|g| g.group == api_group_name) {
@@ -204,8 +197,6 @@ impl DocsRegistry {
             default_path,
             api_group_name,
             theme,
-            #[cfg(feature = "highlight")]
-            code_theme,
         })
     }
 

@@ -1,8 +1,6 @@
 //! Builder for constructing a `DocsRegistry`.
 
 use crate::registry::DocsRegistry;
-#[cfg(feature = "highlight")]
-use dioxus_code::Theme;
 
 /// Theme configuration for the documentation site.
 ///
@@ -15,41 +13,6 @@ pub struct ThemeConfig {
     pub toggle_themes: Option<(String, String)>,
     /// localStorage key used to persist the user's theme preference.
     pub storage_key: String,
-}
-
-/// How rendered code blocks pick their syntax-highlighting theme.
-///
-/// Defaults to [`CodeThemeConfig::Adaptive`] with GitHub Light / Tokyo Night.
-///
-/// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
-#[cfg(feature = "highlight")]
-#[derive(Clone, Copy, Debug)]
-#[non_exhaustive]
-pub enum CodeThemeConfig {
-    /// Always use this one theme, regardless of the site's light/dark state.
-    Fixed(Theme),
-    /// Pick `light` or `dark` to match the site theme.
-    ///
-    /// When a light/dark toggle is configured (via [`DocsConfig::with_theme_toggle`]),
-    /// the choice tracks the active `data-theme` (not the OS `prefers-color-scheme`),
-    /// so code blocks stay in sync with the toggle. Without a toggle it falls back to
-    /// `prefers-color-scheme`.
-    Adaptive {
-        /// Theme used when the site is in its light state.
-        light: Theme,
-        /// Theme used when the site is in its dark state.
-        dark: Theme,
-    },
-}
-
-#[cfg(feature = "highlight")]
-impl Default for CodeThemeConfig {
-    fn default() -> Self {
-        Self::Adaptive {
-            light: Theme::GITHUB_LIGHT,
-            dark: Theme::TOKYO_NIGHT,
-        }
-    }
 }
 
 /// Builder for constructing a [`DocsRegistry`] from a build-time content bundle.
@@ -69,8 +32,6 @@ pub struct DocsConfig {
     default_path: Option<String>,
     api_group_name: Option<String>,
     theme: Option<ThemeConfig>,
-    #[cfg(feature = "highlight")]
-    code_theme: CodeThemeConfig,
 }
 
 impl DocsConfig {
@@ -87,8 +48,6 @@ impl DocsConfig {
             default_path: None,
             api_group_name: None,
             theme: None,
-            #[cfg(feature = "highlight")]
-            code_theme: CodeThemeConfig::default(),
         }
     }
 
@@ -137,31 +96,6 @@ impl DocsConfig {
         self
     }
 
-    /// Use a single, fixed syntax-highlighting theme for all code blocks.
-    ///
-    /// Use this for single-theme sites (e.g. a dark-only app) so the code block
-    /// background matches the site instead of following the reader's OS setting.
-    ///
-    /// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
-    #[cfg(feature = "highlight")]
-    pub fn with_code_theme(mut self, theme: Theme) -> Self {
-        self.code_theme = CodeThemeConfig::Fixed(theme);
-        self
-    }
-
-    /// Use a light/dark pair of syntax themes for code blocks.
-    ///
-    /// When a theme toggle is configured (see [`Self::with_theme_toggle`]), the active
-    /// choice tracks the toggle's `data-theme`; otherwise it follows the reader's OS
-    /// `prefers-color-scheme`. Defaults to GitHub Light / Tokyo Night when not set.
-    ///
-    /// Only available with the `highlight` feature (default), which pulls in `dioxus-code`.
-    #[cfg(feature = "highlight")]
-    pub fn with_code_themes(mut self, light: Theme, dark: Theme) -> Self {
-        self.code_theme = CodeThemeConfig::Adaptive { light, dark };
-        self
-    }
-
     /// Build the [`DocsRegistry`].
     ///
     /// Deserializes the content bundle: pages, OpenAPI specs and the search
@@ -198,10 +132,5 @@ impl DocsConfig {
 
     pub(crate) fn theme_config(&self) -> Option<&ThemeConfig> {
         self.theme.as_ref()
-    }
-
-    #[cfg(feature = "highlight")]
-    pub(crate) fn code_theme_value(&self) -> CodeThemeConfig {
-        self.code_theme
     }
 }

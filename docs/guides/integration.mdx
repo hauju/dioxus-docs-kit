@@ -34,7 +34,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     server = ["dioxus/server", "dioxus-docs-kit/server"]
     ```
 
-    The kit's defaults bring `mermaid`, `highlight`, `openapi` and a common set of `lang-*` syntax-highlighting grammars. To ship less (for example only the grammars you actually fence), set `default-features = false` and list the features you need — see the crate README's *Syntax Highlighting* section.
+    The kit's defaults bring `mermaid` and `openapi`. Syntax highlighting is always on and needs no feature — see the crate README's *Syntax Highlighting* section. To ship less, set `default-features = false` and list the features you need.
   </Step>
 
   <Step title="Create the docs directory">

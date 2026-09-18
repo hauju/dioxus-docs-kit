@@ -47,18 +47,19 @@ Wire features so `web` propagates to the kit:
 
 ```toml
 [features]
-default = ["web", "highlight"]
+default = ["web"]
 web = ["dioxus/web", "dioxus-docs-kit/web"]
 server = ["dioxus/server", "dioxus-docs-kit/server"]
-# Syntax highlighting (dioxus-code); omit to drop the C-compiling
-# tree-sitter grammars — code blocks then render as plain text
-highlight = ["dioxus-docs-kit/highlight"]
 # Optional: keep mermaid rendering
 mermaid = ["dioxus-docs-kit/mermaid"]
 ```
 
 `default-features = false` on the kit is important — the kit's own default
 includes `web`, which would conflict with fullstack feature unification.
+
+Syntax highlighting needs no feature: it is always compiled in (`hl-lite`,
+~48 KB of wasm, no dependencies). To recolor tokens, override the `--dk-hl-*`
+CSS custom properties from `theme.css`; there is no Rust-side code-theme API.
 
 ## Step 2: Build script
 

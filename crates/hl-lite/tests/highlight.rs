@@ -267,12 +267,15 @@ fn slug_aliases() {
         ("shell", Lang::Bash),
         ("zsh", Lang::Bash),
         ("console", Lang::Bash),
+        ("terminal", Lang::Bash),
         ("css", Lang::Css),
         ("CSS", Lang::Css),
         ("dockerfile", Lang::Dockerfile),
         ("Dockerfile", Lang::Dockerfile),
         ("docker", Lang::Dockerfile),
+        ("containerfile", Lang::Dockerfile),
         ("html", Lang::Html),
+        ("htm", Lang::Html),
         ("xml", Lang::Html),
         ("svg", Lang::Html),
         ("javascript", Lang::JavaScript),
@@ -308,6 +311,35 @@ fn slug_aliases() {
     // Canonical slugs round-trip.
     for &lang in ALL_LANGS {
         assert_eq!(Lang::from_slug(lang.slug()), Some(lang));
+    }
+}
+
+#[test]
+fn paths_resolve_by_extension_and_basename() {
+    let table = [
+        ("src/main.rs", Some(Lang::Rust)),
+        ("C:\\proj\\build.rs", Some(Lang::Rust)),
+        ("scripts/deploy.sh", Some(Lang::Bash)),
+        ("assets/tailwind.CSS", Some(Lang::Css)),
+        ("index.htm", Some(Lang::Html)),
+        ("docs/_nav.json", Some(Lang::Json)),
+        ("README.md", Some(Lang::Markdown)),
+        ("page.mdx", Some(Lang::Markdown)),
+        ("tools/snapshot.py", Some(Lang::Python)),
+        ("Cargo.toml", Some(Lang::Toml)),
+        ("src/app.tsx", Some(Lang::TypeScript)),
+        (".github/workflows/ci.yml", Some(Lang::Yaml)),
+        ("Dockerfile", Some(Lang::Dockerfile)),
+        ("Containerfile", Some(Lang::Dockerfile)),
+        ("deploy/Dockerfile.ci", Some(Lang::Dockerfile)),
+        ("app.dockerfile", Some(Lang::Dockerfile)),
+        ("LICENSE", None),
+        ("archive.tar.gz", None),
+        ("", None),
+        ("noext.", None),
+    ];
+    for (path, want) in table {
+        assert_eq!(Lang::from_path(path), want, "path {path}");
     }
 }
 

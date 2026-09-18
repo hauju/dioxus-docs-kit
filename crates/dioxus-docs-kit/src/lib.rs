@@ -51,34 +51,6 @@
 //! });
 //! ```
 
-// The tree-sitter C grammars pulled in via `dioxus-code` (for syntax
-// highlighting) reference the libc global `stderr`. Its definition lives in
-// `arborium-sysroot`'s C shim, but that shim links as a plain static archive
-// whose `stdio.o` member only gets pulled in when `stderr` is undefined as the
-// linker reaches it — and on some host toolchains (notably Homebrew LLVM on
-// macOS) it isn't, so the wasm link fails with `undefined symbol: stderr`.
-//
-// We define `stderr` here in the *library* so every consumer that links
-// `dioxus-docs-kit` gets the symbol — defining it only in the docs-kit binary
-// (`src/main.rs`) leaves library consumers (their own app binaries) to hit the
-// same link error. A strong definition preempts the sysroot's lazy archive
-// member, so where the shim already links cleanly its `stdio.o` simply isn't
-// pulled and there is never a duplicate symbol. `fprintf` is a no-op macro in
-// the shim's headers, so `stderr` is referenced but never dereferenced at
-// runtime. `#[used]` keeps the symbol from being dropped from the rlib before
-// it can satisfy the cross-crate reference at final link.
-//
-// This is only needed when the `highlight` feature is enabled, since that is what
-// links the tree-sitter C code (via `dioxus-code`) that references `stderr`.
-#[cfg(all(target_arch = "wasm32", feature = "highlight"))]
-mod wasm_sysroot_stderr {
-    use core::ffi::c_void;
-    static mut DUMMY_FILE: u8 = 0;
-    #[used]
-    #[unsafe(no_mangle)]
-    static mut stderr: *mut c_void = &raw mut DUMMY_FILE as *mut c_void;
-}
-
 pub mod blog;
 pub(crate) mod bundle;
 pub mod components;
@@ -285,8 +257,6 @@ impl BlogContext {
 // Docs re-exports
 // ============================================================================
 
-#[cfg(feature = "highlight")]
-pub use config::CodeThemeConfig;
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
 pub use registry::DocsRegistry;
@@ -304,19 +274,20 @@ pub use hooks::{DocsProviders, use_docs_context, use_docs_providers};
 pub use webmcp::DocsWebMcp;
 
 pub use dioxus_mdx::{
-    ApiOperation, ApiTag, DocContent, DocTableOfContents, EndpointPage, HttpMethod, OpenApiSpec,
-    ParsedDoc, extract_headers,
+    ApiOperation, ApiTag, CodeBlockNode, DocCodeBlock, DocContent, DocTableOfContents,
+    EndpointPage, HttpMethod, OpenApiSpec, ParsedDoc, extract_headers,
 };
 
 /// The vendored Lucide icons the shell renders, re-exported so consumers can
 /// use the same `Icon` in their own headers and pages.
 pub use dioxus_mdx::lucide;
 
-#[cfg(feature = "highlight")]
-pub use dioxus_mdx::CodeThemeOverride;
-
-#[cfg(feature = "highlight")]
-pub use dioxus_code::{Code, CodeTheme, Language, SourceCode, Theme};
+/// The syntax highlighter behind rendered code blocks.
+///
+/// Re-exported so a consumer can lex a snippet, or map a fence slug to a
+/// language, without depending on `hl-lite` directly. Token colors are CSS:
+/// see the `--dk-hl-*` tokens in `theme.css`.
+pub use dioxus_mdx::hl;
 
 #[cfg(feature = "mermaid")]
 pub use dioxus_mdx::MermaidDiagram;

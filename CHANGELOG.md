@@ -7,20 +7,30 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ## [Unreleased]
 
-### Added
-
-- `hl-lite`: a new workspace crate — a syntax highlighter with no dependencies
-  at all, twelve hand-written byte-level lexers (Rust, Bash, CSS, Dockerfile,
-  HTML, JavaScript, JSON, Markdown, Python, TOML, TypeScript, YAML) behind a
-  `highlight(Lang, &str) -> Vec<Span>` call whose spans carry `hl-*` CSS
-  classes. It is the intended replacement for the `dioxus-code`/tree-sitter
-  path: ~48 KB of wasm (19 KB brotli) for every language at once, against
-  ~6 MB of C-compiled grammars, and no Homebrew-LLVM requirement for local
-  wasm builds. Nothing is wired into `dioxus-mdx` yet.
-
-## [Unreleased]
-
 ### Changed
+
+- **Breaking — syntax highlighting is `hl-lite`, not tree-sitter.** Code blocks
+  are lexed by the new `hl-lite` workspace crate: twelve hand-written byte-level
+  lexers (Rust, Bash, CSS, Dockerfile, HTML, JavaScript, JSON, Markdown, Python,
+  TOML, TypeScript, YAML) with **no dependencies at all**, no regex engine and no
+  C. It replaces `dioxus-code`/arborium, whose grammars were ~6 MB of wasm and
+  ~73 CPU-seconds of cold build for five languages; all twelve of these cost
+  about 48 KB (19 KB brotli) and compile in half a second. Highlighting is now
+  always on — there is nothing to enable and no grammar to pick — and a wasm
+  build needs no C toolchain, which also retires the `stderr` link shim and the
+  `CC_wasm32_unknown_unknown` note in `.cargo/config.toml`. This site's release
+  wasm went from **7.19 MB raw / 1.36 MB brotli** (five grammars) to
+  **1.48 MB raw / 424 KB brotli**.
+
+- **Breaking — token colors are CSS.** A block renders as
+  `<pre class="dk-code">` with one `<span class="hl-{kind}">` per classified
+  token (`hl-keyword`, `hl-string`, `hl-comment`, `hl-number`, `hl-type`,
+  `hl-function`, `hl-attribute`, `hl-property`, `hl-tag`, `hl-operator`,
+  `hl-punctuation`, `hl-constant`, `hl-variable`). `theme.css` defines a
+  `--dk-hl-*` custom property per kind as a `light-dark()` pair (GitHub Light /
+  Tokyo Night) that follows the active theme's `color-scheme`, so code follows
+  the site's light/dark toggle with no Rust involved. The `<pre>`'s class is
+  `dk-code`, not `dxc`.
 
 - **Breaking — all document parsing moves to build time.** `dioxus-docs-kit-build`
   now parses every `.mdx` page and OpenAPI spec, renders each page's prose to
@@ -77,6 +87,15 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Removed
 
+- The `highlight` feature and every `lang-*` feature, from `dioxus-mdx`,
+  `dioxus-docs-kit` and the example app, along with the `dioxus-code` and
+  `regex` dependencies. `dioxus-mdx`'s `components` feature now pulls `hl-lite`.
+- `DocsConfig::with_code_theme`, `with_code_themes`, `CodeThemeConfig`,
+  `DocsRegistry::code_theme` and `dioxus_mdx::CodeThemeOverride` — colors are
+  the `--dk-hl-*` CSS tokens now.
+- The `dioxus_docs_kit::{Code, CodeTheme, Language, SourceCode, Theme}`
+  re-exports (and `dioxus_mdx::{CodeTheme, Theme}`). `dioxus_docs_kit::hl` /
+  `dioxus_mdx::hl` re-export the highlighter itself instead.
 - `dioxus_docs_kit_build::generate_content_map`, `generate_content_map_with_validation`,
   `generate_blog_content_map` and `generate_blog_content_map_with_validation`.
 - `dioxus_docs_kit::doc_content_map!()` and `blog_content_map!()`.
@@ -89,6 +108,12 @@ apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Added
 
+- `hl-lite` 0.8.0, published from this workspace:
+  `highlight(Lang, &str) -> Vec<Span>`, `Lang::from_slug` / `Lang::from_path`,
+  and `Kind::class`. The spans always concatenate back to the input, never split
+  a `char`, and run to the end of the input on an unterminated construct.
+- `dioxus_docs_kit::{CodeBlockNode, DocCodeBlock}` re-exports, so code outside a
+  docs page renders through the same component.
 - `dioxus_docs_kit_build::{DocsBuild, BlogBuild}` builders, plus
   `docs_bundle_json` / `blog_bundle_json` for content that does not come from the
   filesystem.
@@ -160,9 +185,44 @@ With strict validation:
  });
 ```
 
-`with_theme`, `with_theme_toggle`, `with_default_path`, `with_api_group_name`,
-`with_code_theme[s]` and every `DocsRegistry` / `BlogRegistry` query method are
-unchanged.
+`with_theme`, `with_theme_toggle`, `with_default_path`, `with_api_group_name`
+and every `DocsRegistry` / `BlogRegistry` query method are unchanged.
+
+Drop `highlight` and every `lang-*` from your manifest — highlighting is always
+compiled in now:
+
+```diff
+ [features]
+-default = ["web", "highlight", "lang-bash", "lang-json"]
++default = ["web"]
+-highlight = ["dioxus-docs-kit/highlight"]
+-lang-bash = ["dioxus-docs-kit/lang-bash"]
+-lang-json = ["dioxus-docs-kit/lang-json"]
+```
+
+Replace `with_code_theme[s]` with CSS. There is no Rust code-theme API any
+more; override the tokens instead (they already follow your light/dark toggle):
+
+```diff
+-DocsConfig::new(docs_bundle!())
+-    .with_code_themes(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT)
++DocsConfig::new(docs_bundle!())
+```
+
+```css
+.dk-root {
+    --dk-hl-keyword: #cf222e;
+    --dk-hl-string:  #0a3069;
+    --dk-hl-comment: #6e7781;
+}
+```
+
+If you rendered code yourself through the `Code` / `SourceCode` re-exports, use
+`DocCodeBlock { block: CodeBlockNode { language, code, filename } }`, or call
+`dioxus_docs_kit::hl::highlight` and emit your own markup. If you styled the
+`.dxc` element, restyle `.dk-code`. Consumers who copied the `wasm_sysroot_stderr`
+shim into their own `main.rs` (see 0.5.0) should delete it: nothing references
+`stderr` any more.
 
 If you render `DocNode`s yourself, rename `DocNode::Markdown(md)` to
 `DocNode::Html(html)` and drop your `markdown::to_html*` call — the string is

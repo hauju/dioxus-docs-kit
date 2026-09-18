@@ -181,7 +181,7 @@ Collapsible content sections:
     MDX combines the simplicity of Markdown with the power of custom components, making documentation both easy to write and feature-rich.
   </Accordion>
   <Accordion title="How does syntax highlighting work?">
-    Code blocks are highlighted by `dioxus-code`, which compiles tree-sitter grammars into the wasm. Each language sits behind a `lang-*` cargo feature so you only ship the grammars you fence; a block whose grammar is not compiled in renders as plain text.
+    Code blocks are lexed by `hl-lite`, a dependency-free highlighter built into the kit — twelve languages for about 48 KB of wasm, with nothing to enable. Each token becomes a `<span class="hl-{kind}">` and the colors come from the `--dk-hl-*` CSS tokens, so you restyle them in CSS. A fence whose language is unknown renders as plain text.
   </Accordion>
 </AccordionGroup>
 

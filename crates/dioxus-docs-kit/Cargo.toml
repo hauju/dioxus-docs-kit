@@ -19,7 +19,6 @@ dioxus = { workspace = true, features = ["lib", "router"] }
 # (`openapi-parse`) run in `dioxus-docs-kit-build`, so markdown-rs, a regex
 # engine, `openapiv3` and `serde_yaml` never reach the client.
 dioxus-mdx = { workspace = true, features = ["components"] }
-dioxus-code = { workspace = true, optional = true }
 dioxus-fullstack-core = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -37,27 +36,10 @@ dioxus-docs-kit-build = { workspace = true }
 gloo-timers = { workspace = true }
 
 [features]
-default = [
-    "web",
-    "mermaid",
-    "highlight",
-    "openapi",
-    "lang-bash",
-    "lang-css",
-    "lang-dockerfile",
-    "lang-html",
-    "lang-javascript",
-    "lang-json",
-    "lang-markdown",
-    "lang-python",
-    "lang-toml",
-    "lang-typescript",
-    "lang-yaml",
-]
+default = ["web", "mermaid", "openapi"]
 web = ["dioxus/web", "dioxus-mdx/web"]
 server = ["dioxus/server", "dep:dioxus-fullstack-core"]
 mermaid = ["dioxus-mdx/mermaid"]
-highlight = ["dep:dioxus-code", "dioxus-mdx/highlight"]
 # The API-reference machinery: endpoint pages, the API sidebar and the search
 # entries for operations. Costs no extra dependencies since 0.9.0 — the spec is
 # parsed by `dioxus-docs-kit-build` — but leaving it off drops that code and
@@ -68,39 +50,9 @@ openapi = ["dioxus-mdx/openapi"]
 # docs site that never meets an agent should not pay for them.
 webmcp = ["dep:webmcp-rs", "dep:schemars"]
 
-# Syntax-highlighting grammars, one tree-sitter parser each. `highlight` on its
-# own compiles no grammar beyond Rust, which ships with `dioxus-code`'s
-# `runtime` (hence `lang-rust` needs nothing extra). Enable only the languages
-# your fences actually use: dropping just the C# and C++ grammars took this
-# repo's release wasm from 19.0 MB to 9.9 MB. A fence whose grammar is not
-# compiled in renders as plain text.
-#
-# For a language not listed here, depend on `dioxus-code` directly with its
-# `lang-*` flag; cargo unifies the feature into this crate's copy of the
-# dependency and `Language::from_slug` picks the grammar up:
-#   dioxus-code = { version = "0.1", default-features = false, features = [
-#       "runtime", "lang-go",
-#   ] }
-lang-rust = ["highlight", "dioxus-mdx/lang-rust"]
-lang-bash = ["highlight", "dioxus-mdx/lang-bash"]
-lang-c-sharp = ["highlight", "dioxus-mdx/lang-c-sharp"]
-lang-cpp = ["highlight", "dioxus-mdx/lang-cpp"]
-lang-css = ["highlight", "dioxus-mdx/lang-css"]
-lang-dockerfile = ["highlight", "dioxus-mdx/lang-dockerfile"]
-lang-html = ["highlight", "dioxus-mdx/lang-html"]
-lang-javascript = ["highlight", "dioxus-mdx/lang-javascript"]
-lang-json = ["highlight", "dioxus-mdx/lang-json"]
-lang-markdown = ["highlight", "dioxus-mdx/lang-markdown"]
-lang-python = ["highlight", "dioxus-mdx/lang-python"]
-lang-toml = ["highlight", "dioxus-mdx/lang-toml"]
-lang-tsx = ["highlight", "dioxus-mdx/lang-tsx"]
-lang-typescript = ["highlight", "dioxus-mdx/lang-typescript"]
-lang-yaml = ["highlight", "dioxus-mdx/lang-yaml"]
-
 [package.metadata.docs.rs]
 # Without `server` the `SeoRouter` module is absent from docs.rs - it 404'd on
-# 0.5.0. Deliberately not `all-features`: that would compile every `lang-*`
-# tree-sitter grammar just to render the docs.
+# 0.5.0.
 features = ["server"]
 
 [package.metadata.cargo-machete]

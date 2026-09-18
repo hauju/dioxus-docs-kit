@@ -2,7 +2,7 @@
 
 MDX parsing and rendering components for [Dioxus](https://dioxuslabs.com/) applications.
 
-Parse Mintlify-style MDX into an AST and render it with pre-built Dioxus components — callouts, cards, tabs, code groups, accordions, steps, and more. Includes syntax highlighting, frontmatter extraction, and OpenAPI spec parsing.
+Parse Mintlify-style MDX into an AST and render it with pre-built Dioxus components — callouts, cards, tabs, code groups, accordions, steps, and more. Includes dependency-free syntax highlighting, frontmatter extraction, and OpenAPI spec parsing.
 
 ## Quick Start
 
@@ -87,9 +87,47 @@ The `EndpointPage` component renders a two-column Mintlify-style API reference f
 
 ## Syntax Highlighting
 
-Code blocks get automatic syntax highlighting via [dioxus-code](https://crates.io/crates/dioxus-code). `DocCodeBlock` and `DocCodeGroup` render through it on both server and wasm targets — no extra wiring required.
+Code blocks are highlighted by [hl-lite](https://crates.io/crates/hl-lite),
+which `components` pulls in. `DocCodeBlock` and `DocCodeGroup` render through
+it on both server and wasm targets — no extra wiring, no grammar features, no C
+toolchain, and about 48 KB of wasm for every language at once.
 
-The crate ships a common set of languages baked in (bash, css, dockerfile, html, javascript, json, markdown, python, rust, toml, typescript, yaml; `lang-c-sharp`, `lang-cpp` and `lang-tsx` are available but off by default). To support more, add `dioxus-code` directly to your `Cargo.toml` with the desired `lang-*` features — Cargo unifies them into the transitive dep, so no fork or wrapper feature is needed.
+Supported: `bash`, `css`, `dockerfile`, `html`, `javascript`, `json`,
+`markdown`, `python`, `rust`, `toml`, `typescript`, `yaml`, plus the usual
+fence aliases (`rs`, `sh`, `zsh`, `console`, `yml`, `jsx`, `tsx`, `jsonc`,
+`md`, `htm`, …). A fence whose language is unknown renders as plain text in the
+same markup; a fence with no language falls back to the block's filename. The
+lexer is re-exported as `dioxus_mdx::hl` if you want to call it yourself.
+
+### Token colors are CSS
+
+A block renders as `<pre class="dk-code"><code>` with one
+`<span class="hl-{kind}">` per classified token — unclassified text has no
+span. There are thirteen kinds, one per `hl_lite::Kind`:
+
+`hl-keyword`, `hl-string`, `hl-comment`, `hl-number`, `hl-type`, `hl-function`,
+`hl-attribute`, `hl-property`, `hl-tag`, `hl-operator`, `hl-punctuation`,
+`hl-constant`, `hl-variable`.
+
+This crate ships no colors for them. `dioxus-docs-kit` wires them to its
+`--dk-hl-*` tokens; standalone, paste this (GitHub Light / Tokyo Night, flipped
+by the page's `color-scheme`):
+
+```css
+.dk-code .hl-keyword     { color: light-dark(#cf222e, #bb9af7); }
+.dk-code .hl-string      { color: light-dark(#0a3069, #9ece6a); }
+.dk-code .hl-comment     { color: light-dark(#6e7781, #565f89); font-style: italic; }
+.dk-code .hl-number      { color: light-dark(#0550ae, #ff9e64); }
+.dk-code .hl-type        { color: light-dark(#953800, #2ac3de); }
+.dk-code .hl-function    { color: light-dark(#8250df, #7aa2f7); }
+.dk-code .hl-attribute   { color: light-dark(#0550ae, #e0af68); }
+.dk-code .hl-property    { color: light-dark(#953800, #7dcfff); }
+.dk-code .hl-tag         { color: light-dark(#116329, #f7768e); }
+.dk-code .hl-operator    { color: light-dark(#cf222e, #89ddff); }
+.dk-code .hl-punctuation { color: light-dark(#57606a, #9aa5ce); }
+.dk-code .hl-constant    { color: light-dark(#0550ae, #ff9e64); }
+.dk-code .hl-variable    { color: light-dark(#953800, #c0caf5); }
+```
 
 ## Styling Setup
 
@@ -120,8 +158,6 @@ and adapt to any DaisyUI theme.
 - `components` (default) — the Dioxus renderer components. This is the only thing that pulls `dioxus` in; without it the crate is a plain Rust library of the document types plus (with `parse`) the parser.
 - `parse` (default) — the MDX/Markdown parser, including Markdown → HTML rendering. Pulls in `markdown` and a regex engine. A `dioxus-docs-kit` app leaves this off on the client: its pages are parsed into a bundle at build time.
 - `web` (default) — enables web-specific features like clipboard copy buttons on code blocks
-- `highlight` (default) — syntax-highlights code blocks via [`dioxus-code`](https://crates.io/crates/dioxus-code). Disable (`default-features = false`) to drop the dependency and its C-compiling tree-sitter grammars: no C toolchain is needed for wasm and the binary is smaller, but code blocks render as plain (uncolored) text. Turning it off also removes the `CodeTheme`, `Theme`, and `CodeThemeOverride` re-exports.
-- `lang-*` — one tree-sitter grammar each, on top of `highlight`. `highlight` on its own highlights Rust only (`dioxus-code`'s `runtime` always compiles it, so `lang-rust` needs nothing extra). The default set adds `lang-bash`, `lang-css`, `lang-dockerfile`, `lang-html`, `lang-javascript`, `lang-json`, `lang-markdown`, `lang-python`, `lang-toml`, `lang-typescript` and `lang-yaml`; `lang-c-sharp`, `lang-cpp` and `lang-tsx` are available but off by default (their grammars are the largest). For any other language, depend on `dioxus-code` directly — `dioxus-code = { version = "0.1", default-features = false, features = ["runtime", "lang-go"] }` — and cargo unifies the grammar into the copy this crate uses. A fence whose grammar is not compiled in renders as plain text in the same markup.
 - `openapi` — the `OpenApiSpec` types and the viewer components (`OpenApiViewer`, `EndpointPage`, …). Costs no dependencies; always compiled.
 - `openapi-parse` (default) — the spec *parser*: `parse_openapi()` and inline `<OpenAPI>…</OpenAPI>` blocks, plus `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`). Disable to drop them; an `<OpenAPI>` block then falls through to the markdown branch and its body renders as text. Frontmatter parsing is unaffected: it uses the built-in `parse_yaml_lite` subset parser, not `serde_yaml`.
 
