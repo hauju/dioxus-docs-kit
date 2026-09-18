@@ -1076,7 +1076,6 @@ version = "0.8.0"
 dependencies = [
  "dioxus",
  "dioxus-code",
- "dioxus-free-icons",
  "dioxus-fullstack-core",
  "dioxus-mdx",
  "gloo-timers",
@@ -1103,7 +1102,6 @@ dependencies = [
  "dioxus",
  "dioxus-docs-kit",
  "dioxus-docs-kit-build",
- "dioxus-free-icons",
 ]
 
 [[package]]
@@ -1123,15 +1121,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tracing",
-]
-
-[[package]]
-name = "dioxus-free-icons"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28d356e0f9edad0930bc1cc76744360c0ecca020cb943acaadf42cb774f28284"
-dependencies = [
- "dioxus",
 ]
 
 [[package]]
@@ -1371,7 +1360,6 @@ version = "0.8.0"
 dependencies = [
  "dioxus",
  "dioxus-code",
- "dioxus-free-icons",
  "gloo-timers",
  "markdown",
  "openapiv3",
@@ -1380,6 +1368,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tracing",
+ "web-sys",
 ]
 
 [[package]]

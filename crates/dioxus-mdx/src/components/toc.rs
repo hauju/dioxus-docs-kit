@@ -7,8 +7,8 @@
 
 use std::sync::LazyLock;
 
+use crate::lucide::{Icon, LdList};
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::LdList};
 
 static HEADING_RE: LazyLock<crate::re::Regex> =
     LazyLock::new(|| crate::re::Regex::new(r"(?m)^(#{2,4})\s+(.+)$").unwrap());

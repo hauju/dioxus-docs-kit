@@ -1,7 +1,7 @@
 //! Tag group component for grouping endpoints by tag.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::{ApiOperation, ApiTag};
 

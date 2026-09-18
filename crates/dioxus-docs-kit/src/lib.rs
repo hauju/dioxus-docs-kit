@@ -293,6 +293,10 @@ pub use dioxus_mdx::{
     ParsedDoc, extract_headers,
 };
 
+/// The vendored Lucide icons the shell renders, re-exported so consumers can
+/// use the same `Icon` in their own headers and pages.
+pub use dioxus_mdx::lucide;
+
 #[cfg(feature = "highlight")]
 pub use dioxus_mdx::CodeThemeOverride;
 

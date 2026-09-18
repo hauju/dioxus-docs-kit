@@ -2,8 +2,8 @@
 //!
 //! Maps common icon names from Mintlify/FontAwesome style to Lucide icons.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 /// Render an icon by name.
 ///

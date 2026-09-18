@@ -1,7 +1,7 @@
 //! ResponseField and Expandable components for API response documentation.
 
+use crate::lucide::*;
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons::*};
 
 use crate::parser::{ExpandableNode, ResponseFieldNode};
 

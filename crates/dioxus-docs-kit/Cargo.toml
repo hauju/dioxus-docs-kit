@@ -15,7 +15,6 @@ readme = "README.md"
 
 [dependencies]
 dioxus = { workspace = true, features = ["lib", "router"] }
-dioxus-free-icons = { workspace = true }
 dioxus-mdx = { workspace = true }
 dioxus-code = { workspace = true, optional = true }
 dioxus-fullstack-core = { workspace = true, optional = true }

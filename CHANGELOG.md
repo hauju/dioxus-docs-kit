@@ -5,6 +5,34 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all three crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Changed
+
+- **Dropped the `dioxus-free-icons` dependency.** The 86 Lucide icons the shell
+  renders are vendored as inline SVG in `dioxus-mdx`'s new `lucide` module
+  (`Icon { class, icon: LdX }`, re-exported as `dioxus_docs_kit::lucide`); the
+  `<svg>` carries the same attributes and path data as before, so nothing about
+  the rendering or the CSS classes changes. `dioxus-free-icons`
+  0.10.0 was the slowest crate in a cold wasm build (55k LOC, ~1,456 `rsx!`
+  expansions for the ~86 icons used) and, because its manifest requests
+  `dioxus` without `default-features = false`, it re-enabled dioxus's `launch`,
+  `logger` and `devtools` in every consumer — pulling `dioxus-logger`,
+  `tracing-subscriber`, `regex-automata`, `sharded-slab` and `matchers` back
+  into builds that had opted out in 0.7.0. Those crates are now genuinely
+  absent. The kit never re-exported `dioxus_free_icons`, so its own API is
+  unchanged; anything that reached the crate transitively through the kit must
+  now depend on it directly or switch to `dioxus_docs_kit::lucide`.
+
+### Fixed
+
+- `dioxus-mdx` depends on `web-sys` with the `Location` feature under its `web`
+  feature. `dioxus-web`'s history implementation calls `window.location()` but
+  only requests `web-sys/Location` from its own `devtools` feature, so without
+  this a `dioxus/web` build that leaves `devtools` off fails to compile
+  `dioxus-web`. Until now `dioxus-free-icons` masked the bug by re-enabling
+  dioxus's defaults.
+
 ## [0.8.0] — 2026-09-17
 
 ### Added

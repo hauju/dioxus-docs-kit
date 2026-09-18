@@ -1,14 +1,13 @@
 use dioxus::prelude::*;
+use dioxus_docs_kit::lucide::{
+    Icon, LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdLock, LdMenu,
+    LdPackage, LdPalette, LdSearch, LdServer,
+};
 use dioxus_docs_kit::{
     BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
     BlogThemeToggle, Code, CodeTheme, DocsConfig, DocsContext, DocsLayout, DocsPageContent,
     DocsRegistry, DocsWebMcp, Language, SearchButton, SearchModal, SourceCode, Theme, ThemeToggle,
     use_blog_providers, use_docs_context, use_docs_providers,
-};
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{
-    LdArrowRight, LdBookOpen, LdExternalLink, LdFileText, LdGithub, LdLock, LdMenu, LdPackage,
-    LdPalette, LdSearch, LdServer,
 };
 use std::sync::LazyLock;
 
