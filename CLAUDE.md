@@ -38,18 +38,22 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 |-------|------|---------|
 | `dioxus-docs-kit-example` | `src/main.rs` | Example app: routes, custom pages (Home, Blog, Navbar), docs glue |
 | `dioxus-docs-kit` | `crates/dioxus-docs-kit/` | **Reusable docs shell** — layout, sidebar, search, page nav, theme toggle, OpenAPI |
-| `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time helper: reads `_nav.json` → generates `include_str!()` content map |
+| `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
 | `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
 
-**Dependency direction:** `dioxus-docs-kit` depends on `dioxus-mdx`. The build crate is independent. The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
+**Dependency direction:** `dioxus-docs-kit` depends on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
 
 ### Content Pipeline
 
-1. `build.rs` calls `dioxus_docs_kit_build::generate_content_map("docs/_nav.json")`
-2. Build script reads `_nav.json`, generates `$OUT_DIR/doc_content_generated.rs` with `include_str!()` for each `.mdx` file
-3. `doc_content_map!()` macro in `main.rs` includes the generated file as a `HashMap<&str, &str>`
-4. `DocsConfig::new(nav_json, content_map).with_openapi(prefix, yaml).build()` creates a `DocsRegistry` (parses all docs, builds search index)
+**All parsing happens at build time.** The wasm client links no MDX parser, no `markdown`, no `regex`/`regex-lite`, no `openapiv3` and no `serde_yaml` — it only runs `serde_json` over the bundle, once.
+
+1. `build.rs` calls `dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").with_openapi(prefix, spec_path).generate()` (and `BlogBuild::new("blog/_blog.json").generate()`)
+2. The build crate reads `_nav.json`, parses every `.mdx` into `Vec<DocNode>` with prose rendered to HTML (`DocNode::Html`), parses the OpenAPI spec into `OpenApiSpec`, builds the section-level search index (lowercase fields included) and writes `$OUT_DIR/docs_bundle.json` / `blog_bundle.json`. `cargo:rerun-if-changed` is emitted per file.
+3. `docs_bundle!()` / `blog_bundle!()` macros embed the JSON with `include_str!`
+4. `DocsConfig::new(docs_bundle!()).build()` creates a `DocsRegistry` — it deserializes the bundle (inside the consumer's `LazyLock`, so on first page render) and derives only the cheap runtime bits (API sidebar entries, operation index, blog categories)
 5. `DocsPageContent` checks `registry.get_api_operation(&path)` first, then falls back to `registry.get_parsed_doc(&path)`
+
+The bundle carries a `version` field (`BUNDLE_VERSION`, mirrored in `crates/dioxus-docs-kit/src/bundle.rs` and `crates/dioxus-docs-kit-build/src/bundle.rs`); bump it whenever the layout changes incompatibly. The build crate's `bundle.rs` holds serialize-only mirrors of `SearchEntry`, `BlogPost`, `BlogFrontmatter` and `BlogSearchEntry` — the kit's tests dev-depend on the build crate and generate real bundles, which is what keeps the two definitions in sync.
 
 **Adding a new doc page:** create `docs/<group>/<slug>.mdx` and add the path to `docs/_nav.json`.
 
@@ -82,12 +86,12 @@ Route enum (main.rs):
 
 ### Key Types (dioxus-docs-kit)
 
-- **`DocsConfig`** — Builder: `.new(nav_json, content_map)` → `.with_openapi()` → `.with_theme_toggle()` → `.with_default_path()` → `.build()`
+- **`DocsConfig`** — Builder: `.new(docs_bundle!())` → `.with_theme_toggle()` → `.with_default_path()` → `.with_api_group_name()` → `.build()`. Content and OpenAPI specs come from the bundle, so they are configured in `build.rs`, not here
 - **`DocsRegistry`** — Holds parsed docs, nav config, search index, OpenAPI specs. Key methods: `get_parsed_doc()`, `search_docs()`, `get_api_operation()`, `get_api_sidebar_entries()`, `tab_for_path()`, `generate_llms_txt()`, `generate_llms_full_txt()`
 - **`DocsContext`** — Route decoupling bridge (`current_path`, `base_path`, `navigate` callback). Consumer provides this so library components don't depend on the consumer's Route enum
 - **`use_docs_providers(registry, docs_ctx)`** → returns `DocsProviders { search_open, drawer_open }` for use in custom headers
 - **UI components** — `DocsLayout`, `DocsPageContent`, `DocsSidebar`, `SearchModal`, `SearchButton`, `DocsPageNav`, `MobileDrawer`, `ThemeToggle`
-- **`doc_content_map!()`** — Macro that generates `fn doc_content_map() -> HashMap<&'static str, &'static str>` from build script output
+- **`docs_bundle!()` / `blog_bundle!()`** — Macros that `include_str!` the build script's `$OUT_DIR/docs_bundle.json` / `blog_bundle.json`
 
 ### Styling
 
@@ -102,7 +106,8 @@ Route enum (main.rs):
 - Components use `#[component]` macro with owned prop types (`String`, `Vec`, `Signal`)
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `dioxus-code`'s `Code` component, behind the `highlight` feature (in `default`); with the feature off, code blocks render as escaped plain text
-- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi", lang-*]` where the default `lang-*` set is bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript, yaml (`lang-c-sharp`/`lang-cpp`/`lang-tsx` exist but are off — C#+C++ were ~8 MB of wasm, TSX 1.5 MB; Rust is always highlighted). The example app's own `default` list is trimmed to what `docs/` fences: bash, css, json, python, typescript. Plus `server` (SeoRouter/Axum routes). `openapi` gates `DocsConfig::with_openapi` + spec parsing (drops `openapiv3`/`serde_yaml` when off); frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
+- Cargo features (docs-kit): `default = ["web", "mermaid", "highlight", "openapi", lang-*]` where the default `lang-*` set is bash, css, dockerfile, html, javascript, json, markdown, python, toml, typescript, yaml (`lang-c-sharp`/`lang-cpp`/`lang-tsx` exist but are off — C#+C++ were ~8 MB of wasm, TSX 1.5 MB; Rust is always highlighted). The example app's own `default` list is trimmed to what `docs/` fences: bash, css, json, python, typescript. Plus `server` (SeoRouter/Axum routes). `openapi` gates the API-reference rendering path only — the spec parser lives in the build crate. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
+- Cargo features (dioxus-mdx): `components` gates `src/components/**` and is the *only* thing that pulls `dioxus` in; `parse` gates `src/parser/**` implementation (markdown-rs + regex) while the AST types and `src/text.rs` are always compiled; `openapi` is types + viewer components (no deps), `openapi-parse` adds `openapiv3`/`serde_yaml`. Frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
 - CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.10, Bun for Tailwind
 
 ---
