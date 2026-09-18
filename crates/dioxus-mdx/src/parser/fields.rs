@@ -1,7 +1,7 @@
 //! ParamField, ResponseField, and Expandable parsers.
 
 use super::content::parse_content;
-use super::utils::{extract_attr, find_closing_tag, skip_to_next_tag};
+use super::utils::{dedent, extract_attr, find_closing_tag, find_tag_end, skip_to_next_tag};
 use crate::parser::types::*;
 
 /// Try to parse a ParamField component.
@@ -12,7 +12,7 @@ pub(super) fn try_parse_param_field(content: &str) -> Option<(DocNode, &str)> {
         return None;
     }
 
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[11..tag_end]; // Skip "<ParamField"
 
     // Determine location from attribute name
@@ -48,11 +48,11 @@ pub(super) fn try_parse_param_field(content: &str) -> Option<(DocNode, &str)> {
     // Find closing tag
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "ParamField")?;
-    let inner = after_open[..close_idx].trim();
+    let inner = dedent(&after_open[..close_idx]);
     let rest = &after_open[close_idx + "</ParamField>".len()..];
 
     // Parse inner content recursively to handle nested components
-    let parsed_content = parse_content(inner);
+    let parsed_content = parse_content(inner.trim());
 
     Some((
         DocNode::ParamField(ParamFieldNode {
@@ -73,7 +73,7 @@ pub(super) fn try_parse_response_field(content: &str) -> Option<(DocNode, &str)>
         return None;
     }
 
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[14..tag_end]; // Skip "<ResponseField"
 
     // Handle self-closing
@@ -99,7 +99,8 @@ pub(super) fn try_parse_response_field(content: &str) -> Option<(DocNode, &str)>
 
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "ResponseField")?;
-    let inner = &after_open[..close_idx];
+    let dedented = dedent(&after_open[..close_idx]);
+    let inner = dedented.as_str();
     let rest = &after_open[close_idx + "</ResponseField>".len()..];
 
     // Check for nested Expandable
@@ -133,7 +134,7 @@ pub(super) fn try_parse_expandable(content: &str) -> Option<(DocNode, &str)> {
         return None;
     }
 
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[11..tag_end]; // Skip "<Expandable"
 
     let title = extract_attr(tag_content, "title").unwrap_or_else(|| "Details".to_string());
@@ -152,7 +153,7 @@ pub(super) fn try_parse_expandable(content: &str) -> Option<(DocNode, &str)> {
 /// Parse a nested Expandable section within ResponseField.
 fn parse_nested_expandable(content: &str) -> Option<ExpandableNode> {
     let start = content.find("<Expandable")?;
-    let tag_end = content[start..].find('>')? + start;
+    let tag_end = find_tag_end(content, start)?;
     let tag_content = &content[start + 11..tag_end]; // Skip "<Expandable"
 
     let title = extract_attr(tag_content, "title").unwrap_or_else(|| "Properties".to_string());
@@ -376,5 +377,40 @@ mod tests {
             nodes.iter().any(|n| matches!(n, DocNode::ResponseField(_))),
             "Expected ResponseField node"
         );
+    }
+
+    #[test]
+    fn param_field_type_may_contain_angle_brackets() {
+        // Ending the opening tag at the first `>` splits it inside the quoted
+        // type: the badge loses the generic, `required` after it is dropped and
+        // the tag's tail leaks into the body.
+        for generic in ["Option<String>", "Vec<(String, String, u8)>"] {
+            let content =
+                format!(r#"<ParamField path="x" type="{generic}" required>Body</ParamField>"#);
+            let nodes = parse_mdx(&content);
+            let DocNode::ParamField(field) = &nodes[0] else {
+                panic!("expected ParamField, got {:?}", nodes[0]);
+            };
+            assert_eq!(field.name, "x");
+            assert_eq!(field.param_type, generic);
+            assert!(field.required, "`required` lost for {generic}");
+            let DocNode::Html(html) = &field.content[0] else {
+                panic!("expected Html, got {:?}", field.content[0]);
+            };
+            assert_eq!(html.trim(), "<p>Body</p>", "body for {generic}");
+        }
+    }
+
+    #[test]
+    fn response_field_type_may_contain_angle_brackets() {
+        let content = r#"<ResponseField name="items" type="Vec<(String, String, u8)>" required>Body</ResponseField>"#;
+        let nodes = parse_mdx(content);
+        let DocNode::ResponseField(field) = &nodes[0] else {
+            panic!("expected ResponseField, got {:?}", nodes[0]);
+        };
+        assert_eq!(field.name, "items");
+        assert_eq!(field.field_type, "Vec<(String, String, u8)>");
+        assert!(field.required);
+        assert_eq!(field.content_html.trim(), "<p>Body</p>");
     }
 }

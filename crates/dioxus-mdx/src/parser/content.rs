@@ -16,7 +16,7 @@ use super::openapi_tag::try_parse_openapi;
 use super::steps::try_parse_steps;
 use super::tabs::try_parse_tabs;
 use super::update::try_parse_update;
-use super::utils::find_fenced_blocks;
+use super::utils::{find_fenced_blocks, find_inline_code_spans, find_tag_end};
 use crate::parser::frontmatter::extract_frontmatter;
 use crate::parser::types::*;
 
@@ -134,7 +134,7 @@ pub(super) fn parse_content(content: &str) -> Vec<DocNode> {
                 if idx == 0 {
                     // Component tag at position 0 but no parser matched it.
                     // Skip past the '<' to avoid an infinite loop, treating it as markdown.
-                    let skip = remaining.find('>').map(|i| i + 1).unwrap_or(1);
+                    let skip = find_tag_end(remaining, 0).map(|i| i + 1).unwrap_or(1);
                     (&remaining[..skip], &remaining[skip..])
                 } else {
                     (&remaining[..idx], &remaining[idx..])
@@ -200,7 +200,9 @@ fn extract_code_blocks_from_markdown(content: &str) -> Vec<DocNode> {
 /// Find the index of the next MDX component in the content.
 ///
 /// Tags inside fenced code blocks are skipped: a code sample documenting a
-/// component must render as code, not be parsed as that component.
+/// component must render as code, not be parsed as that component. The same
+/// holds for inline code — a sentence mentioning `` `<OpenAPI>` `` blocks is
+/// prose, and treating the span as a real tag cuts the paragraph in three.
 fn find_next_component(content: &str) -> Option<usize> {
     let patterns = [
         "<Tip>",
@@ -224,11 +226,12 @@ fn find_next_component(content: &str) -> Option<usize> {
         "<OpenAPI",
     ];
 
-    let fences: Vec<(usize, usize)> = find_fenced_blocks(content)
+    let code: Vec<(usize, usize)> = find_fenced_blocks(content)
         .iter()
         .map(|b| (b.start, b.end))
+        .chain(find_inline_code_spans(content))
         .collect();
-    let in_fence = |idx: usize| fences.iter().any(|&(start, end)| idx >= start && idx < end);
+    let in_code = |idx: usize| code.iter().any(|&(start, end)| idx >= start && idx < end);
 
     patterns
         .iter()
@@ -236,7 +239,7 @@ fn find_next_component(content: &str) -> Option<usize> {
             content
                 .match_indices(p)
                 .map(|(idx, _)| idx)
-                .find(|&idx| !in_fence(idx))
+                .find(|&idx| !in_code(idx))
         })
         .min()
 }
@@ -388,6 +391,20 @@ mod tests {
             })
             .expect("code block in step");
         assert_eq!(code, "{\n  \"a\": [\n    1\n  ]\n}");
+    }
+
+    #[test]
+    fn component_tags_inside_inline_code_stay_in_the_paragraph() {
+        // `<OpenAPI>` here is prose about the component; parsing it as one cuts
+        // the sentence into three nodes.
+        let md = "Use `<OpenAPI>` blocks and `<Card>` tags in prose.";
+        let nodes = parse_mdx(md);
+        assert_eq!(nodes.len(), 1, "paragraph was split: {nodes:?}");
+        let DocNode::Html(html) = &nodes[0] else {
+            panic!("expected Html, got {:?}", nodes[0]);
+        };
+        assert!(html.contains("<code>&lt;OpenAPI&gt;</code>"), "got: {html}");
+        assert!(html.contains("<code>&lt;Card&gt;</code>"), "got: {html}");
     }
 
     use super::*;

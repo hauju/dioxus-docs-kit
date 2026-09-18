@@ -1,6 +1,6 @@
 //! OpenAPI specification tag parser.
 
-use super::utils::{extract_attr, find_closing_tag};
+use super::utils::{dedent, extract_attr, find_closing_tag, find_tag_end};
 use crate::parser::openapi_parser::parse_openapi;
 use crate::parser::types::*;
 
@@ -11,7 +11,7 @@ pub(super) fn try_parse_openapi(content: &str) -> Option<(DocNode, &str)> {
         return None;
     }
 
-    let tag_end = content.find('>')?;
+    let tag_end = find_tag_end(content, 0)?;
     let tag_content = &content[8..tag_end]; // Skip "<OpenAPI"
 
     // Extract attributes
@@ -33,11 +33,11 @@ pub(super) fn try_parse_openapi(content: &str) -> Option<(DocNode, &str)> {
     // Block tag - spec content is inline
     let after_open = &content[tag_end + 1..];
     let close_idx = find_closing_tag(after_open, "OpenAPI")?;
-    let inner = after_open[..close_idx].trim();
+    let inner = dedent(&after_open[..close_idx]);
     let rest = &after_open[close_idx + "</OpenAPI>".len()..];
 
     // Parse the OpenAPI spec
-    let spec = parse_openapi(inner).ok()?;
+    let spec = parse_openapi(inner.trim()).ok()?;
 
     Some((
         DocNode::OpenApi(OpenApiNode {

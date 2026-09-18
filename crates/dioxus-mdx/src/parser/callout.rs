@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 
 use crate::re::Regex;
 
+use super::utils::dedent;
 use crate::parser::types::*;
 
 static CALLOUT_OPEN_RE: LazyLock<Regex> =
@@ -23,7 +24,7 @@ pub(super) fn try_parse_callout(content: &str) -> Option<(DocNode, &str)> {
     let close_tag = format!("</{}>", tag_name);
     let close_idx = after_open.find(&close_tag)?;
 
-    let inner = after_open[..close_idx].trim().to_string();
+    let inner = dedent(&after_open[..close_idx]).trim().to_string();
     let rest = &after_open[close_idx + close_tag.len()..];
 
     Some((
