@@ -321,6 +321,21 @@ dioxus::server::serve(|| async {
 });
 ```
 
+### Agent feedback discovery
+
+`with_agent_feedback` serves `/.well-known/agent-feedback.json` (a 308 redirect with `AgentFeedback::Redirect`, or the JSON document itself with `AgentFeedback::Inline`) and appends a "Reporting problems" section to `llms.txt` / `llms-full.txt` telling AI agents where to file structured bug and docs-mismatch reports:
+
+```rust
+use dioxus_docs_kit::server::{AgentFeedback, SeoRouter};
+
+let seo = SeoRouter::new("https://your-site.com", "My Docs", "Documentation")
+    .with_docs(&DOCS, "/docs")
+    .with_agent_feedback(AgentFeedback::Redirect(
+        "https://example.com/agent-feedback/discovery.json".into(),
+    ))
+    .into_router();
+```
+
 ## Syntax Highlighting
 
 Code blocks are highlighted by [`hl-lite`](https://crates.io/crates/hl-lite),
