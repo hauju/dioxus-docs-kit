@@ -3,6 +3,10 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
+<Update label="v0.10.2" description="September 2026">
+- **Site-level agent links in `<head>`**: `DocsContext::with_llms_txt(true)` emits `<link rel="alternate" type="text/plain" href="/llms.txt">` and `DocsContext::with_help_link(url)` emits `<link rel="help">` on every docs page, also with `auto_meta: false`, so agents starting from the human docs find `llms.txt` and the reporting guide
+</Update>
+
 <Update label="v0.10.1" description="September 2026">
 - **`registry::agent_feedback_block` is public**: sites that build their own `llms.txt` can append the same "Reporting problems" section
 </Update>
