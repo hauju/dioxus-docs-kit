@@ -21,7 +21,7 @@ use dioxus::server::axum::{Router, http::header, response::Redirect, routing::ge
 
 use crate::blog::BlogRegistry;
 use crate::components::seo::xml_escape;
-use crate::registry::DocsRegistry;
+use crate::registry::{DocsRegistry, agent_feedback_block};
 
 const TEXT: &str = "text/plain; charset=utf-8";
 const XML: &str = "application/xml; charset=utf-8";
@@ -237,25 +237,6 @@ impl SeoRouter {
             get(move || async move { ([(header::CONTENT_TYPE, TEXT)], robots) }),
         )
     }
-}
-
-/// The "Reporting problems" section appended to `llms.txt` / `llms-full.txt`.
-fn agent_feedback_block(discovery_url: &str) -> String {
-    format!(
-        "## Reporting problems
-
-If you hit a bug, a docs mismatch, friction, or a missing feature while using
-this product, file a report. No auth needed.
-
-1. GET {discovery_url}
-2. POST a JSON report to `endpoints.feedback.submit.url`. Minimum fields:
-   `subject.surface`, `signal.category`, `content.title`; everything else is
-   optional. `policy_url` lists the accepted enums and limits. Redact secrets
-   in `evidence`.
-
-One report per distinct problem. Keep working after filing.
-"
-    )
 }
 
 /// Append `block` to `text`, separated by exactly one blank line.

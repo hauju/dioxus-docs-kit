@@ -553,6 +553,29 @@ impl DocsRegistry {
     }
 }
 
+/// The "Reporting problems" section that [`SeoRouter::with_agent_feedback`]
+/// appends to `llms.txt` / `llms-full.txt`. Public so a site that assembles
+/// its own `llms.txt` can append the same text.
+///
+/// [`SeoRouter::with_agent_feedback`]: crate::server::SeoRouter::with_agent_feedback
+pub fn agent_feedback_block(discovery_url: &str) -> String {
+    format!(
+        "## Reporting problems
+
+If you hit a bug, a docs mismatch, friction, or a missing feature while using
+this product, file a report. No auth needed.
+
+1. GET {discovery_url}
+2. POST a JSON report to `endpoints.feedback.submit.url`. Minimum fields:
+   `subject.surface`, `signal.category`, `content.title`; everything else is
+   optional. `policy_url` lists the accepted enums and limits. Redact secrets
+   in `evidence`.
+
+One report per distinct problem. Keep working after filing.
+"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
