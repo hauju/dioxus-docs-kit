@@ -10,7 +10,7 @@ Add it as a build dependency:
 
 ```toml
 [build-dependencies]
-dioxus-docs-kit-build = "0.9"
+dioxus-docs-kit-build = "0.10"
 ```
 
 Create a `build.rs`:
