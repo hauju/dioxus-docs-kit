@@ -17,7 +17,7 @@
 //! });
 //! ```
 
-use dioxus::server::axum::{Router, http::header, routing::get};
+use dioxus::server::axum::{Router, http::header, response::Redirect, routing::get};
 
 use crate::blog::BlogRegistry;
 use crate::components::seo::xml_escape;
@@ -27,6 +27,26 @@ const TEXT: &str = "text/plain; charset=utf-8";
 const XML: &str = "application/xml; charset=utf-8";
 const MD: &str = "text/markdown; charset=utf-8";
 const RSS: &str = "application/rss+xml; charset=utf-8";
+const JSON: &str = "application/json";
+const AGENT_FEEDBACK_PATH: &str = "/.well-known/agent-feedback.json";
+
+/// Where `/.well-known/agent-feedback.json` comes from.
+pub enum AgentFeedback {
+    /// Redirect (308) to a discovery document hosted elsewhere, e.g. by the feedback backend.
+    Redirect(String),
+    /// Serve this document inline as `application/json`.
+    Inline(serde_json::Value),
+}
+
+impl AgentFeedback {
+    /// The URL agents should fetch the discovery document from.
+    fn discovery_url(&self, site_url: &str) -> String {
+        match self {
+            Self::Redirect(url) => url.clone(),
+            Self::Inline(_) => format!("{site_url}{AGENT_FEEDBACK_PATH}"),
+        }
+    }
+}
 
 /// Builder for the crawler-facing routes of a docs/blog site.
 ///
@@ -42,12 +62,14 @@ const RSS: &str = "application/rss+xml; charset=utf-8";
 /// | `/sitemap-blog.xml` | blog | blog sitemap |
 /// | `/sitemap.xml` | always | sitemap index over the above |
 /// | `/robots.txt` | always | allow-all incl. explicit AI-crawler entries |
+/// | `/.well-known/agent-feedback.json` | agent feedback | discovery document (inline or 308 redirect) |
 pub struct SeoRouter {
     site_url: String,
     site_title: String,
     site_description: String,
     docs: Option<(&'static DocsRegistry, String)>,
     blog: Option<(&'static BlogRegistry, String)>,
+    agent_feedback: Option<AgentFeedback>,
 }
 
 /// Normalize a base path to the form `/docs` (leading slash, no trailing slash).
@@ -72,6 +94,7 @@ impl SeoRouter {
             site_description: site_description.to_string(),
             docs: None,
             blog: None,
+            agent_feedback: None,
         }
     }
 
@@ -87,6 +110,13 @@ impl SeoRouter {
         self
     }
 
+    /// Advertise an agent-feedback endpoint: serves `/.well-known/agent-feedback.json`
+    /// and appends a "Reporting problems" section to `llms.txt` / `llms-full.txt`.
+    pub fn with_agent_feedback(mut self, source: AgentFeedback) -> Self {
+        self.agent_feedback = Some(source);
+        self
+    }
+
     /// Build the Axum router. Merge it into your app router with
     /// [`Router::merge`].
     pub fn into_router(self) -> Router {
@@ -94,6 +124,28 @@ impl SeoRouter {
         let site_url = &self.site_url;
 
         let mut sitemap_index_entries: Vec<String> = Vec::new();
+
+        let feedback_block = self
+            .agent_feedback
+            .as_ref()
+            .map(|source| agent_feedback_block(&source.discovery_url(site_url)));
+        match &self.agent_feedback {
+            Some(AgentFeedback::Redirect(url)) => {
+                let url = url.clone();
+                router = router.route(
+                    AGENT_FEEDBACK_PATH,
+                    get(move || async move { Redirect::permanent(&url) }),
+                );
+            }
+            Some(AgentFeedback::Inline(doc)) => {
+                let body = doc.to_string();
+                router = router.route(
+                    AGENT_FEEDBACK_PATH,
+                    get(move || async move { ([(header::CONTENT_TYPE, JSON)], body) }),
+                );
+            }
+            None => {}
+        }
 
         if let Some((docs, base)) = &self.docs {
             // Raw Markdown for each doc page at `<base>/<page>.md`. Registered as
@@ -111,17 +163,22 @@ impl SeoRouter {
 
             let docs_base_url = format!("{site_url}{base}");
 
-            let llms =
-                docs.generate_llms_txt(&self.site_title, &self.site_description, &docs_base_url);
+            let llms = with_block(
+                docs.generate_llms_txt(&self.site_title, &self.site_description, &docs_base_url),
+                feedback_block.as_deref(),
+            );
             router = router.route(
                 "/llms.txt",
                 get(move || async move { ([(header::CONTENT_TYPE, TEXT)], llms) }),
             );
 
-            let llms_full = docs.generate_llms_full_txt(
-                &self.site_title,
-                &self.site_description,
-                &docs_base_url,
+            let llms_full = with_block(
+                docs.generate_llms_full_txt(
+                    &self.site_title,
+                    &self.site_description,
+                    &docs_base_url,
+                ),
+                feedback_block.as_deref(),
             );
             router = router.route(
                 "/llms-full.txt",
@@ -182,6 +239,35 @@ impl SeoRouter {
     }
 }
 
+/// The "Reporting problems" section appended to `llms.txt` / `llms-full.txt`.
+fn agent_feedback_block(discovery_url: &str) -> String {
+    format!(
+        "## Reporting problems
+
+If you hit a bug, a docs mismatch, friction, or a missing feature while using
+this product, file a report. No auth needed.
+
+1. GET {discovery_url}
+2. POST a JSON report to `endpoints.feedback.submit.url`. Minimum fields:
+   `subject.surface`, `signal.category`, `content.title`; everything else is
+   optional. `policy_url` lists the accepted enums and limits. Redact secrets
+   in `evidence`.
+
+One report per distinct problem. Keep working after filing.
+"
+    )
+}
+
+/// Append `block` to `text`, separated by exactly one blank line.
+fn with_block(mut text: String, block: Option<&str>) -> String {
+    if let Some(block) = block {
+        text.truncate(text.trim_end_matches('\n').len());
+        text.push_str("\n\n");
+        text.push_str(block);
+    }
+    text
+}
+
 /// Allow-all robots.txt with explicit per-AI-crawler sections.
 ///
 /// AI crawlers are listed explicitly so each can be controlled with a single
@@ -212,7 +298,7 @@ fn robots_txt(site_url: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_base, robots_txt};
+    use super::{AgentFeedback, agent_feedback_block, normalize_base, robots_txt, with_block};
 
     #[test]
     fn normalizes_base_paths() {
@@ -229,5 +315,37 @@ mod tests {
         assert!(out.contains("User-agent: GPTBot\nAllow: /\n"));
         assert!(out.contains("User-agent: ClaudeBot\nAllow: /\n"));
         assert!(out.ends_with("Sitemap: https://example.com/sitemap.xml\n"));
+    }
+
+    #[test]
+    fn agent_feedback_block_names_url_and_minimum_fields() {
+        let block = agent_feedback_block("https://example.com/discovery.json");
+        assert!(block.starts_with("## Reporting problems\n"));
+        assert!(block.contains("1. GET https://example.com/discovery.json\n"));
+        for field in ["subject.surface", "signal.category", "content.title"] {
+            assert!(block.contains(field), "missing {field}");
+        }
+        assert!(block.ends_with("Keep working after filing.\n"));
+    }
+
+    #[test]
+    fn agent_feedback_discovery_url() {
+        let redirect = AgentFeedback::Redirect("https://feedback.example.org/d.json".into());
+        assert_eq!(
+            redirect.discovery_url("https://example.com"),
+            "https://feedback.example.org/d.json"
+        );
+        let inline = AgentFeedback::Inline(serde_json::json!({ "schema_version": "1" }));
+        assert_eq!(
+            inline.discovery_url("https://example.com"),
+            "https://example.com/.well-known/agent-feedback.json"
+        );
+    }
+
+    #[test]
+    fn block_is_appended_after_one_blank_line() {
+        assert_eq!(with_block("a\n\n\n".into(), Some("B\n")), "a\n\nB\n");
+        assert_eq!(with_block("a".into(), Some("B\n")), "a\n\nB\n");
+        assert_eq!(with_block("a\n".into(), None), "a\n");
     }
 }

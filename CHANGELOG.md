@@ -5,6 +5,18 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
 
+## [Unreleased]
+
+### Added
+
+- **Agent feedback discovery.** `SeoRouter::with_agent_feedback` serves
+  `/.well-known/agent-feedback.json` — either a 308 redirect to a discovery
+  document hosted elsewhere (`AgentFeedback::Redirect`) or the document itself
+  as `application/json` (`AgentFeedback::Inline`) — and appends a "Reporting
+  problems" section to `llms.txt` / `llms-full.txt` that tells AI agents where
+  to POST structured bug and docs-mismatch reports. Independent of
+  `with_docs` / `with_blog`; the `llms.txt` section needs `with_docs`.
+
 ## [0.9.0] — 2026-09-18
 
 ### Changed
