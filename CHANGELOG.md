@@ -5,7 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
 
-## [Unreleased]
+## [0.10.0] — 2026-09-27
 
 ### Added
 
