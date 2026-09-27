@@ -403,7 +403,8 @@ fn MyDocsLayout() -> Element {
         }),
     )
     .with_site_url(SITE_URL)
-    .with_markdown_alternate(true);
+    .with_markdown_alternate(true)
+    .with_llms_txt(true);
 
     let providers = use_docs_providers(&DOCS, docs_ctx);
 
@@ -466,6 +467,7 @@ fn MyBlogLayout() -> Element {
     )
     .with_site_url(SITE_URL)
     .with_markdown_alternate(true)
+    .with_llms_txt(true)
     .with_current_category(current_category);
 
     let providers = use_blog_providers(&BLOG, blog_ctx);

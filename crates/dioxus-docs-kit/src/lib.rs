@@ -121,15 +121,30 @@ pub struct DocsContext {
     /// have no Markdown source), and only when [`auto_meta`](Self::auto_meta)
     /// is also on.
     pub markdown_alternate: bool,
+    /// When true, [`DocsPageMeta`] emits
+    /// `<link rel="alternate" type="text/plain" href="/llms.txt">` on every docs
+    /// page so an agent that lands on the human-facing docs finds the
+    /// machine-readable index. Enable it only if your server serves `/llms.txt`
+    /// (`server::SeoRouter::with_docs`, or your own route). Emitted regardless
+    /// of [`auto_meta`](Self::auto_meta): it is a site-level pointer you opted
+    /// into, not per-page metadata your own `<head>` component would duplicate.
+    pub llms_txt: bool,
+    /// When set, [`DocsPageMeta`] emits `<link rel="help" href="...">` on every
+    /// docs page — the standard HTML link type for "where to get help", e.g. a
+    /// guide that tells agents and humans how to report problems with the docs
+    /// or API. Emitted regardless of [`auto_meta`](Self::auto_meta), like
+    /// [`llms_txt`](Self::llms_txt).
+    pub help_url: Option<String>,
 }
 
 impl DocsContext {
     /// Create a context from the three required fields.
     ///
     /// The meta fields default to `site_url: None`, `auto_meta: true`,
-    /// `markdown_alternate: false`; override them with the `with_*` setters.
-    /// Prefer this over a struct literal — new fields get sensible defaults
-    /// here instead of breaking your build.
+    /// `markdown_alternate: false`, `llms_txt: false`, `help_url: None`;
+    /// override them with the `with_*` setters. Prefer this over a struct
+    /// literal — new fields get sensible defaults here instead of breaking your
+    /// build.
     pub fn new(
         current_path: impl Into<ReadSignal<String>>,
         base_path: impl Into<String>,
@@ -142,6 +157,8 @@ impl DocsContext {
             site_url: None,
             auto_meta: true,
             markdown_alternate: false,
+            llms_txt: false,
+            help_url: None,
         }
     }
 
@@ -160,6 +177,20 @@ impl DocsContext {
     /// Emit `<link rel="alternate" type="text/markdown">` tags (default: off).
     pub fn with_markdown_alternate(mut self, markdown_alternate: bool) -> Self {
         self.markdown_alternate = markdown_alternate;
+        self
+    }
+
+    /// Emit `<link rel="alternate" type="text/plain" href="/llms.txt">` on every
+    /// docs page (default: off).
+    pub fn with_llms_txt(mut self, llms_txt: bool) -> Self {
+        self.llms_txt = llms_txt;
+        self
+    }
+
+    /// Emit `<link rel="help" href="...">` on every docs page, pointing at a
+    /// guide on how to report problems (default: none).
+    pub fn with_help_link(mut self, url: impl Into<String>) -> Self {
+        self.help_url = Some(url.into());
         self
     }
 }

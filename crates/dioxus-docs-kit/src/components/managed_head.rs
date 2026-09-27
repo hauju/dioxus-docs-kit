@@ -37,7 +37,7 @@ impl HeadTag {
         }
     }
 
-    fn attr(&self, name: &str) -> Option<String> {
+    pub(crate) fn attr(&self, name: &str) -> Option<String> {
         self.attributes
             .iter()
             .find(|(key, _)| *key == name)
