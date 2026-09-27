@@ -5,6 +5,14 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
 
+## [0.10.1] — 2026-09-27
+
+### Added
+
+- `registry::agent_feedback_block` is public, so a site that assembles its own
+  `llms.txt` (own robots/sitemap routes, no `SeoRouter`) can append the same
+  "Reporting problems" section `with_agent_feedback` does.
+
 ## [0.10.0] — 2026-09-27
 
 ### Added

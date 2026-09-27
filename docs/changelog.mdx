@@ -3,6 +3,10 @@ title: Changelog
 description: Latest updates and changes to the project.
 ---
 
+<Update label="v0.10.1" description="September 2026">
+- **`registry::agent_feedback_block` is public**: sites that build their own `llms.txt` can append the same "Reporting problems" section
+</Update>
+
 <Update label="v0.10.0" description="September 2026">
 - **Agent feedback discovery**: `SeoRouter::with_agent_feedback` serves `/.well-known/agent-feedback.json` (a 308 redirect via `AgentFeedback::Redirect`, or the document itself via `AgentFeedback::Inline`) and appends a "Reporting problems" section to `llms.txt` / `llms-full.txt` telling AI agents where to file structured bug and docs-mismatch reports
 </Update>
