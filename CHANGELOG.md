@@ -5,6 +5,18 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
 
+## [0.10.2] — 2026-09-27
+
+### Added
+
+- **Site-level agent links in `<head>`.** `DocsContext::with_llms_txt(true)`
+  emits `<link rel="alternate" type="text/plain" href="/llms.txt">` and
+  `DocsContext::with_help_link(url)` emits `<link rel="help" href=...>` on every
+  docs page, so an agent that starts from the human-facing docs finds the
+  machine-readable index and the "how to report problems" guide without
+  guessing URLs. Both emit even with `auto_meta: false`, since they are
+  site-level pointers a consumer's own `<head>` component would not duplicate.
+
 ## [0.10.1] — 2026-09-27
 
 ### Added
