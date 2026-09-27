@@ -61,10 +61,26 @@ fn build_docs_jsonld(
     jsonld_to_string(&payload)
 }
 
+/// Site-level discoverability links: the `llms.txt` alternate and the
+/// `rel="help"` guide. Independent of `auto_meta` — they point at resources the
+/// site opted into, not at per-page metadata a consumer's own `<head>`
+/// component would also emit.
+fn site_link_tags(llms_txt: bool, help_url: Option<&str>) -> Vec<HeadTag> {
+    let mut tags = Vec::new();
+    if llms_txt {
+        tags.push(HeadTag::link("alternate", "/llms.txt", Some("text/plain")));
+    }
+    if let Some(url) = help_url {
+        tags.push(HeadTag::link("help", url, None));
+    }
+    tags
+}
+
 /// Injects SEO meta tags and document title for a single docs page (MDX or API endpoint).
 ///
 /// Reads `auto_meta` and `site_url` from [`DocsContext`]. When `auto_meta` is
-/// off, emits nothing. Otherwise pulls title/description from the registry —
+/// off, emits only the site-level `llms_txt` / `help_url` links (nothing when
+/// neither is set). Otherwise pulls title/description from the registry —
 /// frontmatter for MDX pages, the OpenAPI operation's `summary`/`description`
 /// for API endpoint pages — and emits `<title>`, `<meta name="description">`,
 /// Open Graph, Twitter Card, and schema.org `TechArticle` JSON-LD tags.
@@ -76,8 +92,12 @@ pub fn DocsPageMeta(path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let ctx = use_context::<DocsContext>();
 
+    let site_links = site_link_tags(ctx.llms_txt, ctx.help_url.as_deref());
     if !ctx.auto_meta {
-        return rsx! {};
+        if site_links.is_empty() {
+            return rsx! {};
+        }
+        return rsx! { ManagedPageHead { title: String::new(), tags: site_links, set_title: false } };
     }
 
     // `is_mdx` gates the raw-Markdown alternate link: OpenAPI endpoint pages are
@@ -157,13 +177,27 @@ pub fn DocsPageMeta(path: String) -> Element {
     if let Some(href) = markdown_href {
         tags.push(HeadTag::link("alternate", &href, Some("text/markdown")));
     }
+    tags.extend(site_links);
     tags.push(HeadTag::jsonld(json_ld));
     rsx! { ManagedPageHead { title, tags } }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::build_docs_jsonld;
+    use super::{build_docs_jsonld, site_link_tags};
+
+    #[test]
+    fn site_links_follow_context_flags() {
+        assert!(site_link_tags(false, None).is_empty());
+        let tags = site_link_tags(true, Some("/docs/guides/report"));
+        assert_eq!(tags.len(), 2);
+        assert_eq!(tags[0].attr("rel").as_deref(), Some("alternate"));
+        assert_eq!(tags[0].attr("href").as_deref(), Some("/llms.txt"));
+        assert_eq!(tags[0].attr("type").as_deref(), Some("text/plain"));
+        assert_eq!(tags[1].attr("rel").as_deref(), Some("help"));
+        assert_eq!(tags[1].attr("href").as_deref(), Some("/docs/guides/report"));
+        assert_eq!(tags[1].attr("type"), None);
+    }
 
     #[test]
     fn jsonld_emits_techarticle_with_id_when_canonical_present() {

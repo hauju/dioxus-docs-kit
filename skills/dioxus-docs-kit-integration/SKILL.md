@@ -287,9 +287,11 @@ fn DocsPage(slug: Vec<String>) -> Element {
 
 **`DocsContext` is `#[non_exhaustive]`** — construct it with
 `DocsContext::new(current_path, base_path, navigate)` and layer optional SEO
-settings via `.with_site_url(...)`, `.with_auto_meta(false)`, and
-`.with_markdown_alternate(true)`. Struct literals won't compile outside the
-kit's own crate.
+settings via `.with_site_url(...)`, `.with_auto_meta(false)`,
+`.with_markdown_alternate(true)`, `.with_llms_txt(true)` and
+`.with_help_link("/docs/guides/report-a-problem")` (the last two emit
+site-level `<link>` tags even when `auto_meta` is off). Struct literals won't
+compile outside the kit's own crate.
 
 If you added the blog, add the parallel wrapper:
 
