@@ -3,4 +3,5 @@ fn main() {
     dioxus_docs_kit_build::DocsBuild::new("../../docs/_nav.json")
         .with_openapi("api-reference", "../../docs/api-reference/petstore.yaml")
         .generate();
+    dioxus_docs_kit_build::BlogBuild::new("../../blog/_blog.json").generate();
 }

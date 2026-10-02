@@ -36,6 +36,10 @@
 //!
 //! Serve [`STYLESHEET`] at the `href` you link (see the `topcoat-docs` example).
 //!
+//! The blog (`blog_*_page` / `blog_*_head`) renders a `BlogRegistry` from
+//! `dioxus_docs_kit_build::BlogBuild`, with filters and pagination as plain
+//! links; see the `topcoat-docs` example for its routes.
+//!
 //! Search is a plain GET form: the header's search box submits to
 //! `<base_path>/search?q=…`, which you route to [`docs_search_page`].
 //!
@@ -46,19 +50,25 @@
 //! put [`docs_theme_script`] in `<head>` so the stored choice applies before
 //! first paint.
 //!
-//! Not ported yet: the blog.
 
+mod blog;
 mod content;
 mod icon;
 mod openapi;
 mod shell;
 mod theme;
 
+pub use blog::{
+    blog_category_head, blog_category_page, blog_index_head, blog_index_page, blog_post_head,
+    blog_post_page, blog_search_page,
+};
 pub use content::doc_content;
 pub use shell::{docs_head, docs_page, docs_search_head, docs_search_page};
 pub use theme::docs_theme_script;
 
-pub use docs_kit_core::{DocsConfig, DocsRegistry, docs_bundle};
+pub use docs_kit_core::{
+    BlogConfig, BlogRegistry, DocsConfig, DocsRegistry, ThemeConfig, blog_bundle, docs_bundle,
+};
 
 /// Precompiled stylesheet covering every class these components emit
 /// (Tailwind utilities, DaisyUI dark/light themes, typography prose and the

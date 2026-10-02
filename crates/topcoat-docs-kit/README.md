@@ -32,7 +32,13 @@ tabs, accordions and copy buttons work in plain HTML.
   plus `docs_theme_script` for `<head>`, which applies the stored choice
   before first paint.
 
-Not ported yet: the blog.
+- Blog: index with featured posts, tag or category filter and pagination (plain
+  links: `?tag=`, `?page=`, or category paths), post pages (author, reading
+  time, table of contents, related posts, older/newer, a script-free
+  scroll-driven reading-progress bar), category pages, blog search, and head
+  tags (Open Graph, Twitter, Article JSON-LD).
+
+Everything the Dioxus kit renders is ported.
 
 ## Usage
 

@@ -6,7 +6,7 @@
 //! never needs to know which theme the visitor picked.
 
 use dioxus_mdx::lucide::{LdMoon, LdSun};
-use docs_kit_core::DocsRegistry;
+use docs_kit_core::ThemeConfig;
 use topcoat::{
     Result,
     view::{Unescaped, View, component, view},
@@ -21,12 +21,13 @@ const APPLY_STORED_THEME: &str = "(function(){var s=document.currentScript.datas
 const TOGGLE_THEME: &str = "var s=this.dataset,d=document.documentElement,n=d.getAttribute('data-theme')===s.dark?s.light:s.dark;d.setAttribute('data-theme',n);d.setAttribute('data-dk-mode',n===s.dark?'dark':'light');try{localStorage.setItem(s.key,n)}catch(e){}";
 
 /// Applies the visitor's stored theme (or the configured default) before the
-/// page paints. Place it early in `<head>`. Renders nothing unless the
+/// page paints. Place it early in `<head>`, passing the registry's theme
+/// (`theme: DOCS.theme.as_ref()`); renders nothing for `None`, i.e. unless the
 /// registry was built with `with_theme` or `with_theme_toggle`.
 #[component]
-pub async fn docs_theme_script(registry: &DocsRegistry) -> Result<impl View> {
+pub async fn docs_theme_script(theme: Option<&ThemeConfig>) -> Result<impl View> {
     Ok(view! {
-        if let Some(theme) = &registry.theme {
+        if let Some(theme) = theme {
             <script
                 data-key=(theme.storage_key.as_str())
                 data-default=(theme.default_theme.as_str())
@@ -41,8 +42,7 @@ pub async fn docs_theme_script(registry: &DocsRegistry) -> Result<impl View> {
 
 /// The header's light/dark button; nothing unless `with_theme_toggle` is set.
 #[component]
-pub(crate) async fn theme_toggle(registry: &DocsRegistry) -> Result<impl View> {
-    let theme = registry.theme.as_ref();
+pub(crate) async fn theme_toggle(theme: Option<&ThemeConfig>) -> Result<impl View> {
     let toggle = theme.and_then(|t| t.toggle_themes.as_ref());
     Ok(view! {
         if let (Some(theme), Some((light, dark))) = (theme, toggle) {

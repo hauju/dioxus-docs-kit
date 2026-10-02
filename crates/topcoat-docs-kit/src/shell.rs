@@ -110,7 +110,7 @@ async fn frame(
                         <input type="search" name="q" value=(query) placeholder="Search docs" aria-label="Search documentation">
                     </label>
                 </form>
-                theme_toggle(registry: registry)
+                theme_toggle(theme: registry.theme.as_ref())
             </div>
 
             // Below `lg` the sidebar is hidden; the same nav sits in a disclosure.
@@ -303,20 +303,7 @@ async fn article(registry: &DocsRegistry, base_path: &str, path: &str) -> Result
                             page_nav(registry: registry, base_path: base_path, prev: prev.as_deref(), next: next.as_deref())
                         </article>
                     </main>
-                    if !headers.is_empty() {
-                        <aside class="dk-toc w-56 shrink-0 hidden xl:block">
-                            <div class="sticky top-12 p-6">
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-3">"On this page"</h4>
-                                <ul class="space-y-2 text-sm">
-                                    for (id, title, level) in &headers {
-                                        <li class=(if *level > 2 { "pl-3" } else { "" })>
-                                            <a href=(format!("#{id}")) class="text-base-content/60 hover:text-base-content transition-colors">(title.as_str())</a>
-                                        </li>
-                                    }
-                                </ul>
-                            </div>
-                        </aside>
-                    }
+                    toc(headers: &headers)
                 </div>
             },
         }
@@ -390,5 +377,27 @@ pub async fn docs_search_head(query: &str) -> Result<impl View> {
     Ok(view! {
         <title>(title)</title>
         <meta name="robots" content="noindex">
+    })
+}
+
+/// "On this page" column from a page's `(id, title, level)` headings; nothing
+/// when there are none.
+#[component]
+pub(crate) async fn toc(headers: &[(String, String, u8)]) -> Result<impl View> {
+    Ok(view! {
+        if !headers.is_empty() {
+            <aside class="dk-toc w-56 shrink-0 hidden xl:block">
+                <div class="sticky top-12 p-6">
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-3">"On this page"</h4>
+                    <ul class="space-y-2 text-sm">
+                        for (id, title, level) in headers {
+                            <li class=(if *level > 2 { "pl-3" } else { "" })>
+                                <a href=(format!("#{id}")) class="text-base-content/60 hover:text-base-content transition-colors">(title.as_str())</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </aside>
+        }
     })
 }

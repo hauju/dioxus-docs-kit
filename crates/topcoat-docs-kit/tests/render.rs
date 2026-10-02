@@ -288,7 +288,7 @@ fn themed_registry() -> &'static DocsRegistry {
 async fn theme_script_and_toggle_follow_the_config() {
     let reg = themed_registry();
     let cx = &Cx::default();
-    let script = render(view! { cx => docs_theme_script(registry: reg) }).await;
+    let script = render(view! { cx => docs_theme_script(theme: reg.theme.as_ref()) }).await;
     assert!(
         script
             .starts_with(r#"<script data-key="docs-theme" data-default="dark" data-dark="dark">"#),
@@ -309,7 +309,7 @@ async fn no_theme_config_renders_no_script_or_toggle() {
     let reg = registry();
     let cx = &Cx::default();
     assert_eq!(
-        render(view! { cx => docs_theme_script(registry: reg) }).await,
+        render(view! { cx => docs_theme_script(theme: reg.theme.as_ref()) }).await,
         ""
     );
     let page =

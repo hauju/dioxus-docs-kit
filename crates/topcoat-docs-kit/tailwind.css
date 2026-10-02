@@ -25,3 +25,27 @@
 
 /* The `--dk-*` / `--dk-hl-*` design tokens, shared with dioxus-docs-kit. */
 @import "../dioxus-docs-kit/theme.css";
+
+/* Blog reading progress: a scroll-driven animation, so no script. Browsers
+   without scroll timelines would run it instantly to a full bar, so the bar
+   only shows where they are supported. */
+.dk-reading-progress-track {
+    display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+    .dk-reading-progress-track {
+        display: block;
+    }
+
+    .dk-reading-progress {
+        transform-origin: 0 50%;
+        animation: dk-reading-progress linear both;
+        animation-timeline: scroll(root);
+    }
+}
+
+@keyframes dk-reading-progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}

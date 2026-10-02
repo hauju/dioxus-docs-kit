@@ -28,10 +28,15 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   too, and `with_theme_toggle` adds a light/dark header button
   (`docs_theme_script` applies the stored choice before first paint), and
   ```` ```mermaid ```` fences render as diagrams (`mermaid` feature, default
-  on). The blog is not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  on). The blog is ported too: `blog_index_page` (featured posts, tag or
+  category filter, pagination via plain links), `blog_post_page` (with a
+  script-free scroll-driven reading-progress bar), `blog_category_page`,
+  `blog_search_page` and their `blog_*_head` tags. `docs_theme_script` takes
+  `theme: Option<&ThemeConfig>`, so docs and blog pages share it. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
-  order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
+  order — `docs_kit_core::seo::article_jsonld` (moved out of the Dioxus blog
+  meta component) and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
   target, title/context, highlighted snippet), shared by both shells.
 - `dioxus-mdx`: `lucide` (icon SVG data and `icon_for_name`) and
   `clean_step_title` no longer need the `components` feature;
