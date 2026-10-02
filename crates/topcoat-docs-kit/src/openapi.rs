@@ -1,14 +1,14 @@
-//! OpenAPI endpoint pages. Markup mirrors `dioxus-mdx`'s `EndpointPage`;
+//! OpenAPI endpoint pages and the inline `<OpenAPI>` viewer. Markup mirrors `dioxus-mdx`'s `EndpointPage`;
 //! the expandable parts are `<details>`, so no runtime script is needed.
 
-use dioxus_mdx::lucide::LdChevronRight;
+use dioxus_mdx::lucide::{LdBraces, LdChevronRight, LdDownload, LdServer, LdSettings2, LdUpload};
 use dioxus_mdx::{
     ApiOperation, ApiParameter, ApiRequestBody, ApiResponse, CodeBlockNode, HttpMethod,
-    OpenApiSpec, SchemaDefinition,
+    OpenApiNode, OpenApiSpec, SchemaDefinition,
 };
 use topcoat::{
     Result,
-    view::{View, ViewExt, component, view},
+    view::{BoxView, View, ViewExt, component, view},
 };
 
 use crate::content::highlighted;
@@ -249,7 +249,7 @@ async fn schema_view(
     name: Option<&str>,
     required: bool,
     open: bool,
-) -> Result<impl View> {
+) -> Result<BoxView<'_>> {
     let indent = if depth > 0 {
         "py-1.5 ml-4 border-l-2 border-base-300 pl-3"
     } else {
@@ -344,5 +344,172 @@ async fn schema_view(
         </div>
     }
     // Recursive through nested properties and variants.
+    .boxed())
+}
+
+// ============================================================================
+// Inline <OpenAPI> viewer
+// ============================================================================
+
+/// The `<OpenAPI>` MDX component: spec header, endpoints grouped by tag (each
+/// endpoint expandable), and optionally the schema definitions.
+///
+/// This and `endpoint_card` return boxed views on purpose: without the boxes,
+/// the nesting down to the recursive `schema_view` overflows the trait
+/// solver (E0275) in any crate that renders `doc_content`.
+#[component]
+pub(crate) async fn openapi_viewer(node: &OpenApiNode) -> Result<BoxView<'_>> {
+    let spec = &node.spec;
+    let (groups, untagged) = spec.operations_by_tag();
+    let groups: Vec<_> = match &node.tags {
+        Some(filter) => groups
+            .into_iter()
+            .filter(|(tag, _)| filter.iter().any(|t| t.eq_ignore_ascii_case(&tag.name)))
+            .collect(),
+        None => groups,
+    };
+    let show_untagged = node.tags.is_none() && !untagged.is_empty();
+
+    Ok(view! {
+        <div class="openapi-viewer not-prose">
+            <div class="border-b border-base-300 pb-4 mb-4">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h2 class="text-2xl font-bold text-base-content">(spec.info.title.as_str())</h2>
+                    <span class="badge badge-primary badge-outline">"v" (spec.info.version.as_str())</span>
+                </div>
+                if let Some(desc) = &spec.info.description {
+                    <p class="mt-2 text-base-content/70">(desc.as_str())</p>
+                }
+                if !spec.servers.is_empty() {
+                    <div class="mt-4">
+                        <span class="text-sm font-semibold text-base-content/60 flex items-center gap-2">
+                            icon(glyph: LdServer, class: "size-4") "Servers"
+                        </span>
+                        <div class="mt-2 space-y-1">
+                            for server in &spec.servers {
+                                <div class="flex items-center gap-2">
+                                    <code class="text-sm font-mono text-primary bg-base-200 px-2 py-1 rounded">(server.url.as_str())</code>
+                                    if let Some(desc) = &server.description {
+                                        <span class="text-sm text-base-content/50">"- " (desc.as_str())</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="mt-6">
+                for (tag, ops) in &groups {
+                    <details class="group/tag my-6" open="">
+                        <summary class="w-full flex items-center gap-2 py-2 text-left cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                            icon(glyph: LdChevronRight, class: "size-5 text-base-content/50 transition-transform group-open/tag:rotate-90")
+                            <h3 class="text-lg font-semibold text-base-content">(tag.name.as_str())</h3>
+                            <span class="badge badge-ghost badge-sm">(ops.len())</span>
+                        </summary>
+                        if let Some(desc) = &tag.description {
+                            <p class="text-sm text-base-content/70 ml-7 mb-3">(desc.as_str())</p>
+                        }
+                        <div class="ml-4">
+                            for op in ops {
+                                endpoint_card(op: op)
+                            }
+                        </div>
+                    </details>
+                }
+                if show_untagged {
+                    <div class="my-6">
+                        <h3 class="text-lg font-semibold text-base-content mb-3">"Other Endpoints"</h3>
+                        for op in &untagged {
+                            endpoint_card(op: op)
+                        }
+                    </div>
+                }
+            </div>
+            if node.show_schemas && !spec.schemas.is_empty() {
+                <details class="group/schemas mt-8 border-t border-base-300 pt-4">
+                    <summary class="w-full flex items-center gap-2 py-2 text-left cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        icon(glyph: LdChevronRight, class: "size-5 text-base-content/50 transition-transform group-open/schemas:rotate-90")
+                        <h3 class="text-lg font-semibold text-base-content flex items-center gap-2">
+                            icon(glyph: LdBraces, class: "size-5") "Schema Definitions"
+                        </h3>
+                        <span class="badge badge-ghost badge-sm">(spec.schemas.len())</span>
+                    </summary>
+                    <div class="mt-4 space-y-4">
+                        for (name, schema) in &spec.schemas {
+                            <div class="border border-base-300 rounded-lg overflow-hidden">
+                                <div class="px-4 py-2 bg-base-200 border-b border-base-300">
+                                    <code class="font-mono font-semibold text-primary">(name.as_str())</code>
+                                </div>
+                                <div class="p-4">schema_view(schema: schema, depth: 0, name: None, required: false, open: true)</div>
+                            </div>
+                        }
+                    </div>
+                </details>
+            }
+        </div>
+    }
+    .boxed())
+}
+
+/// One collapsible endpoint in the inline viewer.
+#[component]
+async fn endpoint_card(op: &ApiOperation) -> Result<BoxView<'_>> {
+    Ok(view! {
+        <details class="group/op border border-base-300 rounded-lg overflow-hidden my-3">
+            <summary class="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-base-200/50 transition-colors">
+                icon(glyph: LdChevronRight, class: "size-4 text-base-content/50 transition-transform shrink-0 group-open/op:rotate-90")
+                method_badge(method: op.method)
+                <code class="font-mono text-sm text-base-content">(op.path.as_str())</code>
+                if op.deprecated {
+                    <span class="badge badge-warning badge-sm">"deprecated"</span>
+                }
+                if let Some(summary) = &op.summary {
+                    <span class="text-sm text-base-content/60 truncate ml-auto max-w-[40%]">(summary.as_str())</span>
+                }
+            </summary>
+            <div class="border-t border-base-300">
+                <div class="px-4 py-3 bg-base-200/30">
+                    if let Some(summary) = &op.summary {
+                        <h4 class="font-semibold text-base-content">(summary.as_str())</h4>
+                    }
+                    if let Some(desc) = &op.description {
+                        <p class="mt-2 text-sm text-base-content/70">(desc.as_str())</p>
+                    }
+                    if let Some(op_id) = &op.operation_id {
+                        <div class="mt-2">
+                            <span class="text-xs text-base-content/50">"Operation ID: "</span>
+                            <code class="text-xs font-mono text-base-content/70">(op_id.as_str())</code>
+                        </div>
+                    }
+                </div>
+                if !op.parameters.is_empty() {
+                    <div class="px-4 py-3 border-t border-base-300">
+                        <h5 class="text-sm font-semibold text-base-content/80 mb-3 flex items-center gap-2">icon(glyph: LdSettings2, class: "size-4") "Parameters"</h5>
+                        <div class="space-y-1">
+                            for param in &op.parameters {
+                                parameter_item(param: param)
+                            }
+                        </div>
+                    </div>
+                }
+                if let Some(body) = &op.request_body {
+                    <div class="px-4 py-3 border-t border-base-300">
+                        <h5 class="text-sm font-semibold text-base-content/80 mb-3 flex items-center gap-2">icon(glyph: LdUpload, class: "size-4") "Request Body"</h5>
+                        request_body(body: body)
+                    </div>
+                }
+                if !op.responses.is_empty() {
+                    <div class="px-4 py-3 border-t border-base-300">
+                        <h5 class="text-sm font-semibold text-base-content/80 mb-3 flex items-center gap-2">icon(glyph: LdDownload, class: "size-4") "Responses"</h5>
+                        <div class="space-y-2">
+                            for response in &op.responses {
+                                response_item(response: response)
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </details>
+    }
     .boxed())
 }

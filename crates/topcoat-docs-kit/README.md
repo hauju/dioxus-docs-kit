@@ -23,14 +23,14 @@ tabs, accordions and copy buttons work in plain HTML.
   kit's search modal.
 - MDX components: callouts, cards and card groups, tabs, steps, accordions,
   code blocks and code groups (syntax highlighted), param/response fields,
-  request/response examples, changelog updates.
+  request/response examples, changelog updates, and the inline `<OpenAPI>`
+  spec viewer.
 
 - Light/dark toggle (with `DocsConfig::with_theme_toggle`): a header button
   plus `docs_theme_script` for `<head>`, which applies the stored choice
   before first paint.
 
-Not ported yet: the inline `<OpenAPI>` MDX viewer, the blog, Mermaid diagrams
-(shown as code).
+Not ported yet: the blog, Mermaid diagrams (shown as code).
 
 ## Usage
 

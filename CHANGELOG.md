@@ -19,22 +19,24 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 - **`topcoat-docs-kit` crate (experimental).** The docs shell for
   [Topcoat](https://github.com/tokio-rs/topcoat) apps, on the same content
   bundle: `docs_page` (tab bar, sidebar, article, table of contents,
-  previous/next, 404), `docs_head`, `doc_content` (every MDX component except
-  the inline OpenAPI viewer) and a precompiled `STYLESHEET`. Server-rendered
+  previous/next, 404), `docs_head`, `doc_content` (every MDX component,
+  including the inline `<OpenAPI>` viewer) and a precompiled `STYLESHEET`. Server-rendered
   with no runtime script — tabs are DaisyUI radio tabs, accordions are
   `<details>`. Search is a header GET form plus `docs_search_page` /
   `docs_search_head` (ranked results with highlighted snippets, `noindex`).
   OpenAPI endpoint pages (with the endpoints in the sidebar by tag) render
   too, and `with_theme_toggle` adds a light/dark header button
   (`docs_theme_script` applies the stored choice before first paint). The
-  inline `<OpenAPI>` viewer and the blog are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  blog and Mermaid diagrams are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
   order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
   target, title/context, highlighted snippet), shared by both shells.
 - `dioxus-mdx`: `lucide` (icon SVG data and `icon_for_name`) and
   `clean_step_title` no longer need the `components` feature;
-  `LucideIcon::svg_inner()` exposes an icon's SVG markup.
+  `LucideIcon::svg_inner()` exposes an icon's SVG markup; and
+  `OpenApiSpec::operations_by_tag()` (moved out of the viewer component)
+  groups operations for any renderer.
 
 ### Changed
 

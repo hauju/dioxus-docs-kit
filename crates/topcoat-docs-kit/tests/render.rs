@@ -317,3 +317,27 @@ async fn no_theme_config_renders_no_script_or_toggle() {
             .await;
     assert!(!page.contains("dk-theme-toggle"), "{page}");
 }
+
+#[tokio::test]
+async fn inline_openapi_viewer_lists_endpoints_by_tag() {
+    let mdx = format!(
+        "---\ntitle: Inline\n---\n\n<OpenAPI>\n{}\n</OpenAPI>\n",
+        SPEC.trim()
+    );
+    let bundle = dioxus_docs_kit_build::docs_bundle_json(
+        r#"{ "groups": [ { "group": "G", "pages": ["g/inline"] } ] }"#,
+        &[("g/inline", mdx.as_str())],
+        &[],
+    )
+    .expect("generate bundle");
+    let reg = DocsConfig::new(bundle.leak()).build();
+    let doc = reg.get_parsed_doc("g/inline").unwrap();
+    let cx = &Cx::default();
+    let html = render(view! { cx => doc_content(nodes: &doc.content, base_path: "/docs") }).await;
+
+    assert!(html.contains(r#"<div class="openapi-viewer"#), "{html}");
+    assert!(html.contains(">Pets</h2>"), "{html}");
+    assert!(html.contains(">pets</h3>"), "{html}");
+    assert!(html.contains(">/pets/{id}</code>"), "{html}");
+    assert!(html.contains("Operation ID: "), "{html}");
+}

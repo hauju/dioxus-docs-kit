@@ -15,10 +15,11 @@ use dioxus_mdx::{
 use hl_lite::{Kind, Lang};
 use topcoat::{
     Result,
-    view::{Unescaped, View, ViewExt, component, view},
+    view::{BoxView, Unescaped, View, ViewExt, component, view},
 };
 
 use crate::icon::icon;
+use crate::openapi::openapi_viewer;
 
 /// Renders a page's parsed MDX nodes.
 ///
@@ -52,7 +53,7 @@ async fn doc_nodes(nodes: &[DocNode], base_path: &str, key: &str) -> Result<impl
 }
 
 #[component]
-async fn doc_node(node: &DocNode, base_path: &str, key: &str) -> Result<impl View> {
+async fn doc_node(node: &DocNode, base_path: &str, key: &str) -> Result<BoxView<'_>> {
     Ok(view! {
         match node {
             // Rendered from the author's Markdown at build time: trusted.
@@ -71,7 +72,8 @@ async fn doc_node(node: &DocNode, base_path: &str, key: &str) -> Result<impl Vie
             DocNode::RequestExample(example) => labeled_code_group(label: "Request", blocks: &example.blocks, key: key),
             DocNode::ResponseExample(example) => labeled_code_group(label: "Response", blocks: &example.blocks, key: key),
             DocNode::Update(update) => update_entry(update: update, base_path: base_path, key: key),
-            // Inline <OpenAPI> viewers are not ported yet.
+            DocNode::OpenApi(node) => openapi_viewer(node: node),
+            // `DocNode` is non-exhaustive.
             _ => "",
         }
     }
@@ -277,7 +279,7 @@ async fn param_field(field: &ParamFieldNode, base_path: &str, key: &str) -> Resu
 }
 
 #[component]
-async fn response_field(field: &ResponseFieldNode, depth: usize) -> Result<impl View> {
+async fn response_field(field: &ResponseFieldNode, depth: usize) -> Result<BoxView<'_>> {
     let indent = if depth > 0 {
         "py-3 ml-4 border-l-2 border-base-300 pl-4"
     } else {
