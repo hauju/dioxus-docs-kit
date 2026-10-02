@@ -213,3 +213,47 @@ More text.
         assert_eq!(headers[0].1, "Real");
     }
 }
+
+/// Clean up step title by removing a redundant `Step N:` / `Step N.` prefix.
+///
+/// Hand-rolled rather than a regex (`^Step\s+\d+[:.]\s*`) so the renderer links
+/// no regex engine: with parsing moved to build time this was the last one left
+/// in the browser.
+pub fn clean_step_title(title: &str) -> String {
+    let Some(rest) = title.strip_prefix("Step") else {
+        return title.trim().to_string();
+    };
+    let rest = rest.trim_start_matches([' ', '\t']);
+    if rest.len() == title.len() - 4 {
+        // No whitespace after "Step" — `\s+` requires at least one.
+        return title.trim().to_string();
+    }
+    let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
+    let after = &rest[digits..];
+    match (digits, after.as_bytes().first()) {
+        (0, _) | (_, None) => title.trim().to_string(),
+        (_, Some(b':' | b'.')) => after[1..].trim().to_string(),
+        _ => title.trim().to_string(),
+    }
+}
+
+#[cfg(test)]
+mod step_title_tests {
+    use super::clean_step_title;
+
+    #[test]
+    fn step_number_prefix_is_stripped() {
+        assert_eq!(clean_step_title("Step 1: Install"), "Install");
+        assert_eq!(clean_step_title("Step 12.  Install"), "Install");
+        assert_eq!(clean_step_title("Step\t3: Install"), "Install");
+    }
+
+    #[test]
+    fn other_titles_are_left_alone() {
+        assert_eq!(clean_step_title("Install"), "Install");
+        assert_eq!(clean_step_title("Stepping stones"), "Stepping stones");
+        assert_eq!(clean_step_title("Step one"), "Step one");
+        assert_eq!(clean_step_title("Step1: x"), "Step1: x");
+        assert_eq!(clean_step_title("Step 1"), "Step 1");
+    }
+}

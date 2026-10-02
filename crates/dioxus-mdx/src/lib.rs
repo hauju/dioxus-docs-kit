@@ -107,7 +107,6 @@
 
 #[cfg(feature = "components")]
 pub mod components;
-#[cfg(feature = "components")]
 pub mod lucide;
 pub mod parser;
 #[cfg(feature = "parse")]
@@ -128,7 +127,9 @@ pub use parser::{
 // Heading helpers are free of both dioxus and regex, so they are available in
 // every configuration (the renderer, the TOC and the build-time bundle
 // generator all have to agree on anchor ids).
-pub use text::{extract_headers, parse_atx_heading, slugify, strip_markdown_links};
+pub use text::{
+    clean_step_title, extract_headers, parse_atx_heading, slugify, strip_markdown_links,
+};
 
 // Parsing lives behind the `parse` feature (default). A docs-kit app turns it
 // off: its content is parsed into a bundle at build time.

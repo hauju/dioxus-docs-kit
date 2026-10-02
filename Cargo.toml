@@ -5,6 +5,8 @@ members = [
     "crates/dioxus-mdx",
     "crates/docs-kit-core",
     "crates/hl-lite",
+    "crates/topcoat-docs-kit",
+    "examples/topcoat-docs",
 ]
 
 [workspace.package]

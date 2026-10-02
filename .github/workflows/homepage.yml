@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
         with:
           components: rustfmt
       - name: Check Format
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
         with:
           components: clippy
           targets: wasm32-unknown-unknown
@@ -61,7 +61,8 @@ jobs:
       - name: Check precompiled kit CSS is fresh
         run: |
           ./node_modules/.bin/tailwindcss -i crates/dioxus-docs-kit/tailwind.css -o crates/dioxus-docs-kit/assets/docs-kit.css --minify
-          git diff --exit-code crates/dioxus-docs-kit/assets/docs-kit.css
+          ./node_modules/.bin/tailwindcss -i crates/topcoat-docs-kit/tailwind.css -o crates/topcoat-docs-kit/assets/docs-kit.css --minify
+          git diff --exit-code crates/dioxus-docs-kit/assets/docs-kit.css crates/topcoat-docs-kit/assets/docs-kit.css
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Run Clippy (web-only features)
@@ -75,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
       - name: Install cargo-machete
         uses: taiki-e/install-action@v2
         with:
@@ -88,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
       - name: Install cargo-audit
         uses: taiki-e/install-action@v2
         with:
@@ -101,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
       - uses: rui314/setup-mold@v1
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -122,7 +123,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       # Keep in sync with workspace.package.rust-version in Cargo.toml.
-      # The published crates use let-chains, which need 1.88.
+      # The published crates use let-chains, which need 1.88. topcoat-docs-kit
+      # is the exception: it follows Topcoat's MSRV (1.98), which the jobs
+      # above run on.
       - uses: dtolnay/rust-toolchain@1.88.0
       - uses: rui314/setup-mold@v1
       - name: Setup Rust cache
@@ -130,7 +133,7 @@ jobs:
         with:
           cache-on-failure: true
       - name: Check published crates on the declared MSRV
-        run: cargo check -p dioxus-mdx -p dioxus-docs-kit -p dioxus-docs-kit-build
+        run: cargo check -p dioxus-mdx -p docs-kit-core -p dioxus-docs-kit -p dioxus-docs-kit-build
 
   build:
     runs-on: ubuntu-latest
@@ -138,7 +141,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: dtolnay/rust-toolchain@1.98.0
         with:
           targets: wasm32-unknown-unknown
       - uses: rui314/setup-mold@v1

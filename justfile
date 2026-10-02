@@ -18,13 +18,14 @@ serve:
 browser-test url="http://127.0.0.1:18479":
     python3 scripts/browser-smoke.py {{url}}
 
-# Rebuild the kit's precompiled stylesheet (matches the CI freshness check).
+# Rebuild the kits' precompiled stylesheets (matches the CI freshness check).
 # Uses the lockfile-pinned tailwind binary — bunx may silently resolve a newer
 # cached version, which changes the output byte-for-byte and fails CI.
 [group("dev")]
 css:
     bun install --frozen-lockfile
     ./node_modules/.bin/tailwindcss -i crates/dioxus-docs-kit/tailwind.css -o crates/dioxus-docs-kit/assets/docs-kit.css --minify
+    ./node_modules/.bin/tailwindcss -i crates/topcoat-docs-kit/tailwind.css -o crates/topcoat-docs-kit/assets/docs-kit.css --minify
 
 # Report the bundled web asset sizes (run after `dx bundle --web --release`)
 [group("dev")]
