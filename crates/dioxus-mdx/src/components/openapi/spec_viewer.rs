@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use crate::lucide::*;
 use dioxus::prelude::*;
 
-use crate::parser::{ApiOperation, ApiTag, OpenApiSpec, SchemaDefinition};
+use crate::parser::{OpenApiSpec, SchemaDefinition};
 
 use super::schema_viewer::SchemaViewer;
 use super::tag_group::{TagGroup, UngroupedEndpoints};
@@ -29,7 +29,7 @@ pub fn OpenApiViewer(props: OpenApiViewerProps) -> Element {
     let spec = &props.spec;
 
     // Group operations by tag
-    let (grouped_ops, ungrouped_ops) = group_operations_by_tag(&spec.operations, &spec.tags);
+    let (grouped_ops, ungrouped_ops) = spec.operations_by_tag();
 
     // Filter tags if specified
     let filtered_groups: Vec<_> = if let Some(filter_tags) = &props.tags {
@@ -72,49 +72,6 @@ pub fn OpenApiViewer(props: OpenApiViewerProps) -> Element {
             }
         }
     }
-}
-
-/// Group operations by their tags.
-fn group_operations_by_tag(
-    operations: &[ApiOperation],
-    tags: &[ApiTag],
-) -> (Vec<(ApiTag, Vec<ApiOperation>)>, Vec<ApiOperation>) {
-    let mut grouped: BTreeMap<String, Vec<ApiOperation>> = BTreeMap::new();
-    let mut ungrouped = Vec::new();
-
-    for op in operations {
-        if op.tags.is_empty() {
-            ungrouped.push(op.clone());
-        } else {
-            for tag_name in &op.tags {
-                grouped
-                    .entry(tag_name.clone())
-                    .or_default()
-                    .push(op.clone());
-            }
-        }
-    }
-
-    // Convert to vec with tag metadata, preserving tag order from spec
-    let mut result = Vec::new();
-    for tag in tags {
-        if let Some(ops) = grouped.remove(&tag.name) {
-            result.push((tag.clone(), ops));
-        }
-    }
-
-    // Add any remaining tags that weren't in the spec's tag list
-    for (tag_name, ops) in grouped {
-        result.push((
-            ApiTag {
-                name: tag_name,
-                description: None,
-            },
-            ops,
-        ));
-    }
-
-    (result, ungrouped)
 }
 
 /// Props for ApiInfoHeader component.

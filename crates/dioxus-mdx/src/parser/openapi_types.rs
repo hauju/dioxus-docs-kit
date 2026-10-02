@@ -25,6 +25,50 @@ pub struct OpenApiSpec {
     pub schemas: BTreeMap<String, SchemaDefinition>,
 }
 
+impl OpenApiSpec {
+    /// Operations grouped by tag: declared tags first, in spec order, then any
+    /// undeclared tag names alphabetically. An operation with several tags
+    /// appears under each. Untagged operations are returned separately.
+    pub fn operations_by_tag(&self) -> (Vec<(ApiTag, Vec<ApiOperation>)>, Vec<ApiOperation>) {
+        let mut grouped: BTreeMap<String, Vec<ApiOperation>> = BTreeMap::new();
+        let mut ungrouped = Vec::new();
+
+        for op in &self.operations {
+            if op.tags.is_empty() {
+                ungrouped.push(op.clone());
+            } else {
+                for tag_name in &op.tags {
+                    grouped
+                        .entry(tag_name.clone())
+                        .or_default()
+                        .push(op.clone());
+                }
+            }
+        }
+
+        // Convert to vec with tag metadata, preserving tag order from spec
+        let mut result = Vec::new();
+        for tag in &self.tags {
+            if let Some(ops) = grouped.remove(&tag.name) {
+                result.push((tag.clone(), ops));
+            }
+        }
+
+        // Add any remaining tags that weren't in the spec's tag list
+        for (tag_name, ops) in grouped {
+            result.push((
+                ApiTag {
+                    name: tag_name,
+                    description: None,
+                },
+                ops,
+            ));
+        }
+
+        (result, ungrouped)
+    }
+}
+
 /// API metadata.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ApiInfo {
@@ -730,5 +774,30 @@ paths:
             ..Default::default()
         };
         assert_eq!(schema.generate_example_json(0), json!(42));
+    }
+
+    #[cfg(feature = "openapi")]
+    #[test]
+    fn operations_group_by_declared_tags_first() {
+        let spec = parse_openapi(
+            r#"
+openapi: "3.0.0"
+info: { title: T, version: "1" }
+tags: [{ name: zebra }]
+paths:
+  /a:
+    get: { operationId: a, tags: [apple], responses: { "200": { description: ok } } }
+  /z:
+    get: { operationId: z, tags: [zebra], responses: { "200": { description: ok } } }
+  /u:
+    get: { operationId: u, responses: { "200": { description: ok } } }
+"#,
+        )
+        .expect("parse spec");
+        let (groups, untagged) = spec.operations_by_tag();
+        let names: Vec<&str> = groups.iter().map(|(tag, _)| tag.name.as_str()).collect();
+        assert_eq!(names, ["zebra", "apple"]);
+        assert_eq!(untagged.len(), 1);
+        assert_eq!(untagged[0].path, "/u");
     }
 }
