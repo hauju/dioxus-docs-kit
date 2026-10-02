@@ -3,44 +3,7 @@ use dioxus::prelude::*;
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
-use docs_kit_core::seo::{join_site_url, jsonld_to_string};
-
-/// Build a schema.org Article JSON-LD string, with `</` escaped to `<\/` so the
-/// payload cannot break out of its `<script>` container.
-fn build_article_jsonld(
-    title: &str,
-    description: &str,
-    url: Option<&str>,
-    date: &str,
-    author_name: &str,
-    image: Option<&str>,
-) -> String {
-    let mut payload = serde_json::json!({
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": title,
-        "description": description,
-        "datePublished": date,
-    });
-
-    if let Some(url) = url {
-        payload["mainEntityOfPage"] = serde_json::json!({
-            "@type": "WebPage",
-            "@id": url,
-        });
-    }
-    if !author_name.is_empty() {
-        payload["author"] = serde_json::json!({
-            "@type": "Person",
-            "name": author_name,
-        });
-    }
-    if let Some(image) = image {
-        payload["image"] = serde_json::Value::String(image.to_string());
-    }
-
-    jsonld_to_string(&payload)
-}
+use docs_kit_core::seo::{article_jsonld, join_site_url};
 
 /// Injects Open Graph / SEO meta tags and document title for a single blog post.
 ///
@@ -80,7 +43,7 @@ pub fn BlogPostMeta(slug: String) -> Element {
         .map(|a| a.name.as_str())
         .unwrap_or("");
 
-    let json_ld = build_article_jsonld(
+    let json_ld = article_jsonld(
         title,
         description,
         canonical.as_deref(),
@@ -164,61 +127,4 @@ pub(super) fn listing_tags(
         tags.push(HeadTag::meta("name", "twitter:image", image));
     }
     tags
-}
-
-#[cfg(test)]
-mod tests {
-    use super::build_article_jsonld;
-
-    #[test]
-    fn jsonld_includes_required_fields() {
-        let out = build_article_jsonld(
-            "Hello",
-            "A post",
-            Some("https://example.com/blog/hello"),
-            "2026-05-21",
-            "Jane",
-            Some("https://example.com/cover.png"),
-        );
-        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(parsed["@context"], "https://schema.org");
-        assert_eq!(parsed["@type"], "Article");
-        assert_eq!(parsed["headline"], "Hello");
-        assert_eq!(parsed["description"], "A post");
-        assert_eq!(parsed["datePublished"], "2026-05-21");
-        assert_eq!(parsed["author"]["@type"], "Person");
-        assert_eq!(parsed["author"]["name"], "Jane");
-        assert_eq!(parsed["image"], "https://example.com/cover.png");
-        assert_eq!(
-            parsed["mainEntityOfPage"]["@id"],
-            "https://example.com/blog/hello"
-        );
-    }
-
-    #[test]
-    fn jsonld_omits_author_and_image_when_missing() {
-        let out = build_article_jsonld("Hello", "A post", None, "2026-05-21", "", None);
-        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
-        assert!(parsed.get("author").is_none());
-        assert!(parsed.get("image").is_none());
-        assert!(parsed.get("mainEntityOfPage").is_none());
-    }
-
-    #[test]
-    fn jsonld_escapes_script_close_sequence() {
-        // A title containing `</script>` must not break out of the <script> tag.
-        let out = build_article_jsonld(
-            "evil </script><script>alert(1)</script>",
-            "",
-            Some("https://example.com/"),
-            "2026-05-21",
-            "",
-            None,
-        );
-        assert!(
-            !out.contains("</script"),
-            "expected </ sequences to be escaped, got: {out}"
-        );
-        assert!(out.contains("<\\/script"));
-    }
 }
