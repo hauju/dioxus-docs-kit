@@ -14,7 +14,9 @@
  * Tailwind/Bun setup of their own.
  */
 
-@import "tailwindcss";
+/* `source(none)`: scan only the sources listed below. Tailwind's automatic
+   repo-wide scan let prose (README, CHANGELOG) leak component classes in. */
+@import "tailwindcss" source(none);
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui" {
@@ -26,11 +28,4 @@
 @source "./safelist.html";
 @source "./src/**/*.{rs,html,css}";
 @source "../dioxus-mdx/src/**/*.{rs,html,css}";
-/* Tailwind also auto-scans the repo; the vendored WebMCP polyfill mentions
-   checkbox/radio/range input types, which would pull three DaisyUI components
-   nobody renders into the precompiled sheet. */
-@source not "../../assets/webmcp-polyfill.js";
-/* The Topcoat kit has its own precompiled sheet; its classes stay out of this one. */
-@source not "../topcoat-docs-kit";
-
 @import "./theme.css";
