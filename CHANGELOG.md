@@ -46,6 +46,12 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Changed
 
+- Mermaid diagrams load lazily and lighter, in both kits: nothing is fetched
+  until a diagram comes within 200px of the viewport, and then mermaid's
+  code-split ESM build loads only the diagram types in use (~270 KB compressed
+  for a flowchart and a sequence diagram, down from ~935 KB for the
+  all-in-one `mermaid.min.js`). Pages whose diagrams are never scrolled to
+  load no mermaid at all.
 - `dioxus_mdx::MERMAID_JS` (the browser-side diagram driver) is public and
   compiled in every configuration, so other renderers share it.
 - `DOCS_KIT_CSS` is built from the kit's declared sources only. Tailwind's

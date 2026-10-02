@@ -361,6 +361,6 @@ async fn mermaid_fences_render_as_diagrams() {
         html.contains("<pre class=\"mermaid\">graph TD\n  A --&gt; B</pre>"),
         "{html}"
     );
-    assert!(html.contains("window.__dkMermaid=1"), "{html}");
+    assert!(html.contains("window.__dkMermaidOnce=1"), "{html}");
     assert!(!html.contains("dk-code-block"), "{html}");
 }

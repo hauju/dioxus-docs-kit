@@ -364,14 +364,15 @@ fn is_mermaid(block: &CodeBlockNode) -> bool {
     cfg!(feature = "mermaid") && block.language.as_deref().map(str::trim) == Some("mermaid")
 }
 
-/// A diagram the browser renders: the shared `MERMAID_JS` driver loads
-/// mermaid.js from jsDelivr and turns every `pre.mermaid` into an SVG that
-/// follows the light/dark theme. The script repeats per diagram but runs once,
-/// after the document has parsed, so it sees every diagram on the page.
+/// A diagram the browser renders: once a diagram nears the viewport, the
+/// shared `MERMAID_JS` driver loads mermaid's ESM build from jsDelivr and turns
+/// the `pre.mermaid` into an SVG that follows the light/dark theme. The script
+/// repeats per diagram but runs once, after the document has parsed, so it
+/// sees every diagram on the page.
 #[component]
 async fn mermaid_diagram(code: &str) -> Result<impl View> {
     let script = format!(
-        "(function(){{if(window.__dkMermaid)return;window.__dkMermaid=1;function go(){{{MERMAID_JS}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go()}})()"
+        "(function(){{if(window.__dkMermaidOnce)return;window.__dkMermaidOnce=1;function go(){{{MERMAID_JS}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go()}})()"
     );
     Ok(view! {
         <div class="not-prose my-6 flex justify-center">

@@ -23,9 +23,9 @@ topcoat = { version = "0.9", default-features = false, features = ["router"] }
 
 [features]
 default = ["mermaid"]
-# Render ```mermaid fences as diagrams. The browser loads mermaid.js from
-# jsDelivr; turn this off to keep pages free of third-party scripts (the fences
-# then render as ordinary code blocks).
+# Render ```mermaid fences as diagrams. Once a diagram nears the viewport, the
+# browser loads mermaid's ESM build from jsDelivr; turn this off to keep pages
+# free of third-party scripts (the fences then render as ordinary code blocks).
 mermaid = []
 
 [dev-dependencies]
