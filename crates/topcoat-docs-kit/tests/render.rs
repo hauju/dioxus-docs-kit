@@ -341,3 +341,26 @@ async fn inline_openapi_viewer_lists_endpoints_by_tag() {
     assert!(html.contains(">/pets/{id}</code>"), "{html}");
     assert!(html.contains("Operation ID: "), "{html}");
 }
+
+#[tokio::test]
+async fn mermaid_fences_render_as_diagrams() {
+    let mdx = "---\ntitle: D\n---\n\n```mermaid\ngraph TD\n  A --> B\n```\n";
+    let bundle = dioxus_docs_kit_build::docs_bundle_json(
+        r#"{ "groups": [ { "group": "G", "pages": ["g/d"] } ] }"#,
+        &[("g/d", mdx)],
+        &[],
+    )
+    .expect("generate bundle");
+    let reg = DocsConfig::new(bundle.leak()).build();
+    let doc = reg.get_parsed_doc("g/d").unwrap();
+    let cx = &Cx::default();
+    let html = render(view! { cx => doc_content(nodes: &doc.content, base_path: "/docs") }).await;
+
+    // Source stays escaped text inside the <pre>; the driver runs once.
+    assert!(
+        html.contains("<pre class=\"mermaid\">graph TD\n  A --&gt; B</pre>"),
+        "{html}"
+    );
+    assert!(html.contains("window.__dkMermaid=1"), "{html}");
+    assert!(!html.contains("dk-code-block"), "{html}");
+}

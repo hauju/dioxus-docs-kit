@@ -26,8 +26,9 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `docs_search_head` (ranked results with highlighted snippets, `noindex`).
   OpenAPI endpoint pages (with the endpoints in the sidebar by tag) render
   too, and `with_theme_toggle` adds a light/dark header button
-  (`docs_theme_script` applies the stored choice before first paint). The
-  blog and Mermaid diagrams are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  (`docs_theme_script` applies the stored choice before first paint), and
+  ```` ```mermaid ```` fences render as diagrams (`mermaid` feature, default
+  on). The blog is not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
   order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
@@ -38,8 +39,15 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `OpenApiSpec::operations_by_tag()` (moved out of the viewer component)
   groups operations for any renderer.
 
+### Fixed
+
+- Mermaid diagrams no longer sit in a black box in light themes: the
+  typography plugin's dark `<pre>` background no longer applies to them.
+
 ### Changed
 
+- `dioxus_mdx::MERMAID_JS` (the browser-side diagram driver) is public and
+  compiled in every configuration, so other renderers share it.
 - `DOCS_KIT_CSS` is built from the kit's declared sources only. Tailwind's
   repo-wide scan had been pulling in classes from the example app and docs
   prose (DaisyUI `menu`, `dropdown`, `range`, …) that no kit component uses;

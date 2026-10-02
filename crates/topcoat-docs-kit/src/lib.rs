@@ -46,7 +46,7 @@
 //! put [`docs_theme_script`] in `<head>` so the stored choice applies before
 //! first paint.
 //!
-//! Not ported yet: the blog, and Mermaid diagrams (shown as code).
+//! Not ported yet: the blog.
 
 mod content;
 mod icon;

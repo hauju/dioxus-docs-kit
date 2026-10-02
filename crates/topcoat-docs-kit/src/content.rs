@@ -10,7 +10,8 @@ use dioxus_mdx::lucide::{
 };
 use dioxus_mdx::{
     AccordionGroupNode, CalloutNode, CalloutType, CardNode, CodeBlockNode, DocNode, ExpandableNode,
-    ParamFieldNode, ResponseFieldNode, StepsNode, TabsNode, UpdateNode, clean_step_title, slugify,
+    MERMAID_JS, ParamFieldNode, ResponseFieldNode, StepsNode, TabsNode, UpdateNode,
+    clean_step_title, slugify,
 };
 use hl_lite::{Kind, Lang};
 use topcoat::{
@@ -64,6 +65,7 @@ async fn doc_node(node: &DocNode, base_path: &str, key: &str) -> Result<BoxView<
             DocNode::Tabs(tabs) => tabs_box(tabs: tabs, base_path: base_path, key: key),
             DocNode::Steps(steps) => steps_list(steps: steps, base_path: base_path, key: key),
             DocNode::AccordionGroup(group) => accordion_group(group: group, base_path: base_path, key: key),
+            DocNode::CodeBlock(block) if is_mermaid(block) => mermaid_diagram(code: &block.code),
             DocNode::CodeBlock(block) => code_block(block: block),
             DocNode::CodeGroup(group) => code_group(blocks: &group.blocks, key: key),
             DocNode::ParamField(field) => param_field(field: field, base_path: base_path, key: key),
@@ -356,6 +358,29 @@ async fn update_entry(update: &UpdateNode, base_path: &str, key: &str) -> Result
 // ============================================================================
 // Code
 // ============================================================================
+
+/// A ```` ```mermaid ```` fence, when the `mermaid` feature is on.
+fn is_mermaid(block: &CodeBlockNode) -> bool {
+    cfg!(feature = "mermaid") && block.language.as_deref().map(str::trim) == Some("mermaid")
+}
+
+/// A diagram the browser renders: the shared `MERMAID_JS` driver loads
+/// mermaid.js from jsDelivr and turns every `pre.mermaid` into an SVG that
+/// follows the light/dark theme. The script repeats per diagram but runs once,
+/// after the document has parsed, so it sees every diagram on the page.
+#[component]
+async fn mermaid_diagram(code: &str) -> Result<impl View> {
+    let script = format!(
+        "(function(){{if(window.__dkMermaid)return;window.__dkMermaid=1;function go(){{{MERMAID_JS}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go()}})()"
+    );
+    Ok(view! {
+        <div class="not-prose my-6 flex justify-center">
+            <pre class="mermaid">(code)</pre>
+        </div>
+        // Static, trusted source.
+        <script>(Unescaped::new_unchecked(script))</script>
+    })
+}
 
 #[component]
 async fn code_block(block: &CodeBlockNode) -> Result<impl View> {

@@ -21,6 +21,13 @@ dioxus-mdx = { workspace = true }
 hl-lite = { workspace = true }
 topcoat = { version = "0.9", default-features = false, features = ["router"] }
 
+[features]
+default = ["mermaid"]
+# Render ```mermaid fences as diagrams. The browser loads mermaid.js from
+# jsDelivr; turn this off to keep pages free of third-party scripts (the fences
+# then render as ordinary code blocks).
+mermaid = []
+
 [dev-dependencies]
 dioxus-docs-kit-build = { workspace = true }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
