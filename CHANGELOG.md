@@ -25,8 +25,9 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `<details>`. Search is a header GET form plus `docs_search_page` /
   `docs_search_head` (ranked results with highlighted snippets, `noindex`).
   OpenAPI endpoint pages (with the endpoints in the sidebar by tag) render
-  too. The inline `<OpenAPI>` viewer, the blog and the theme toggle are not
-  ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  too, and `with_theme_toggle` adds a light/dark header button
+  (`docs_theme_script` applies the stored choice before first paint). The
+  inline `<OpenAPI>` viewer and the blog are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
   order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
