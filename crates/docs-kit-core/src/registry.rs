@@ -566,6 +566,47 @@ impl DocsRegistry {
     // Search
     // ========================================================================
 
+    /// [`search_docs`](Self::search_docs) shaped for display: at most `limit`
+    /// hits, each with its link target, a title (the section heading for a
+    /// section hit, with the page title as context) and a snippet around the
+    /// first matched term. Both kits' search UIs render these.
+    pub fn search_hits(&self, query: &str, limit: usize) -> Vec<DocsHit> {
+        let terms = crate::search::split_terms(query);
+        self.search_docs(query)
+            .into_iter()
+            .take(limit)
+            .map(|entry| {
+                let target = if entry.anchor.is_empty() {
+                    entry.path.clone()
+                } else {
+                    format!("{}#{}", entry.path, entry.anchor)
+                };
+                let (title, context) = if entry.heading.is_empty() {
+                    (entry.title.clone(), None)
+                } else {
+                    (entry.heading.clone(), Some(entry.title.clone()))
+                };
+                let snippet_src = if entry.body.is_empty() {
+                    &entry.description
+                } else {
+                    &entry.body
+                };
+                DocsHit {
+                    target,
+                    title,
+                    context,
+                    breadcrumb: entry.breadcrumb.clone(),
+                    api_method: entry.api_method,
+                    snippet: crate::search::build_snippet(
+                        snippet_src,
+                        &terms,
+                        crate::search::SNIPPET_WINDOW,
+                    ),
+                }
+            })
+            .collect()
+    }
+
     /// Search documentation by query string.
     ///
     /// Splits the query on whitespace and returns section-level entries whose
@@ -606,6 +647,23 @@ this product, file a report. No auth needed.
 One report per distinct problem. Keep working after filing.
 "
     )
+}
+
+/// One docs search result, ready to render. See [`DocsRegistry::search_hits`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct DocsHit {
+    /// Content path relative to the docs root, with `#anchor` for section hits.
+    pub target: String,
+    /// Section heading for a section hit, else the page title.
+    pub title: String,
+    /// The page title, for section hits.
+    pub context: Option<String>,
+    /// Sidebar breadcrumb (nav group, or API group + tag).
+    pub breadcrumb: String,
+    /// HTTP method for API operation hits.
+    pub api_method: Option<HttpMethod>,
+    /// Highlighted snippet around the first matched term (empty = none).
+    pub snippet: Vec<crate::search::SnippetSegment>,
 }
 
 #[cfg(test)]
@@ -738,6 +796,21 @@ paths:
             reg.page_neighbors("api-reference/list-pets").0,
             Some("api-reference/overview".into())
         );
+    }
+
+    #[test]
+    fn search_hits_link_sections_by_anchor_with_the_page_as_context() {
+        let reg = registry();
+        let hit = reg
+            .search_hits("cache", 5)
+            .into_iter()
+            .next()
+            .expect("a hit");
+        assert_eq!(hit.target, "g/sections#advanced-setup");
+        assert_eq!(hit.title, "Advanced Setup");
+        assert_eq!(hit.context.as_deref(), Some("Widget Guide"));
+        assert!(hit.snippet.iter().any(|s| s.highlight));
+        assert_eq!(reg.search_hits("widget", 1).len(), 1);
     }
 
     #[test]

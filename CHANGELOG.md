@@ -22,17 +22,24 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   previous/next, 404), `docs_head`, `doc_content` (every MDX component except
   the inline OpenAPI viewer) and a precompiled `STYLESHEET`. Server-rendered
   with no runtime script — tabs are DaisyUI radio tabs, accordions are
-  `<details>`. OpenAPI endpoint pages, search, the blog and the theme toggle
-  are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  `<details>`. Search is a header GET form plus `docs_search_page` /
+  `docs_search_head` (ranked results with highlighted snippets, `noindex`).
+  OpenAPI endpoint pages, the blog and the theme toggle are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
-  order, shared by both shells.
+  order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
+  target, title/context, highlighted snippet), shared by both shells.
 - `dioxus-mdx`: `lucide` (icon SVG data and `icon_for_name`) and
   `clean_step_title` no longer need the `components` feature;
   `LucideIcon::svg_inner()` exposes an icon's SVG markup.
 
 ### Changed
 
+- `DOCS_KIT_CSS` is built from the kit's declared sources only. Tailwind's
+  repo-wide scan had been pulling in classes from the example app and docs
+  prose (DaisyUI `menu`, `dropdown`, `range`, …) that no kit component uses;
+  if your own markup relied on those leaked classes, add them to your own
+  Tailwind build.
 - CI runs on Rust 1.98 (was 1.96). The Dioxus crates' MSRV stays 1.88.
 
 ## [0.10.2] — 2026-09-27

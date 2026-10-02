@@ -169,7 +169,7 @@ pub(crate) fn rank<'a, T>(
 
 /// A run of snippet text, flagged when it is (part of) a matched term so the UI
 /// can highlight it.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SnippetSegment {
     pub text: String,
     pub highlight: bool,
