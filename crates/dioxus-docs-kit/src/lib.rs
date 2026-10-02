@@ -52,13 +52,8 @@
 //! ```
 
 pub mod blog;
-pub(crate) mod bundle;
 pub mod components;
-pub mod config;
-pub mod error;
 pub mod hooks;
-pub mod registry;
-pub(crate) mod search;
 #[cfg(feature = "server")]
 pub mod server;
 #[cfg(feature = "webmcp")]
@@ -288,6 +283,10 @@ impl BlogContext {
 // Docs re-exports
 // ============================================================================
 
+/// The framework-agnostic registry, config and error modules, re-exported at
+/// their pre-0.11 paths.
+pub use docs_kit_core::{config, error, registry};
+
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
 pub use registry::DocsRegistry;
@@ -343,38 +342,4 @@ pub use components::{
 // Macros
 // ============================================================================
 
-/// Embeds the docs bundle written by `dioxus-docs-kit-build` as a
-/// `&'static str`.
-///
-/// ```rust,ignore
-/// static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-///     DocsConfig::new(dioxus_docs_kit::docs_bundle!()).build()
-/// });
-/// ```
-///
-/// Requires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`
-/// that calls `dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").generate()`.
-#[macro_export]
-macro_rules! docs_bundle {
-    () => {
-        include_str!(concat!(env!("OUT_DIR"), "/docs_bundle.json"))
-    };
-}
-
-/// Embeds the blog bundle written by `dioxus-docs-kit-build` as a
-/// `&'static str`.
-///
-/// ```rust,ignore
-/// static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-///     BlogConfig::new(dioxus_docs_kit::blog_bundle!()).build()
-/// });
-/// ```
-///
-/// Requires `dioxus-docs-kit-build` in `[build-dependencies]` and a `build.rs`
-/// that calls `dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate()`.
-#[macro_export]
-macro_rules! blog_bundle {
-    () => {
-        include_str!(concat!(env!("OUT_DIR"), "/blog_bundle.json"))
-    };
-}
+pub use docs_kit_core::{blog_bundle, docs_bundle};

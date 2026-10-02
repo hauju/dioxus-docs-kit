@@ -3,10 +3,10 @@
 //! Holds parsed docs, nav config, search index, and OpenAPI specs.
 
 use crate::bundle::DocsBundle;
-use crate::components::seo::xml_escape;
 use crate::config::{DocsConfig, ThemeConfig};
 use crate::error::DocsKitError;
 use crate::search::Field;
+use crate::seo::xml_escape;
 use dioxus_mdx::{ApiOperation, ApiTag, HttpMethod, OpenApiSpec, ParsedDoc};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -553,11 +553,9 @@ impl DocsRegistry {
     }
 }
 
-/// The "Reporting problems" section that [`SeoRouter::with_agent_feedback`]
-/// appends to `llms.txt` / `llms-full.txt`. Public so a site that assembles
+/// The "Reporting problems" section that `dioxus-docs-kit`'s
+/// `SeoRouter::with_agent_feedback` appends to `llms.txt` / `llms-full.txt`. Public so a site that assembles
 /// its own `llms.txt` can append the same text.
-///
-/// [`SeoRouter::with_agent_feedback`]: crate::server::SeoRouter::with_agent_feedback
 pub fn agent_feedback_block(discovery_url: &str) -> String {
     format!(
         "## Reporting problems

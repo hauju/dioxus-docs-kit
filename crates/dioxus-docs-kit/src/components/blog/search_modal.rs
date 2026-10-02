@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
 use crate::components::search_shell::{SearchHit, SearchModalShell};
-use crate::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
+use docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
 
 /// Blog search modal triggered by Cmd/Ctrl+K or the search button.
 #[component]

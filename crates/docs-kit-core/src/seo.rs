@@ -3,7 +3,7 @@
 /// Join a site origin, base path, and page path into an absolute URL,
 /// normalizing duplicate slashes. An empty `path` yields the base URL only;
 /// an empty `site_url` yields the root-relative path portion.
-pub(crate) fn join_site_url(site_url: &str, base_path: &str, path: &str) -> String {
+pub fn join_site_url(site_url: &str, base_path: &str, path: &str) -> String {
     let mut url = site_url.trim_end_matches('/').to_string();
 
     if !base_path.is_empty() {
@@ -25,7 +25,7 @@ pub(crate) fn join_site_url(site_url: &str, base_path: &str, path: &str) -> Stri
 ///
 /// `</` is escaped to `<\/` so the payload cannot break out of its
 /// `<script>` container.
-pub(crate) fn jsonld_to_string(payload: &serde_json::Value) -> String {
+pub fn jsonld_to_string(payload: &serde_json::Value) -> String {
     serde_json::to_string(payload)
         .unwrap_or_default()
         .replace("</", "<\\/")
@@ -35,7 +35,7 @@ pub(crate) fn jsonld_to_string(payload: &serde_json::Value) -> String {
 ///
 /// RSS and sitemap output is parsed strictly: a single unescaped `&` in a post
 /// title makes readers reject the whole feed, not just that item.
-pub(crate) fn xml_escape(value: &str) -> String {
+pub fn xml_escape(value: &str) -> String {
     // `&` first, or the ampersands introduced by the later replacements get
     // escaped a second time.
     value
