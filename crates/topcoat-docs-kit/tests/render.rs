@@ -5,7 +5,7 @@ use topcoat::{
     context::Cx,
     view::{View, ViewExt, view},
 };
-use topcoat_docs_kit::{doc_content, docs_head, docs_page};
+use topcoat_docs_kit::{doc_content, docs_head, docs_page, docs_search_head, docs_search_page};
 
 const NAV: &str = r#"{
     "tabs": ["Docs", "More"],
@@ -15,7 +15,7 @@ const NAV: &str = r#"{
     ]
 }"#;
 
-const NEXT: &str = "---\ntitle: Next page\n---\n\n## Section one\n\nText.\n";
+const NEXT: &str = "---\ntitle: Next page\n---\n\n## Section one\n\nText about widgets.\n";
 const EXTRA: &str = "---\ntitle: Extra\n---\n\nText.\n";
 
 const INTRO: &str = r#"---
@@ -135,4 +135,66 @@ async fn head_omits_a_missing_description() {
     );
     let without = render(view! { cx => docs_head(registry: reg, path: "guide/next") }).await;
     assert_eq!(without, "<title>Next page</title>");
+}
+
+#[tokio::test]
+async fn header_search_form_submits_to_the_search_page() {
+    let reg = registry();
+    let cx = &Cx::default();
+    let html =
+        render(view! { cx => docs_page(registry: reg, base_path: "/docs", path: "guide/intro") })
+            .await;
+    assert!(
+        html.contains(r#"action="/docs/search" method="get" role="search""#),
+        "{html}"
+    );
+    assert!(html.contains(r#"name="q" value="""#), "{html}");
+}
+
+#[tokio::test]
+async fn search_page_links_hits_and_highlights_terms() {
+    let reg = registry();
+    let cx = &Cx::default();
+    let html = render(
+        view! { cx => docs_search_page(registry: reg, base_path: "/docs", query: "widgets") },
+    )
+    .await;
+
+    assert!(
+        html.contains("1 result for \u{201c}widgets\u{201d}"),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"href="/docs/guide/next#section-one""#),
+        "{html}"
+    );
+    assert!(html.contains(r#"<mark class="dk-search-mark"#), "{html}");
+    // The query is echoed back into the search box.
+    assert!(html.contains(r#"name="q" value="widgets""#), "{html}");
+}
+
+#[tokio::test]
+async fn search_page_handles_blank_and_unmatched_queries() {
+    let reg = registry();
+    let cx = &Cx::default();
+    let blank =
+        render(view! { cx => docs_search_page(registry: reg, base_path: "/docs", query: "  ") })
+            .await;
+    assert!(blank.contains("Type a word or phrase"), "{blank}");
+    let none = render(
+        view! { cx => docs_search_page(registry: reg, base_path: "/docs", query: "zzzqqq") },
+    )
+    .await;
+    assert!(none.contains("0 results for"), "{none}");
+    assert!(none.contains("No pages match"), "{none}");
+}
+
+#[tokio::test]
+async fn search_head_is_noindex() {
+    let cx = &Cx::default();
+    let html = render(view! { cx => docs_search_head(query: " tabs ") }).await;
+    assert_eq!(
+        html,
+        r#"<title>Search: tabs</title><meta name="robots" content="noindex">"#
+    );
 }

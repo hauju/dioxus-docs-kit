@@ -1,15 +1,17 @@
-//! The docs page shell: tab bar, sidebar, article, table of contents and
-//! previous/next links. Markup and classes mirror `dioxus-docs-kit`.
+//! The docs page shell: header with tabs and search, sidebar, article, table
+//! of contents, previous/next links, and the search results page. Markup and classes mirror `dioxus-docs-kit`.
 
 use dioxus_mdx::extract_headers;
-use docs_kit_core::{DocsRegistry, NavGroup};
+use dioxus_mdx::lucide::LdSearch;
+use docs_kit_core::{DocsHit, DocsRegistry, NavGroup, search::MAX_RESULTS};
 use topcoat::{
     Result,
     router::StatusCode,
-    view::{View, component, view},
+    view::{Child, View, component, view},
 };
 
 use crate::content::doc_content;
+use crate::icon::icon;
 
 /// A full docs page for `path` (relative to `base_path`, e.g.
 /// `"getting-started/introduction"`; empty means the registry's default page).
@@ -17,6 +19,9 @@ use crate::content::doc_content;
 /// Renders the body content only — wrap it in your own `<html>` document and
 /// link [`STYLESHEET`](crate::STYLESHEET) (or your own Tailwind build) in its
 /// `<head>`. Unknown paths render a 404 page and set the response status.
+///
+/// The header's search box submits to `<base_path>/search?q=…`; mount
+/// [`docs_search_page`] there.
 #[component]
 pub async fn docs_page(registry: &DocsRegistry, base_path: &str, path: &str) -> Result<impl View> {
     let path = if path.is_empty() {
@@ -24,8 +29,40 @@ pub async fn docs_page(registry: &DocsRegistry, base_path: &str, path: &str) -> 
     } else {
         path
     };
+    Ok(view! {
+        frame(registry: registry, base_path: base_path, current: path, query: "",
+            article(registry: registry, base_path: base_path, path: path)
+        )
+    })
+}
+
+/// The search results page for `query`, in the same shell as [`docs_page`].
+/// Mount it at `<base_path>/search` and pass the `q` query parameter.
+#[component]
+pub async fn docs_search_page(
+    registry: &DocsRegistry,
+    base_path: &str,
+    query: &str,
+) -> Result<impl View> {
+    Ok(view! {
+        frame(registry: registry, base_path: base_path, current: "", query: query,
+            search_results(registry: registry, base_path: base_path, query: query)
+        )
+    })
+}
+
+/// Header (tabs + search box), sidebar and main column around `child`.
+/// `current` is the active page path (empty = none, e.g. on the search page).
+#[component]
+async fn frame(
+    registry: &DocsRegistry,
+    base_path: &str,
+    current: &str,
+    query: &str,
+    child: Child<'_>,
+) -> Result<impl View> {
     let active_tab = registry
-        .tab_for_path(path)
+        .tab_for_path(current)
         .or_else(|| registry.nav.tabs.first().cloned());
     let groups: Vec<&NavGroup> = match &active_tab {
         Some(tab) if registry.nav.has_tabs() => registry.nav.groups_for_tab(tab),
@@ -34,48 +71,112 @@ pub async fn docs_page(registry: &DocsRegistry, base_path: &str, path: &str) -> 
 
     Ok(view! {
         <div class="dk-root dk-docs-root min-h-screen bg-base-100">
-            if registry.nav.has_tabs() {
-                <div class="dk-header sticky top-0 z-50">
-                    <div class="dk-tabs bg-base-200/80 backdrop-blur border-b border-base-300 px-4 lg:px-8">
-                        <div class="flex gap-6">
-                            for tab in &registry.nav.tabs {
-                                let first = registry.nav.groups_for_tab(tab).first().and_then(|g| g.pages.first()).cloned().unwrap_or_default();
-                                let is_active = active_tab.as_ref() == Some(tab);
-                                <a
-                                    href=(format!("{base_path}/{first}"))
-                                    class=(if is_active {
-                                        "dk-tab dk-tab-active px-1 py-2.5 text-sm transition-colors -mb-px text-primary border-b-2 border-primary font-medium"
-                                    } else {
-                                        "dk-tab px-1 py-2.5 text-sm transition-colors -mb-px text-base-content/60 hover:text-base-content border-b-2 border-transparent"
-                                    })
-                                >
-                                    (tab.as_str())
-                                </a>
-                            }
-                        </div>
-                    </div>
+            <div class="dk-header sticky top-0 z-50 flex items-center gap-4 bg-base-200/80 backdrop-blur border-b border-base-300 px-4 lg:px-8">
+                <div class="dk-tabs flex flex-1 min-w-0 gap-6 overflow-x-auto">
+                    for tab in &registry.nav.tabs {
+                        let first = registry.nav.groups_for_tab(tab).first().and_then(|g| g.pages.first()).cloned().unwrap_or_default();
+                        let is_active = active_tab.as_ref() == Some(tab);
+                        <a
+                            href=(format!("{base_path}/{first}"))
+                            class=(if is_active {
+                                "dk-tab dk-tab-active shrink-0 px-1 py-2.5 text-sm transition-colors -mb-px text-primary border-b-2 border-primary font-medium"
+                            } else {
+                                "dk-tab shrink-0 px-1 py-2.5 text-sm transition-colors -mb-px text-base-content/60 hover:text-base-content border-b-2 border-transparent"
+                            })
+                        >
+                            (tab.as_str())
+                        </a>
+                    }
                 </div>
-            }
+                <form class="dk-search-form shrink-0 py-1.5" action=(format!("{base_path}/search")) method="get" role="search">
+                    <label class="input input-sm w-36 sm:w-56">
+                        icon(glyph: LdSearch, class: "size-4 opacity-50")
+                        <input type="search" name="q" value=(query) placeholder="Search docs" aria-label="Search documentation">
+                    </label>
+                </form>
+            </div>
 
             // Below `lg` the sidebar is hidden; the same nav sits in a disclosure.
             <details class="dk-mobile-nav lg:hidden border-b border-base-300 bg-base-200/30">
                 <summary class="px-4 py-3 text-sm font-medium cursor-pointer">"Menu"</summary>
                 <div class="px-4 pb-4">
-                    sidebar(registry: registry, groups: &groups, base_path: base_path, current: path)
+                    sidebar(registry: registry, groups: &groups, base_path: base_path, current: current)
                 </div>
             </details>
 
             <div class="dk-shell flex">
                 <aside class="dk-sidebar w-64 shrink-0 border-r border-base-300 bg-base-200/30 hidden lg:block">
                     <div class="sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto p-6 flex flex-col gap-6">
-                        sidebar(registry: registry, groups: &groups, base_path: base_path, current: path)
+                        sidebar(registry: registry, groups: &groups, base_path: base_path, current: current)
                     </div>
                 </aside>
-                <div class="dk-main flex-1 min-w-0">
-                    article(registry: registry, base_path: base_path, path: path)
-                </div>
+                <div class="dk-main flex-1 min-w-0">(child)</div>
             </div>
         </div>
+    })
+}
+
+#[component]
+async fn search_results(
+    registry: &DocsRegistry,
+    base_path: &str,
+    query: &str,
+) -> Result<impl View> {
+    // Endpoint pages are not rendered by this kit yet, so their hits would 404.
+    let hits: Vec<DocsHit> = registry
+        .search_hits(query, MAX_RESULTS)
+        .into_iter()
+        .filter(|hit| hit.api_method.is_none())
+        .collect();
+    let blank = query.trim().is_empty();
+    let summary = match hits.len() {
+        1 => "1 result for".to_string(),
+        n => format!("{n} results for"),
+    };
+
+    Ok(view! {
+        <main class="flex-1 min-w-0 px-8 py-12 lg:px-12">
+            <div class="dk-search-page max-w-3xl mx-auto">
+                <h1 class="text-4xl font-bold tracking-tight mb-3">"Search"</h1>
+                if blank {
+                    <p class="text-base-content/70">"Type a word or phrase into the search box above."</p>
+                } else {
+                    <p class="text-base-content/70 mb-8">(summary) " \u{201c}" (query) "\u{201d}"</p>
+                    if hits.is_empty() {
+                        <p class="text-base-content/50">"No pages match. Try fewer or different words."</p>
+                    }
+                    <ul class="dk-search-results divide-y divide-base-300">
+                        for hit in &hits {
+                            <li>
+                                <a href=(format!("{base_path}/{}", hit.target)) class="dk-search-result block py-4 group">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        if let Some(context) = &hit.context {
+                                            <span class="dk-search-context text-sm text-base-content/50 truncate shrink-0">(context.as_str())</span>
+                                            <span class="text-sm text-base-content/30 shrink-0">"\u{203a}"</span>
+                                        }
+                                        <span class="font-medium truncate group-hover:text-primary transition-colors">(hit.title.as_str())</span>
+                                    </div>
+                                    if !hit.breadcrumb.is_empty() {
+                                        <div class="text-xs text-base-content/50 mt-0.5">(hit.breadcrumb.as_str())</div>
+                                    }
+                                    if !hit.snippet.is_empty() {
+                                        <p class="dk-search-snippet text-sm text-base-content/70 mt-1.5">
+                                            for seg in &hit.snippet {
+                                                if seg.highlight {
+                                                    <mark class="dk-search-mark bg-primary/20 text-primary rounded-sm px-0.5">(seg.text.as_str())</mark>
+                                                } else {
+                                                    (seg.text.as_str())
+                                                }
+                                            }
+                                        </p>
+                                    }
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </main>
     })
 }
 
@@ -227,5 +328,20 @@ pub async fn docs_head(registry: &DocsRegistry, path: &str) -> Result<impl View>
         if let Some(description) = description {
             <meta name="description" content=(description)>
         }
+    })
+}
+
+/// `<title>` for the search page, plus `noindex`: result pages are thin,
+/// query-dependent content that search engines should not index.
+#[component]
+pub async fn docs_search_head(query: &str) -> Result<impl View> {
+    let title = if query.trim().is_empty() {
+        "Search".to_string()
+    } else {
+        format!("Search: {}", query.trim())
+    };
+    Ok(view! {
+        <title>(title)</title>
+        <meta name="robots" content="noindex">
     })
 }

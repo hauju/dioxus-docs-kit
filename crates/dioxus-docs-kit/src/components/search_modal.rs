@@ -4,7 +4,7 @@ use dioxus_mdx::HttpMethod;
 use super::search_shell::{SearchHit, SearchModalShell};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-use docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
+use docs_kit_core::search::MAX_RESULTS;
 
 /// Rank `query` against the docs index and build at most `limit` rendered hits.
 ///
@@ -12,39 +12,17 @@ use docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_te
 /// and each hit costs a snippet scan plus a mounted component, so building hits
 /// the modal cannot show is the dominant cost of a broad query.
 fn docs_hits(registry: &'static DocsRegistry, query: &str, limit: usize) -> Vec<SearchHit> {
-    let terms = split_terms(query);
     registry
-        .search_docs(query)
+        .search_hits(query, limit)
         .into_iter()
-        .take(limit)
-        .map(|entry| {
-            // Section hits deep-link via `path#anchor`; page-level hits use
-            // the bare path.
-            let target = if entry.anchor.is_empty() {
-                entry.path.clone()
-            } else {
-                format!("{}#{}", entry.path, entry.anchor)
-            };
-            // Section hits show the heading with the page title as context.
-            let (title, context) = if entry.heading.is_empty() {
-                (entry.title.clone(), None)
-            } else {
-                (entry.heading.clone(), Some(entry.title.clone()))
-            };
-            let snippet_src = if entry.body.is_empty() {
-                &entry.description
-            } else {
-                &entry.body
-            };
-            SearchHit {
-                target,
-                title,
-                context,
-                badge: entry.api_method.map(method_badge),
-                meta: entry.breadcrumb.clone(),
-                tags: Vec::new(),
-                snippet: build_snippet(snippet_src, &terms, SNIPPET_WINDOW),
-            }
+        .map(|hit| SearchHit {
+            target: hit.target,
+            title: hit.title,
+            context: hit.context,
+            badge: hit.api_method.map(method_badge),
+            meta: hit.breadcrumb,
+            tags: Vec::new(),
+            snippet: hit.snippet,
         })
         .collect()
 }

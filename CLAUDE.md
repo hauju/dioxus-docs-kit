@@ -90,7 +90,7 @@ Route enum (main.rs):
 ### Key Types (dioxus-docs-kit)
 
 - **`DocsConfig`** — Builder: `.new(docs_bundle!())` → `.with_theme_toggle()` → `.with_default_path()` → `.with_api_group_name()` → `.build()`. Content and OpenAPI specs come from the bundle, so they are configured in `build.rs`, not here
-- **`DocsRegistry`** — Holds parsed docs, nav config, search index, OpenAPI specs. Key methods: `get_parsed_doc()`, `search_docs()`, `get_api_operation()`, `get_api_sidebar_entries()`, `tab_for_path()`, `generate_llms_txt()`, `generate_llms_full_txt()`
+- **`DocsRegistry`** — Holds parsed docs, nav config, search index, OpenAPI specs. Key methods: `get_parsed_doc()`, `search_docs()`, `search_hits()` (display-ready `DocsHit`s, shared by both kits), `page_neighbors()`, `get_api_operation()`, `get_api_sidebar_entries()`, `tab_for_path()`, `generate_llms_txt()`, `generate_llms_full_txt()`
 - **`DocsContext`** — Route decoupling bridge (`current_path`, `base_path`, `navigate` callback). Consumer provides this so library components don't depend on the consumer's Route enum
 - **`use_docs_providers(registry, docs_ctx)`** → returns `DocsProviders { search_open, drawer_open }` for use in custom headers
 - **UI components** — `DocsLayout`, `DocsPageContent`, `DocsSidebar`, `SearchModal`, `SearchButton`, `DocsPageNav`, `MobileDrawer`, `ThemeToggle`
@@ -107,7 +107,7 @@ Route enum (main.rs):
 - **Code block colors**: thirteen `--dk-hl-*` tokens in `crates/dioxus-docs-kit/theme.css`,
   each a `light-dark()` pair (GitHub Light / Tokyo Night) that follows the DaisyUI
   theme's `color-scheme`. The `.hl-*` rules need no safelist entry — they are plain
-  CSS, not Tailwind utilities. Rebuild the precompiled sheets (both kits) with `just css`
+  CSS, not Tailwind utilities. Rebuild the precompiled sheets (both kits) with `just css`. Both inputs use `@import "tailwindcss" source(none)` + explicit `@source`s: the automatic repo-wide scan leaks classes from prose (a CHANGELOG mention of "radio" once pulled in DaisyUI's radio styles)
 - **Safelist pattern**: when crates are git/crates.io deps, Tailwind can't scan `~/.cargo/` — ship `safelist.html` files with all CSS classes (especially dynamic ones from match arms like `HttpMethod::badge_class()`)
 
 ### Key Conventions

@@ -36,15 +36,17 @@
 //!
 //! Serve [`STYLESHEET`] at the `href` you link (see the `topcoat-docs` example).
 //!
-//! Not ported yet: OpenAPI endpoint pages, search, the blog, and the theme
-//! toggle.
+//! Search is a plain GET form: the header's search box submits to
+//! `<base_path>/search?q=…`, which you route to [`docs_search_page`].
+//!
+//! Not ported yet: OpenAPI endpoint pages, the blog, and the theme toggle.
 
 mod content;
 mod icon;
 mod shell;
 
 pub use content::doc_content;
-pub use shell::{docs_head, docs_page};
+pub use shell::{docs_head, docs_page, docs_search_head, docs_search_page};
 
 pub use docs_kit_core::{DocsConfig, DocsRegistry, docs_bundle};
 

@@ -31,7 +31,7 @@ pub use blog::{
 };
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
-pub use registry::{ApiEndpointEntry, DocsRegistry, NavConfig, NavGroup, SearchEntry};
+pub use registry::{ApiEndpointEntry, DocsHit, DocsRegistry, NavConfig, NavGroup, SearchEntry};
 
 /// Embeds the docs bundle written by `dioxus-docs-kit-build` as a
 /// `&'static str`.

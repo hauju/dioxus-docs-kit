@@ -15,12 +15,15 @@ tabs, accordions and copy buttons work in plain HTML.
 
 - Docs shell: tab bar, sidebar with active page, table of contents,
   previous/next links, 404 page with status code, `<title>`/description.
+- Search: a header search box (plain GET form) and a results page with ranked
+  hits and highlighted snippets — the same index and ranking as the Dioxus
+  kit's search modal.
 - MDX components: callouts, cards and card groups, tabs, steps, accordions,
   code blocks and code groups (syntax highlighted), param/response fields,
   request/response examples, changelog updates.
 
-Not ported yet: OpenAPI endpoint pages, search, the blog, the theme toggle,
-Mermaid diagrams (shown as code).
+Not ported yet: OpenAPI endpoint pages (and their search hits), the blog, the
+theme toggle, Mermaid diagrams (shown as code).
 
 ## Usage
 
@@ -61,8 +64,10 @@ async fn document(path: &str) -> Result<impl View> {
 }
 ```
 
-Serve `STYLESHEET` at `/docs-kit.css` and route `/docs/{*doc_path}` to
-`document`. The full app is
+Serve `STYLESHEET` at `/docs-kit.css`, route `/docs/{*doc_path}` to
+`document`, and route `/docs/search` to a page that renders
+`docs_search_head(query)` + `docs_search_page(registry, base_path, query)` with
+the `q` query parameter. The full app is
 [`examples/topcoat-docs`](https://github.com/hauju/dioxus-docs-kit/tree/main/examples/topcoat-docs):
 
 ```sh
