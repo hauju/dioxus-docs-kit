@@ -405,7 +405,7 @@ async fn code_group(blocks: &[CodeBlockNode], key: &str) -> Result<impl View> {
 /// `<pre class="dk-code">` with one `hl-*` span per token; colors come from the
 /// `--dk-hl-*` CSS tokens. An unknown language renders the same markup, unspanned.
 #[component]
-async fn highlighted(block: &CodeBlockNode) -> Result<impl View> {
+pub(crate) async fn highlighted(block: &CodeBlockNode) -> Result<impl View> {
     let spans: Vec<(Option<String>, &str)> = match code_language(block) {
         Some(lang) => hl_lite::highlight(lang, &block.code)
             .into_iter()

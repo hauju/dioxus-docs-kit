@@ -15,7 +15,7 @@ categories = ["web-programming"]
 readme = "README.md"
 
 [dependencies]
-docs-kit-core = { workspace = true }
+docs-kit-core = { workspace = true, features = ["openapi"] }
 # Types, the Lucide icon data and the highlighter only: no Dioxus components.
 dioxus-mdx = { workspace = true }
 hl-lite = { workspace = true }

@@ -1,6 +1,7 @@
 //! The docs page shell: header with tabs and search, sidebar, article, table
 //! of contents, previous/next links, and the search results page. Markup and classes mirror `dioxus-docs-kit`.
 
+use dioxus_mdx::HttpMethod;
 use dioxus_mdx::extract_headers;
 use dioxus_mdx::lucide::LdSearch;
 use docs_kit_core::{DocsHit, DocsRegistry, NavGroup, search::MAX_RESULTS};
@@ -12,6 +13,7 @@ use topcoat::{
 
 use crate::content::doc_content;
 use crate::icon::icon;
+use crate::openapi::endpoint_page;
 
 /// A full docs page for `path` (relative to `base_path`, e.g.
 /// `"getting-started/introduction"`; empty means the registry's default page).
@@ -31,7 +33,20 @@ pub async fn docs_page(registry: &DocsRegistry, base_path: &str, path: &str) -> 
     };
     Ok(view! {
         frame(registry: registry, base_path: base_path, current: path, query: "",
-            article(registry: registry, base_path: base_path, path: path)
+            match registry.get_api_operation_with_spec(path) {
+                Some((operation, spec)) => {
+                    <div class="dk-endpoint flex flex-col">
+                        endpoint_page(operation: operation, spec: spec)
+                        <main class="px-8 lg:px-12 pb-12">
+                            <div class="max-w-2xl">
+                                let (prev, next) = registry.page_neighbors(path);
+                                page_nav(registry: registry, base_path: base_path, prev: prev.as_deref(), next: next.as_deref())
+                            </div>
+                        </main>
+                    </div>
+                },
+                None => article(registry: registry, base_path: base_path, path: path),
+            }
         )
     })
 }
@@ -122,12 +137,7 @@ async fn search_results(
     base_path: &str,
     query: &str,
 ) -> Result<impl View> {
-    // Endpoint pages are not rendered by this kit yet, so their hits would 404.
-    let hits: Vec<DocsHit> = registry
-        .search_hits(query, MAX_RESULTS)
-        .into_iter()
-        .filter(|hit| hit.api_method.is_none())
-        .collect();
+    let hits: Vec<DocsHit> = registry.search_hits(query, MAX_RESULTS);
     let blank = query.trim().is_empty();
     let summary = match hits.len() {
         1 => "1 result for".to_string(),
@@ -150,6 +160,9 @@ async fn search_results(
                             <li>
                                 <a href=(format!("{base_path}/{}", hit.target)) class="dk-search-result block py-4 group">
                                     <div class="flex items-center gap-2 min-w-0">
+                                        if let Some(method) = hit.api_method {
+                                            <span class=(format!("badge badge-xs font-mono font-bold {} shrink-0", method.badge_class()))>(method.as_str())</span>
+                                        }
                                         if let Some(context) = &hit.context {
                                             <span class="dk-search-context text-sm text-base-content/50 truncate shrink-0">(context.as_str())</span>
                                             <span class="text-sm text-base-content/30 shrink-0">"\u{203a}"</span>
@@ -201,21 +214,53 @@ async fn sidebar(
                                 <a
                                     href=(format!("{base_path}/{page}"))
                                     aria-current=((page == current).then_some("page"))
-                                    class=(if page == current {
-                                        "dk-nav-item dk-nav-item-active block px-3 py-2 text-sm rounded-lg transition-colors bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                                    } else {
-                                        "dk-nav-item block px-3 py-2 text-sm rounded-lg transition-colors text-base-content/70 hover:text-base-content hover:bg-base-200"
-                                    })
+                                    class=(format!("dk-nav-item block px-3 py-2 text-sm rounded-lg transition-colors {}", nav_state(page == current)))
                                 >
                                     (title)
                                 </a>
                             </li>
                         }
                     </ul>
+                    // The API group also lists every endpoint, grouped by tag.
+                    if group.group == registry.api_group_name {
+                        for (tag, entries) in registry.get_api_sidebar_entries() {
+                            <div class="dk-nav-subgroup mt-3">
+                                <h4 class="dk-nav-subgroup-title text-xs font-medium text-base-content/50 uppercase tracking-wider px-3 mb-1">(tag.name.as_str())</h4>
+                                <ul class="space-y-0.5">
+                                    for entry in entries {
+                                        let path = format!("{}/{}", entry.prefix, entry.slug);
+                                        let active = path == current;
+                                        let label = match entry.method {
+                                            HttpMethod::Delete => "DEL",
+                                            method => method.as_str(),
+                                        };
+                                        <li>
+                                            <a
+                                                href=(format!("{base_path}/{path}"))
+                                                aria-current=(active.then_some("page"))
+                                                class=(format!("dk-nav-item dk-nav-item-api flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors {}", nav_state(active)))
+                                            >
+                                                <span class=(format!("badge badge-xs font-mono font-bold {} shrink-0", entry.method.badge_class()))>(label)</span>
+                                                <span class="truncate">(entry.title.as_str())</span>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    }
                 </div>
             }
         </nav>
     })
+}
+
+fn nav_state(active: bool) -> &'static str {
+    if active {
+        "dk-nav-item-active bg-primary/10 text-primary font-medium border-l-2 border-primary"
+    } else {
+        "text-base-content/70 hover:text-base-content hover:bg-base-200"
+    }
 }
 
 #[component]

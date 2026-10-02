@@ -19,6 +19,9 @@
 }
 
 @source "./src/**/*.rs";
+/* Badge classes chosen in match arms (`HttpMethod::badge_class()`,
+   `ApiResponse::status_badge_class()`, …) live in the shared types. */
+@source "../dioxus-mdx/src/parser/**/*.rs";
 
 /* The `--dk-*` / `--dk-hl-*` design tokens, shared with dioxus-docs-kit. */
 @import "../dioxus-docs-kit/theme.css";

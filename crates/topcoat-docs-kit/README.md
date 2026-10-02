@@ -15,6 +15,9 @@ tabs, accordions and copy buttons work in plain HTML.
 
 - Docs shell: tab bar, sidebar with active page, table of contents,
   previous/next links, 404 page with status code, `<title>`/description.
+- OpenAPI: endpoint pages (method, parameters, request body, responses with
+  expandable schemas, curl and example-response samples) and the endpoints in
+  the sidebar, grouped by tag.
 - Search: a header search box (plain GET form) and a results page with ranked
   hits and highlighted snippets — the same index and ranking as the Dioxus
   kit's search modal.
@@ -22,8 +25,8 @@ tabs, accordions and copy buttons work in plain HTML.
   code blocks and code groups (syntax highlighted), param/response fields,
   request/response examples, changelog updates.
 
-Not ported yet: OpenAPI endpoint pages (and their search hits), the blog, the
-theme toggle, Mermaid diagrams (shown as code).
+Not ported yet: the inline `<OpenAPI>` MDX viewer, the blog, the theme toggle,
+Mermaid diagrams (shown as code).
 
 ## Usage
 

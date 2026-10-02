@@ -39,10 +39,15 @@
 //! Search is a plain GET form: the header's search box submits to
 //! `<base_path>/search?q=…`, which you route to [`docs_search_page`].
 //!
-//! Not ported yet: OpenAPI endpoint pages, the blog, and the theme toggle.
+//! OpenAPI specs registered in `build.rs` get endpoint pages under their
+//! prefix, listed in the sidebar by tag.
+//!
+//! Not ported yet: the inline `<OpenAPI>` MDX viewer, the blog, and the theme
+//! toggle.
 
 mod content;
 mod icon;
+mod openapi;
 mod shell;
 
 pub use content::doc_content;

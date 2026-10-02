@@ -8,12 +8,39 @@ use topcoat::{
 use topcoat_docs_kit::{doc_content, docs_head, docs_page, docs_search_head, docs_search_page};
 
 const NAV: &str = r#"{
-    "tabs": ["Docs", "More"],
+    "tabs": ["Docs", "More", "API Reference"],
     "groups": [
         { "group": "Guide", "tab": "Docs", "pages": ["guide/intro", "guide/next"] },
-        { "group": "Extra", "tab": "More", "pages": ["extra/page"] }
+        { "group": "Extra", "tab": "More", "pages": ["extra/page"] },
+        { "group": "API Reference", "tab": "API Reference", "pages": ["api/overview"] }
     ]
 }"#;
+
+const OVERVIEW: &str = "---\ntitle: API Overview\n---\n\nEndpoints below.\n";
+
+const SPEC: &str = r#"
+openapi: "3.0.0"
+info: { title: Pets, version: "1" }
+servers: [{ url: "https://pets.example.com" }]
+tags: [{ name: pets }]
+paths:
+  /pets/{id}:
+    delete:
+      operationId: deletePet
+      summary: Delete a pet
+      tags: [pets]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+"#;
 
 const NEXT: &str = "---\ntitle: Next page\n---\n\n## Section one\n\nText about widgets.\n";
 const EXTRA: &str = "---\ntitle: Extra\n---\n\nText.\n";
@@ -52,8 +79,9 @@ fn registry() -> &'static DocsRegistry {
             ("guide/intro", INTRO),
             ("guide/next", NEXT),
             ("extra/page", EXTRA),
+            ("api/overview", OVERVIEW),
         ],
-        &[],
+        &[("api", SPEC)],
     )
     .expect("generate bundle")
     .leak();
@@ -197,4 +225,48 @@ async fn search_head_is_noindex() {
         html,
         r#"<title>Search: tabs</title><meta name="robots" content="noindex">"#
     );
+}
+
+#[tokio::test]
+async fn endpoint_page_renders_operation_and_samples() {
+    let reg = registry();
+    let cx = &Cx::default();
+    let html = render(
+        view! { cx => docs_page(registry: reg, base_path: "/docs", path: "api/delete-pet") },
+    )
+    .await;
+
+    assert!(html.contains(">Delete a pet</h1>"), "{html}");
+    assert!(html.contains(">/pets/{id}</code>"), "{html}");
+    assert!(html.contains("https://pets.example.com"), "{html}");
+    // Parameter, response with an expandable schema, curl sample.
+    assert!(html.contains(">id</code>"), "{html}");
+    assert!(
+        html.contains("<details class=\"group border border-base-300"),
+        "{html}"
+    );
+    assert!(html.contains("curl"), "{html}");
+    // Sidebar: the endpoint is listed under its tag, active, with a short badge.
+    assert!(
+        html.contains(r#"href="/docs/api/delete-pet" aria-current="page""#),
+        "{html}"
+    );
+    assert!(html.contains(">DEL</span>"), "{html}");
+    // Previous page is the API overview.
+    assert!(
+        html.contains(r#"href="/docs/api/overview" class="dk-page-prev"#),
+        "{html}"
+    );
+}
+
+#[tokio::test]
+async fn search_includes_endpoint_hits_with_a_method_badge() {
+    let reg = registry();
+    let cx = &Cx::default();
+    let html = render(
+        view! { cx => docs_search_page(registry: reg, base_path: "/docs", query: "delete") },
+    )
+    .await;
+    assert!(html.contains(r#"href="/docs/api/delete-pet""#), "{html}");
+    assert!(html.contains(">DELETE</span>"), "{html}");
 }

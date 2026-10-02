@@ -24,7 +24,9 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   with no runtime script — tabs are DaisyUI radio tabs, accordions are
   `<details>`. Search is a header GET form plus `docs_search_page` /
   `docs_search_head` (ranked results with highlighted snippets, `noindex`).
-  OpenAPI endpoint pages, the blog and the theme toggle are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  OpenAPI endpoint pages (with the endpoints in the sidebar by tag) render
+  too. The inline `<OpenAPI>` viewer, the blog and the theme toggle are not
+  ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
   order — and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
