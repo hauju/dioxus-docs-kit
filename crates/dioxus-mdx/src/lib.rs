@@ -108,6 +108,7 @@
 #[cfg(feature = "components")]
 pub mod components;
 pub mod lucide;
+mod mermaid_js;
 pub mod parser;
 #[cfg(feature = "parse")]
 mod re;
@@ -166,3 +167,4 @@ pub use components::{MdxContent, MdxRenderer};
 
 #[cfg(feature = "mermaid")]
 pub use components::MermaidDiagram;
+pub use mermaid_js::MERMAID_JS;
