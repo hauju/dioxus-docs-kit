@@ -9,7 +9,7 @@ use super::docs_layout::LayoutOffsets;
 use super::docs_meta::DocsPageMeta;
 use super::managed_head::NotFoundMeta;
 use super::page_nav::DocsPageNav;
-use super::seo::join_site_url;
+use docs_kit_core::seo::join_site_url;
 
 /// Documentation page content renderer.
 ///

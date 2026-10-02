@@ -46,7 +46,7 @@ impl BlogConfig {
     /// Enable linkable tag categories under a root-relative path.
     ///
     /// Register routes for `{base}/:slug` and `{base}/:slug/page/:page`
-    /// rendering [`crate::BlogCategoryPage`] (page numbers start at one).
+    /// rendering `dioxus-docs-kit`'s `BlogCategoryPage` (page numbers start at one).
     /// With this unset, existing tag buttons retain their local filtering behavior
     /// and no category URLs are emitted into the sitemap.
     pub fn with_category_base_path(mut self, path: &str) -> Self {

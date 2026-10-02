@@ -71,7 +71,7 @@ const BOUNDARY_BONUS: i32 = 250;
 const POSITION_CAP: i32 = 200;
 
 /// Default snippet window in characters, centred on the first match.
-pub(crate) const SNIPPET_WINDOW: usize = 100;
+pub const SNIPPET_WINDOW: usize = 100;
 
 /// Cap on how many ranked matches get turned into rendered results.
 ///
@@ -79,7 +79,7 @@ pub(crate) const SNIPPET_WINDOW: usize = 100;
 /// scan plus a mounted component. A single-letter query matches most of the
 /// corpus, so without a cap a mid-size site builds hundreds of hits per
 /// keypress into a modal that shows about six.
-pub(crate) const MAX_RESULTS: usize = 25;
+pub const MAX_RESULTS: usize = 25;
 
 /// One char in, one char out, so char offsets stay aligned with the original
 /// text (snippet highlight ranges rely on this).
@@ -99,7 +99,7 @@ pub(crate) fn search_lower(s: &str) -> String {
 }
 
 /// Split a query into lowercased, whitespace-delimited terms.
-pub(crate) fn split_terms(query: &str) -> Vec<String> {
+pub fn split_terms(query: &str) -> Vec<String> {
     query.split_whitespace().map(search_lower).collect()
 }
 
@@ -170,7 +170,7 @@ pub(crate) fn rank<'a, T>(
 /// A run of snippet text, flagged when it is (part of) a matched term so the UI
 /// can highlight it.
 #[derive(Clone, PartialEq)]
-pub(crate) struct SnippetSegment {
+pub struct SnippetSegment {
     pub text: String,
     pub highlight: bool,
 }
@@ -205,7 +205,7 @@ impl SnippetSegment {
 /// / trailing ellipses when the text is clipped. Returns an empty vec when no
 /// term matches (callers render no snippet then). Matching uses the same
 /// case-insensitive fold as ranking.
-pub(crate) fn build_snippet(text: &str, terms: &[String], window: usize) -> Vec<SnippetSegment> {
+pub fn build_snippet(text: &str, terms: &[String], window: usize) -> Vec<SnippetSegment> {
     if text.is_empty() || terms.is_empty() {
         return Vec::new();
     }

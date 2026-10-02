@@ -2,12 +2,11 @@
 //!
 //! Provides a complete blog with post listing, tag filtering, search,
 //! reading time, and MDX rendering — all embedded at compile time.
+//! The registry and types live in [`docs_kit_core::blog`].
 
-mod categories;
-pub mod config;
+pub use docs_kit_core::blog::{config, registry, types};
+
 pub mod hooks;
-pub mod registry;
-pub mod types;
 
 pub use config::BlogConfig;
 pub use hooks::{BlogProviders, use_blog_providers};

@@ -2,8 +2,20 @@
 
 All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
-apply to all four crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-`dioxus-mdx`, `hl-lite`), which are released together from this workspace.
+apply to all five crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
+`docs-kit-core`, `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
+
+## [Unreleased]
+
+### Added
+
+- **`docs-kit-core` crate.** The registries (`DocsRegistry`, `BlogRegistry`),
+  their configs, the bundle loader, search ranking/snippets and the SEO/XML
+  helpers moved out of `dioxus-docs-kit` into a new crate with no `dioxus`
+  dependency, so a non-Dioxus UI can sit on the same content bundle.
+  `dioxus-docs-kit` re-exports everything at its old paths
+  (`dioxus_docs_kit::registry`, `::config`, `::error`, `::blog::*`,
+  `docs_bundle!`, `blog_bundle!`) — no migration needed.
 
 ## [0.10.2] — 2026-09-27
 

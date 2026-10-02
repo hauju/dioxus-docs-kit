@@ -3,8 +3,8 @@ use dioxus::prelude::*;
 use super::blog_meta::listing_tags;
 use super::{BlogCard, TagFilter};
 use crate::components::managed_head::{ManagedPageHead, NotFoundMeta};
-use crate::components::seo::join_site_url;
 use crate::{BlogCategory, BlogContext, BlogRegistry};
+use docs_kit_core::seo::join_site_url;
 
 /// A shareable topic page showing published posts with the category's tag.
 ///

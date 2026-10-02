@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
-use crate::components::seo::{join_site_url, jsonld_to_string};
+use docs_kit_core::seo::{join_site_url, jsonld_to_string};
 
 /// Build a schema.org Article JSON-LD string, with `</` escaped to `<\/` so the
 /// payload cannot break out of its `<script>` container.

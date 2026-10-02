@@ -3,9 +3,9 @@
 use crate::blog::config::BlogConfig;
 use crate::blog::types::{Author, BlogCategory, BlogPost, BlogSearchEntry};
 use crate::bundle::BlogBundle;
-use crate::components::seo::xml_escape;
 use crate::config::ThemeConfig;
 use crate::error::DocsKitError;
+use crate::seo::xml_escape;
 use std::collections::HashMap;
 
 /// Central blog registry holding all parsed content.
@@ -412,8 +412,7 @@ impl BlogRegistry {
         for category in &self.categories {
             for page in 1..=self.total_pages_for_tag(&category.tag) {
                 if let Some(path) = self.category_url(&category.slug, page) {
-                    let loc =
-                        xml_escape(&crate::components::seo::join_site_url(site_url, &path, ""));
+                    let loc = xml_escape(&crate::seo::join_site_url(site_url, &path, ""));
                     xml.push_str(&format!(
                         "<url>\n<loc>{loc}</loc>\n<changefreq>weekly</changefreq>\n</url>\n"
                     ));

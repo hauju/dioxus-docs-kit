@@ -786,6 +786,7 @@ dependencies = [
  "dioxus-docs-kit-build",
  "dioxus-fullstack-core",
  "dioxus-mdx",
+ "docs-kit-core",
  "gloo-timers",
  "schemars",
  "serde",
@@ -1282,6 +1283,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "docs-kit-core"
+version = "0.10.2"
+dependencies = [
+ "dioxus-docs-kit-build",
+ "dioxus-mdx",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]

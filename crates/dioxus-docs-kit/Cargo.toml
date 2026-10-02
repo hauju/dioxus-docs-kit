@@ -19,6 +19,7 @@ dioxus = { workspace = true, features = ["lib", "router"] }
 # (`openapi-parse`) run in `dioxus-docs-kit-build`, so markdown-rs, a regex
 # engine, `openapiv3` and `serde_yaml` never reach the client.
 dioxus-mdx = { workspace = true, features = ["components"] }
+docs-kit-core = { workspace = true }
 dioxus-fullstack-core = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -44,7 +45,7 @@ mermaid = ["dioxus-mdx/mermaid"]
 # entries for operations. Costs no extra dependencies since 0.9.0 — the spec is
 # parsed by `dioxus-docs-kit-build` — but leaving it off drops that code and
 # makes the registry ignore any specs in the bundle.
-openapi = ["dioxus-mdx/openapi"]
+openapi = ["dioxus-mdx/openapi", "docs-kit-core/openapi"]
 # Register the site's docs as WebMCP tools for an in-browser agent
 # (`DocsWebMcp`). Off by default: it pulls `webmcp-rs` + `schemars`, and a
 # docs site that never meets an agent should not pay for them.

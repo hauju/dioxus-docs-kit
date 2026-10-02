@@ -4,7 +4,7 @@ use dioxus_mdx::HttpMethod;
 use super::search_shell::{SearchHit, SearchModalShell};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-use crate::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
+use docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
 
 /// Rank `query` against the docs index and build at most `limit` rendered hits.
 ///
