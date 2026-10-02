@@ -418,6 +418,40 @@ impl DocsRegistry {
         None
     }
 
+    /// The previous and next page around `path`, in sidebar order within its
+    /// tab. An API group's `<prefix>/overview` page is followed by that spec's
+    /// endpoint pages. Either side is `None` at the ends of the tab, and both
+    /// are `None` for a path the nav does not list.
+    pub fn page_neighbors(&self, path: &str) -> (Option<String>, Option<String>) {
+        let groups: Vec<&NavGroup> = match self.tab_for_path(path) {
+            Some(tab) => self.nav.groups_for_tab(&tab),
+            None => self.nav.groups.iter().collect(),
+        };
+
+        let mut pages: Vec<String> = Vec::new();
+        for group in groups {
+            for page in &group.pages {
+                pages.push(page.clone());
+                if let Some(prefix) = page.strip_suffix("/overview")
+                    && let Some(spec) = self.get_api_spec(prefix)
+                {
+                    pages.extend(
+                        spec.operations
+                            .iter()
+                            .map(|op| format!("{prefix}/{}", op.slug())),
+                    );
+                }
+            }
+        }
+
+        let Some(i) = pages.iter().position(|p| p == path) else {
+            return (None, None);
+        };
+        let prev = i.checked_sub(1).map(|j| pages[j].clone());
+        let next = pages.get(i + 1).cloned();
+        (prev, next)
+    }
+
     // ========================================================================
     // LLMs.txt
     // ========================================================================
@@ -674,6 +708,36 @@ paths:
         #[cfg(not(feature = "openapi"))]
         let specs: &[(&str, &str)] = &[];
         DocsConfig::new(bundle(NAV, PAGES, specs)).build()
+    }
+
+    #[test]
+    fn page_neighbors_follow_sidebar_order_within_a_tab() {
+        let reg = registry();
+        assert_eq!(
+            reg.page_neighbors("g/sections"),
+            (
+                Some("g/title-doc".into()),
+                Some("getting-started/intro".into())
+            )
+        );
+        assert_eq!(reg.page_neighbors("g/body-doc").0, None);
+        // The Docs tab ends at the intro; the API tab is not its neighbor.
+        assert_eq!(reg.page_neighbors("getting-started/intro").1, None);
+        assert_eq!(reg.page_neighbors("not/listed"), (None, None));
+    }
+
+    #[cfg(feature = "openapi")]
+    #[test]
+    fn page_neighbors_walk_into_endpoint_pages_after_the_overview() {
+        let reg = registry();
+        assert_eq!(
+            reg.page_neighbors("api-reference/overview").1,
+            Some("api-reference/list-pets".into())
+        );
+        assert_eq!(
+            reg.page_neighbors("api-reference/list-pets").0,
+            Some("api-reference/overview".into())
+        );
     }
 
     #[test]

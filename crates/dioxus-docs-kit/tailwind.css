@@ -30,5 +30,7 @@
    checkbox/radio/range input types, which would pull three DaisyUI components
    nobody renders into the precompiled sheet. */
 @source not "../../assets/webmcp-polyfill.js";
+/* The Topcoat kit has its own precompiled sheet; its classes stay out of this one. */
+@source not "../topcoat-docs-kit";
 
 @import "./theme.css";

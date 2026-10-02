@@ -1,0 +1,14 @@
+[package]
+name = "topcoat-docs-example"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+publish = false
+
+[dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+topcoat = { version = "0.9", default-features = false, features = ["router", "serve"] }
+topcoat-docs-kit = { path = "../../crates/topcoat-docs-kit" }
+
+[build-dependencies]
+dioxus-docs-kit-build = { workspace = true }

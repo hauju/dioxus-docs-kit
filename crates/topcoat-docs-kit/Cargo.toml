@@ -1,0 +1,26 @@
+[package]
+name = "topcoat-docs-kit"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+# Topcoat's own MSRV.
+rust-version = "1.98"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Documentation site shell for Topcoat applications, on the dioxus-docs-kit content pipeline"
+documentation = "https://docs.rs/topcoat-docs-kit"
+keywords = ["topcoat", "documentation", "mdx", "docs-site"]
+categories = ["web-programming"]
+readme = "README.md"
+
+[dependencies]
+docs-kit-core = { workspace = true }
+# Types, the Lucide icon data and the highlighter only: no Dioxus components.
+dioxus-mdx = { workspace = true }
+hl-lite = { workspace = true }
+topcoat = { version = "0.9", default-features = false, features = ["router"] }
+
+[dev-dependencies]
+dioxus-docs-kit-build = { workspace = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

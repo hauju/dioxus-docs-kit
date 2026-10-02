@@ -1,0 +1,24 @@
+/*
+ * Input for the precompiled stylesheet shipped with the crate
+ * (assets/docs-kit.css, exposed as `topcoat_docs_kit::STYLESHEET`).
+ *
+ * Rebuild after changing component markup or theme.css:
+ *
+ *   just css        (from the repo root)
+ *
+ * CI fails if the committed output is stale.
+ */
+
+/* `source(none)`: scan only this crate, not the whole repo (the Dioxus kit's
+   classes would otherwise end up in this sheet too). */
+@import "tailwindcss" source(none);
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+    themes: dark --default, light;
+}
+
+@source "./src/**/*.rs";
+
+/* The `--dk-*` / `--dk-hl-*` design tokens, shared with dioxus-docs-kit. */
+@import "../dioxus-docs-kit/theme.css";

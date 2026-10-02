@@ -13,53 +13,7 @@ use crate::registry::DocsRegistry;
 pub fn DocsPageNav(current_path: String) -> Element {
     let registry = use_context::<&'static DocsRegistry>();
     let ctx = use_context::<DocsContext>();
-    let nav = &registry.nav;
-
-    // Determine which tab the current page belongs to
-    let current_tab = registry.tab_for_path(&current_path);
-
-    // Build page list scoped to the current tab
-    let tab_groups: Vec<_> = if let Some(ref tab) = current_tab {
-        nav.groups_for_tab(tab)
-    } else {
-        nav.groups.iter().collect()
-    };
-
-    let mut all_pages: Vec<String> = Vec::new();
-    for group in &tab_groups {
-        for page in &group.pages {
-            all_pages.push(page.clone());
-            // Insert a spec's endpoint pages right after its "<prefix>/overview"
-            // page, so endpoints participate in prev/next ordering.
-            if let Some(prefix) = page.strip_suffix("/overview")
-                && let Some(spec) = registry.get_api_spec(prefix)
-            {
-                all_pages.extend(
-                    spec.operations
-                        .iter()
-                        .map(|op| format!("{prefix}/{}", op.slug())),
-                );
-            }
-        }
-    }
-
-    let current_index = all_pages.iter().position(|p| *p == current_path);
-
-    let prev_page = current_index.and_then(|i| {
-        if i > 0 {
-            Some(all_pages[i - 1].clone())
-        } else {
-            None
-        }
-    });
-
-    let next_page = current_index.and_then(|i| {
-        if i + 1 < all_pages.len() {
-            Some(all_pages[i + 1].clone())
-        } else {
-            None
-        }
-    });
+    let (prev_page, next_page) = registry.page_neighbors(&current_path);
 
     rsx! {
         nav { class: "dk-pagination mt-16 pt-8 border-t border-base-300 flex justify-between gap-4",

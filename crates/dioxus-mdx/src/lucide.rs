@@ -25,13 +25,26 @@
 //! > ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 //! > IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+#[cfg(feature = "components")]
 use dioxus::prelude::*;
+
+mod names;
+pub use names::icon_for_name;
 
 /// A Lucide icon: the inner elements of a 24x24 stroke `<svg>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LucideIcon(&'static str);
 
+impl LucideIcon {
+    /// The icon's inner SVG elements, for renderers that build the `<svg>`
+    /// wrapper themselves (24x24 viewBox, `currentColor` stroke, width 2).
+    pub const fn svg_inner(self) -> &'static str {
+        self.0
+    }
+}
+
 /// Renders a [`LucideIcon`] as an inline `<svg>`.
+#[cfg(feature = "components")]
 #[component]
 pub fn Icon(
     /// The icon to draw.

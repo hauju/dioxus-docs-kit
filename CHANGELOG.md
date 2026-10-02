@@ -2,8 +2,8 @@
 
 All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
-apply to all five crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-`docs-kit-core`, `dioxus-mdx`, `hl-lite`), which are released together from this workspace.
+apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
+`docs-kit-core`, `dioxus-mdx`, `hl-lite`, `topcoat-docs-kit`), which are released together from this workspace.
 
 ## [Unreleased]
 
@@ -16,6 +16,24 @@ apply to all five crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `dioxus-docs-kit` re-exports everything at its old paths
   (`dioxus_docs_kit::registry`, `::config`, `::error`, `::blog::*`,
   `docs_bundle!`, `blog_bundle!`) — no migration needed.
+- **`topcoat-docs-kit` crate (experimental).** The docs shell for
+  [Topcoat](https://github.com/tokio-rs/topcoat) apps, on the same content
+  bundle: `docs_page` (tab bar, sidebar, article, table of contents,
+  previous/next, 404), `docs_head`, `doc_content` (every MDX component except
+  the inline OpenAPI viewer) and a precompiled `STYLESHEET`. Server-rendered
+  with no runtime script — tabs are DaisyUI radio tabs, accordions are
+  `<details>`. OpenAPI endpoint pages, search, the blog and the theme toggle
+  are not ported yet. Needs Rust 1.98 (Topcoat's MSRV); see
+  `examples/topcoat-docs`.
+- `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
+  order, shared by both shells.
+- `dioxus-mdx`: `lucide` (icon SVG data and `icon_for_name`) and
+  `clean_step_title` no longer need the `components` feature;
+  `LucideIcon::svg_inner()` exposes an icon's SVG markup.
+
+### Changed
+
+- CI runs on Rust 1.98 (was 1.96). The Dioxus crates' MSRV stays 1.88.
 
 ## [0.10.2] — 2026-09-27
 

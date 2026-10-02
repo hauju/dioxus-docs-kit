@@ -41,6 +41,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 | `docs-kit-core` | `crates/docs-kit-core/` | **UI-agnostic core** — bundle loader, `DocsRegistry`/`BlogRegistry`, configs, search, SEO/XML helpers. No `dioxus` dep; the kit re-exports it at its old paths |
 | `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
 | `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
+| `topcoat-docs-kit` | `crates/topcoat-docs-kit/` | **Topcoat docs shell** (experimental) — server-rendered `docs_page`/`docs_head`/`doc_content` on `docs-kit-core`, no runtime script; own precompiled CSS. Rust 1.98. Example: `examples/topcoat-docs` (`cargo run -p topcoat-docs-example`) |
 | `hl-lite` | `crates/hl-lite/` | Zero-dependency syntax highlighter (12 hand-written lexers → `hl-*` spans); used by `dioxus-mdx`'s code blocks |
 
 **Dependency direction:** `dioxus-docs-kit` depends on `docs-kit-core` (which depends on `dioxus-mdx` with no features — types only) and on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
@@ -106,7 +107,7 @@ Route enum (main.rs):
 - **Code block colors**: thirteen `--dk-hl-*` tokens in `crates/dioxus-docs-kit/theme.css`,
   each a `light-dark()` pair (GitHub Light / Tokyo Night) that follows the DaisyUI
   theme's `color-scheme`. The `.hl-*` rules need no safelist entry — they are plain
-  CSS, not Tailwind utilities. Rebuild the precompiled sheet with `just css`
+  CSS, not Tailwind utilities. Rebuild the precompiled sheets (both kits) with `just css`
 - **Safelist pattern**: when crates are git/crates.io deps, Tailwind can't scan `~/.cargo/` — ship `safelist.html` files with all CSS classes (especially dynamic ones from match arms like `HttpMethod::badge_class()`)
 
 ### Key Conventions
@@ -116,7 +117,7 @@ Route enum (main.rs):
 - Syntax highlighting: `hl-lite`, always on — no feature, no grammar selection, no C toolchain. `dioxus-mdx`'s `code_block` lexes the fence and emits `<pre class="dk-code">` with one `<span class="hl-{kind}">` per token; colors are the `--dk-hl-*` CSS tokens in `crates/dioxus-docs-kit/theme.css`, never Rust. An unknown language renders the same markup with no spans
 - Cargo features (docs-kit): `default = ["web", "mermaid", "openapi"]`, plus `server` (SeoRouter/Axum routes) and `webmcp`. `openapi` gates the API-reference rendering path only — the spec parser lives in the build crate. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
 - Cargo features (dioxus-mdx): `components` gates `src/components/**` and pulls in both `dioxus` and `hl-lite`; `parse` gates `src/parser/**` implementation (markdown-rs + regex) while the AST types and `src/text.rs` are always compiled; `openapi` is types + viewer components (no deps), `openapi-parse` adds `openapiv3`/`serde_yaml`. Frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
-- CI toolchain: Rust 1.96.0, Dioxus CLI 0.7.10, Bun for Tailwind
+- CI toolchain: Rust 1.98.0 (Topcoat's MSRV; the Dioxus crates still declare 1.88), Dioxus CLI 0.7.10, Bun for Tailwind
 
 ---
 
