@@ -42,16 +42,21 @@
 //! OpenAPI specs registered in `build.rs` get endpoint pages under their
 //! prefix, listed in the sidebar by tag.
 //!
-//! Not ported yet: the inline `<OpenAPI>` MDX viewer, the blog, and the theme
-//! toggle.
+//! With `DocsConfig::with_theme_toggle`, the header gets a light/dark button;
+//! put [`docs_theme_script`] in `<head>` so the stored choice applies before
+//! first paint.
+//!
+//! Not ported yet: the inline `<OpenAPI>` MDX viewer and the blog.
 
 mod content;
 mod icon;
 mod openapi;
 mod shell;
+mod theme;
 
 pub use content::doc_content;
 pub use shell::{docs_head, docs_page, docs_search_head, docs_search_page};
+pub use theme::docs_theme_script;
 
 pub use docs_kit_core::{DocsConfig, DocsRegistry, docs_bundle};
 

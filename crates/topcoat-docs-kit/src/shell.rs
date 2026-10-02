@@ -14,6 +14,7 @@ use topcoat::{
 use crate::content::doc_content;
 use crate::icon::icon;
 use crate::openapi::endpoint_page;
+use crate::theme::theme_toggle;
 
 /// A full docs page for `path` (relative to `base_path`, e.g.
 /// `"getting-started/introduction"`; empty means the registry's default page).
@@ -109,6 +110,7 @@ async fn frame(
                         <input type="search" name="q" value=(query) placeholder="Search docs" aria-label="Search documentation">
                     </label>
                 </form>
+                theme_toggle(registry: registry)
             </div>
 
             // Below `lg` the sidebar is hidden; the same nav sits in a disclosure.

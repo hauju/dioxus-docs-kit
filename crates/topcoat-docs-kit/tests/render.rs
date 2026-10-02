@@ -5,7 +5,9 @@ use topcoat::{
     context::Cx,
     view::{View, ViewExt, view},
 };
-use topcoat_docs_kit::{doc_content, docs_head, docs_page, docs_search_head, docs_search_page};
+use topcoat_docs_kit::{
+    doc_content, docs_head, docs_page, docs_search_head, docs_search_page, docs_theme_script,
+};
 
 const NAV: &str = r#"{
     "tabs": ["Docs", "More", "API Reference"],
@@ -269,4 +271,49 @@ async fn search_includes_endpoint_hits_with_a_method_badge() {
     .await;
     assert!(html.contains(r#"href="/docs/api/delete-pet""#), "{html}");
     assert!(html.contains(">DELETE</span>"), "{html}");
+}
+
+fn themed_registry() -> &'static DocsRegistry {
+    let bundle = dioxus_docs_kit_build::docs_bundle_json(NAV, &[("guide/intro", INTRO)], &[])
+        .expect("generate bundle")
+        .leak();
+    Box::leak(Box::new(
+        DocsConfig::new(bundle)
+            .with_theme_toggle("light", "dark", "dark")
+            .build(),
+    ))
+}
+
+#[tokio::test]
+async fn theme_script_and_toggle_follow_the_config() {
+    let reg = themed_registry();
+    let cx = &Cx::default();
+    let script = render(view! { cx => docs_theme_script(registry: reg) }).await;
+    assert!(
+        script
+            .starts_with(r#"<script data-key="docs-theme" data-default="dark" data-dark="dark">"#),
+        "{script}"
+    );
+    let page =
+        render(view! { cx => docs_page(registry: reg, base_path: "/docs", path: "guide/intro") })
+            .await;
+    assert!(page.contains(r#"class="dk-theme-toggle"#), "{page}");
+    assert!(
+        page.contains(r#"data-light="light" data-dark="dark""#),
+        "{page}"
+    );
+}
+
+#[tokio::test]
+async fn no_theme_config_renders_no_script_or_toggle() {
+    let reg = registry();
+    let cx = &Cx::default();
+    assert_eq!(
+        render(view! { cx => docs_theme_script(registry: reg) }).await,
+        ""
+    );
+    let page =
+        render(view! { cx => docs_page(registry: reg, base_path: "/docs", path: "guide/intro") })
+            .await;
+    assert!(!page.contains("dk-theme-toggle"), "{page}");
 }

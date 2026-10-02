@@ -17,10 +17,14 @@ use topcoat::{
 };
 use topcoat_docs_kit::{
     DocsConfig, DocsRegistry, STYLESHEET, docs_head, docs_page, docs_search_head, docs_search_page,
+    docs_theme_script,
 };
 
-static DOCS: LazyLock<DocsRegistry> =
-    LazyLock::new(|| DocsConfig::new(topcoat_docs_kit::docs_bundle!()).build());
+static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
+    DocsConfig::new(topcoat_docs_kit::docs_bundle!())
+        .with_theme_toggle("light", "dark", "dark")
+        .build()
+});
 
 #[tokio::main]
 async fn main() {
@@ -110,6 +114,7 @@ async fn document(head: Child<'_>, child: Child<'_>) -> Result<impl View> {
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
+                docs_theme_script(registry: &DOCS)
                 (head)
                 <link rel="stylesheet" href="/docs-kit.css">
             </head>
