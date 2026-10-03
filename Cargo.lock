@@ -901,7 +901,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "tracing",
  "webmcp-rs",
 ]
 
