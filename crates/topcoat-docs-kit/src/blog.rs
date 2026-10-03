@@ -37,15 +37,15 @@ pub async fn blog_index_page(
     page: usize,
 ) -> Result<impl View> {
     let page = page.max(1);
-    let (posts, total_pages) = match tag {
-        Some(tag) => (
-            registry.posts_page_by_tag(tag, page - 1),
-            registry.total_pages_for_tag(tag),
-        ),
-        None => (
-            registry.non_featured_posts_page(page - 1),
-            registry.non_featured_total_pages(),
-        ),
+    let total_pages = match tag {
+        Some(tag) => registry.total_pages_for_tag(tag),
+        None => registry.non_featured_total_pages(),
+    };
+    // Checked first: the page number comes straight from the query string.
+    let posts = match tag {
+        _ if page > total_pages => Vec::new(),
+        Some(tag) => registry.posts_page_by_tag(tag, page - 1),
+        None => registry.non_featured_posts_page(page - 1),
     };
     let show_featured = tag.is_none() && page == 1 && registry.has_featured();
     let heading = match tag {

@@ -219,3 +219,13 @@ async fn search_finds_posts_with_snippets() {
     assert!(html.contains(r#"<mark class="dk-search-mark"#), "{html}");
     assert!(html.contains(r#"action="/blog/search""#), "{html}");
 }
+
+#[tokio::test]
+async fn huge_page_number_renders_empty_instead_of_overflowing() {
+    let reg = registry(2);
+    let cx = &Cx::default();
+    let html = render(view! { cx => blog_index_page(registry: reg, base_path: "/blog", tag: None, page: usize::MAX) }).await;
+    assert!(html.contains("No posts found."), "{html}");
+    let tagged = render(view! { cx => blog_index_page(registry: reg, base_path: "/blog", tag: Some("rust"), page: usize::MAX) }).await;
+    assert!(tagged.contains("No posts found."), "{tagged}");
+}
