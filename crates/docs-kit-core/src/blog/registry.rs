@@ -174,11 +174,11 @@ impl BlogRegistry {
             .iter()
             .filter(|p| !p.frontmatter.featured)
             .collect();
-        let start = page * self.posts_per_page;
-        let end = (start + self.posts_per_page).min(filtered.len());
+        let start = page.saturating_mul(self.posts_per_page);
         if start >= filtered.len() {
             return Vec::new();
         }
+        let end = (start + self.posts_per_page).min(filtered.len());
         filtered[start..end].to_vec()
     }
 
@@ -242,21 +242,21 @@ impl BlogRegistry {
     }
 
     pub fn posts_page(&self, page: usize) -> &[BlogPost] {
-        let start = page * self.posts_per_page;
-        let end = (start + self.posts_per_page).min(self.posts.len());
+        let start = page.saturating_mul(self.posts_per_page);
         if start >= self.posts.len() {
             return &[];
         }
+        let end = (start + self.posts_per_page).min(self.posts.len());
         &self.posts[start..end]
     }
 
     pub fn posts_page_by_tag(&self, tag: &str, page: usize) -> Vec<&BlogPost> {
         let filtered = self.posts_by_tag(tag);
-        let start = page * self.posts_per_page;
-        let end = (start + self.posts_per_page).min(filtered.len());
+        let start = page.saturating_mul(self.posts_per_page);
         if start >= filtered.len() {
             return Vec::new();
         }
+        let end = (start + self.posts_per_page).min(filtered.len());
         filtered[start..end].to_vec()
     }
 
@@ -518,6 +518,15 @@ mod tests {
         BlogConfig::new(bundle(manifest, posts))
             .with_posts_per_page(posts_per_page)
             .build()
+    }
+
+    #[test]
+    fn huge_page_numbers_return_empty_pages_instead_of_overflowing() {
+        let registry = build_registry(2);
+        assert!(registry.posts_page(usize::MAX).is_empty());
+        assert!(registry.non_featured_posts_page(usize::MAX).is_empty());
+        assert!(registry.posts_page_by_tag("rust", usize::MAX).is_empty());
+        assert!(registry.category_posts_page("rust", usize::MAX).is_none());
     }
 
     fn category_config() -> BlogConfig {
