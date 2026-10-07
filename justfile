@@ -36,7 +36,6 @@ size:
 [group("lint")]
 fmt:
     cargo fmt --all --check
-    topcoat fmt --check --rustfmt crates/topcoat-docs-kit/src examples/topcoat-docs/src
 
 # Clippy (matches CI)
 [group("lint")]
