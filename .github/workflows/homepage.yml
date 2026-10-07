@@ -33,6 +33,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.98.0
         with:
           components: rustfmt
+      - name: Install Topcoat CLI
+        uses: taiki-e/install-action@v2
+        with:
+          tool: topcoat-cli@0.10.0
+      - name: Check Topcoat formatting
+        run: topcoat fmt --check --rustfmt crates/topcoat-docs-kit/src examples/topcoat-docs/src
       - name: Check Format
         run: cargo fmt --all --check
 
