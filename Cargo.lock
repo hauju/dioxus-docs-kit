@@ -2598,6 +2598,7 @@ name = "oxidt-docs"
 version = "0.10.2"
 dependencies = [
  "dioxus-docs-kit-build",
+ "dioxus-mdx",
  "http",
  "http-body-util",
  "serde",
