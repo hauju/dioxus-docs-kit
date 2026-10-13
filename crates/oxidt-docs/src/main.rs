@@ -94,14 +94,63 @@ async fn main() -> ExitCode {
     }
 }
 
+/// Written into every export; `build` only replaces an output directory that
+/// has it (or is empty), so `--out` can never wipe unrelated files.
+const MARKER: &str = ".oxidt-docs";
+
+/// Export into a staging directory next to `out`, then swap it in, so pages
+/// deleted from the nav do not survive in a reused output directory.
+async fn build(opts: &Options, out: &Path, base: &str) -> Result<(), String> {
+    if out.exists() && !out.join(MARKER).exists() && !is_empty_dir(out) {
+        return Err(format!(
+            "{} exists and is not an oxidt-docs output directory; refusing to replace it",
+            out.display()
+        ));
+    }
+    let name = out.file_name().ok_or("--out needs a directory name")?;
+    let staging = out.with_file_name(format!("{}.oxidt-tmp", name.to_string_lossy()));
+    remove_dir(&staging)?;
+
+    let pages = match export(opts, &staging, base).await {
+        Ok(pages) => pages,
+        Err(e) => {
+            let _ = fs::remove_dir_all(&staging);
+            return Err(e);
+        }
+    };
+    remove_dir(out)?;
+    fs::rename(&staging, out).map_err(|e| format!("{}: {e}", out.display()))?;
+    println!("wrote {pages} pages to {}", out.display());
+    Ok(())
+}
+
+fn is_empty_dir(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|mut entries| entries.next().is_none())
+}
+
+fn remove_dir(dir: &Path) -> Result<(), String> {
+    match fs::remove_dir_all(dir) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            Err(format!("{}: {e}", dir.display()))
+        }
+        _ => Ok(()),
+    }
+}
+
 /// Render every route through the router in memory and write it to `out`.
 ///
-/// Pages are rendered at `/docs/...` and every root-relative URL is then
-/// prefixed with `base` (e.g. `/my-repo` for a GitHub project page).
-async fn build(opts: &Options, out: &Path, base: &str) -> Result<(), String> {
+/// Pages are rendered at `/docs/...`; their URLs are then made root-relative
+/// and prefixed with `base` (e.g. `/my-repo` for a GitHub project page).
+/// Returns the number of pages written.
+async fn export(opts: &Options, out: &Path, base: &str) -> Result<usize, String> {
     let bundle = site::load(opts)?;
-    let router = site::router();
+    let router = site::router(&opts.root);
     let registry = site::registry();
+
+    // Static files referenced from content (`/images/x.png`) come from
+    // `<root>/public`; generated files below win on a name clash.
+    copy_dir(&opts.root.join("public"), out)?;
+    write(&out.join(MARKER), "")?;
 
     let mut paths: Vec<String> = registry
         .get_all_paths()
@@ -112,18 +161,23 @@ async fn build(opts: &Options, out: &Path, base: &str) -> Result<(), String> {
     paths.sort();
 
     let docs = out.join("docs");
+    // The index renders the default page, so its links resolve like that page's.
+    let html = render(&router, "/docs").await?;
     write(
         &docs.join("index.html"),
-        &rebase(&render(&router, "/docs").await?, base),
+        &rewrite_urls(&html, base, &url_dir(&registry.default_path)),
     )?;
     for path in &paths {
         let html = render(&router, &format!("/docs/{path}")).await?;
-        write(&docs.join(path).join("index.html"), &rebase(&html, base))?;
+        write(
+            &docs.join(path).join("index.html"),
+            &rewrite_urls(&html, base, &url_dir(path)),
+        )?;
     }
 
     // The header search box submits to /docs/search; statically that page
     // ranks the exported index in the browser.
-    let search_page = rebase(&render(&router, "/docs/search").await?, base).replace(
+    let search_page = rewrite_urls(&render(&router, "/docs/search").await?, base, "/docs").replace(
         "</body>",
         &format!("<script src=\"{base}/oxidt-search.js\" data-base=\"{base}\"></script></body>"),
     );
@@ -149,26 +203,96 @@ async fn build(opts: &Options, out: &Path, base: &str) -> Result<(), String> {
         )?;
     }
 
-    println!("wrote {} pages to {}", paths.len() + 1, out.display());
+    Ok(paths.len() + 1)
+}
+
+fn copy_dir(from: &Path, to: &Path) -> Result<(), String> {
+    let Ok(entries) = fs::read_dir(from) else {
+        return Ok(());
+    };
+    fs::create_dir_all(to).map_err(|e| format!("{}: {e}", to.display()))?;
+    for entry in entries.flatten() {
+        let (src, dest) = (entry.path(), to.join(entry.file_name()));
+        if src.is_dir() {
+            copy_dir(&src, &dest)?;
+        } else {
+            fs::copy(&src, &dest).map_err(|e| format!("{}: {e}", src.display()))?;
+        }
+    }
     Ok(())
 }
 
-/// Prefix root-relative `href`/`src`/`action` URLs with `base`, leaving
-/// protocol-relative `//host` URLs alone.
-fn rebase(html: &str, base: &str) -> String {
+/// The URL directory a docs page is served from: the server serves
+/// `guides/intro` at `/docs/guides/intro`, so its relative links resolve
+/// against `/docs/guides`.
+fn url_dir(path: &str) -> String {
+    match path.rsplit_once('/') {
+        Some((dir, _)) => format!("/docs/{dir}"),
+        None => "/docs".to_string(),
+    }
+}
+
+/// Rewrite every `href`/`src`/`action` URL for the static export.
+///
+/// Exported pages live at `<page>/index.html`, which hosts serve as
+/// `<page>/`, so relative URLs would resolve one level too deep: they are
+/// resolved against `page_dir` instead. Root-relative URLs then get `base`.
+/// Fragments, queries, `//host` and `scheme:` URLs are left alone.
+fn rewrite_urls(html: &str, base: &str, page_dir: &str) -> String {
     let mut out = String::with_capacity(html.len());
     let mut rest = html;
-    while let Some(i) = rest.find("=\"/") {
+    while let Some(i) = rest.find("=\"") {
         let (head, tail) = rest.split_at(i + 2);
         out.push_str(head);
+        let Some(end) = tail.find('"') else {
+            rest = tail;
+            break;
+        };
+        let (value, after) = tail.split_at(end);
         let attr = head[..i].rsplit(|c: char| c.is_whitespace()).next();
-        if matches!(attr, Some("href" | "src" | "action")) && !tail.starts_with("//") {
-            out.push_str(base);
+        if matches!(attr, Some("href" | "src" | "action")) {
+            out.push_str(&resolve_url(value, base, page_dir));
+        } else {
+            out.push_str(value);
         }
-        rest = tail;
+        rest = after;
     }
     out.push_str(rest);
     out
+}
+
+fn resolve_url(url: &str, base: &str, page_dir: &str) -> String {
+    let has_scheme = url.split_once(':').is_some_and(|(scheme, _)| {
+        !scheme.is_empty()
+            && scheme
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || "+-.".contains(c))
+    });
+    if url.is_empty() || url.starts_with(['#', '?']) || url.starts_with("//") || has_scheme {
+        return url.to_string();
+    }
+    if url.starts_with('/') {
+        return format!("{base}{url}");
+    }
+    // Normalize `page_dir/url`, keeping any `?query`/`#fragment` as is.
+    let split = url.find(['?', '#']).unwrap_or(url.len());
+    let (path, suffix) = url.split_at(split);
+    let mut segments: Vec<&str> = page_dir.split('/').filter(|s| !s.is_empty()).collect();
+    for segment in path.split('/') {
+        match segment {
+            "" | "." => {}
+            ".." => {
+                segments.pop();
+            }
+            s => segments.push(s),
+        }
+    }
+    let trailing = if path.ends_with('/') && !segments.is_empty() {
+        "/"
+    } else {
+        ""
+    };
+    format!("{base}/{}{trailing}{suffix}", segments.join("/"))
 }
 
 /// The bundle's search entries, trimmed to what `search.js` reads.
@@ -242,6 +366,7 @@ async fn dev(opts: &Options, port: u16) -> Result<(), String> {
 
     let watched = watched_paths(opts);
     let mut stamp = latest_change(&watched);
+    let router = site::router(&opts.root);
     let opts = opts.clone();
     tokio::spawn(async move {
         loop {
@@ -258,7 +383,7 @@ async fn dev(opts: &Options, port: u16) -> Result<(), String> {
         }
     });
 
-    topcoat::serve(listener, site::router())
+    topcoat::serve(listener, router)
         .await
         .map_err(|e| e.to_string())
 }
@@ -288,4 +413,30 @@ fn latest_change(paths: &[PathBuf]) -> (Option<SystemTime>, usize) {
         walk(path, &mut stamp);
     }
     stamp
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rewrites_root_relative_and_relative_urls() {
+        let html = r#"<a href="/docs/x">a</a><a href="next#h">b</a><img src="../img/a.png"><a href="./">c</a>"#;
+        assert_eq!(
+            rewrite_urls(html, "/repo", "/docs/guides"),
+            r#"<a href="/repo/docs/x">a</a><a href="/repo/docs/guides/next#h">b</a><img src="/repo/docs/img/a.png"><a href="/repo/docs/guides/">c</a>"#
+        );
+    }
+
+    #[test]
+    fn leaves_external_fragment_and_other_attributes_alone() {
+        let html = r##"<a href="https://x.dev/a">a</a><a href="#top">b</a><script src="//cdn.x/y.js"></script><a href="mailto:a@b.c">c</a><div data-href="next" title="a b"></div>"##;
+        assert_eq!(rewrite_urls(html, "/repo", "/docs/guides"), html);
+    }
+
+    #[test]
+    fn relative_urls_resolve_without_a_base() {
+        assert_eq!(resolve_url("next", "", "/docs/guides"), "/docs/guides/next");
+        assert_eq!(resolve_url("/a.png", "", "/docs"), "/a.png");
+    }
 }

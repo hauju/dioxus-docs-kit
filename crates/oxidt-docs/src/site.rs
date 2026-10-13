@@ -10,8 +10,8 @@ use topcoat::{
     Result,
     context::Cx,
     router::{
-        CatchAllSegments, HeaderValue, Router, error::redirect, header, page, path_param,
-        query_params, response::IntoResponse, route,
+        CatchAllSegments, DirectoryRoute, HeaderValue, Router, error::redirect, header, page,
+        path_param, query_params, response::IntoResponse, route,
     },
     view::{Child, Unescaped, View, component, view},
 };
@@ -91,7 +91,8 @@ fn pairs<'a>(owned: &'a [(&'a str, String)]) -> Vec<(&'a str, &'a str)> {
     owned.iter().map(|(k, v)| (*k, v.as_str())).collect()
 }
 
-pub fn router() -> Router {
+/// Pages, plus files under `<root>/public` at the site root.
+pub fn router(root: &Path) -> Router {
     Router::builder()
         .route(home)
         .route(stylesheet)
@@ -99,6 +100,7 @@ pub fn router() -> Router {
         .page(docs_index)
         .page(search)
         .page(docs)
+        .route(DirectoryRoute::new("/{*file}", root.join("public")))
         .build()
 }
 
