@@ -3,13 +3,19 @@
 All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
 apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-`docs-kit-core`, `dioxus-mdx`, `hl-lite`, `topcoat-docs-kit`), which are released together from this workspace.
+`oxidt-docs-kit-core`, `dioxus-mdx`, `hl-lite`, `topcoat-docs-kit`), which are released together from this workspace.
 
 ## [Unreleased]
 
+### Changed
+
+- **Project renamed to oxidt-docs-kit.** The site, README and docs now use the
+  new name. Published crate names (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
+  `dioxus-mdx`, `hl-lite`) are unchanged.
+
 ### Added
 
-- **`docs-kit-core` crate.** The registries (`DocsRegistry`, `BlogRegistry`),
+- **`oxidt-docs-kit-core` crate.** The registries (`DocsRegistry`, `BlogRegistry`),
   their configs, the bundle loader, search ranking/snippets and the SEO/XML
   helpers moved out of `dioxus-docs-kit` into a new crate with no `dioxus`
   dependency, so a non-Dioxus UI can sit on the same content bundle.
@@ -35,7 +41,7 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
   `theme: Option<&ThemeConfig>`, so docs and blog pages share it. Needs Rust 1.98 (Topcoat's MSRV); see
   `examples/topcoat-docs`.
 - `DocsRegistry::page_neighbors(path)` — the previous/next page in sidebar
-  order — `docs_kit_core::seo::article_jsonld` (moved out of the Dioxus blog
+  order — `oxidt_docs_kit_core::seo::article_jsonld` (moved out of the Dioxus blog
   meta component) and `DocsRegistry::search_hits(query, limit)` → `DocsHit` (link
   target, title/context, highlighted snippet), shared by both shells.
 - `dioxus-mdx`: `lucide` (icon SVG data and `icon_for_name`) and

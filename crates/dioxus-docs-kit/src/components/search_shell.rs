@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use dioxus_mdx::lucide::{Icon, LdSearch, LdX};
 
-use docs_kit_core::search::SnippetSegment;
+use oxidt_docs_kit_core::search::SnippetSegment;
 
 /// A single result row in the search modal.
 #[derive(Clone, PartialEq)]

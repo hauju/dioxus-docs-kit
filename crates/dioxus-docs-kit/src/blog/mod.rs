@@ -2,9 +2,9 @@
 //!
 //! Provides a complete blog with post listing, tag filtering, search,
 //! reading time, and MDX rendering — all embedded at compile time.
-//! The registry and types live in [`docs_kit_core::blog`].
+//! The registry and types live in [`oxidt_docs_kit_core::blog`].
 
-pub use docs_kit_core::blog::{config, registry, types};
+pub use oxidt_docs_kit_core::blog::{config, registry, types};
 
 pub mod hooks;
 

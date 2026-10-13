@@ -21,7 +21,7 @@ use dioxus::server::axum::{Router, http::header, response::Redirect, routing::ge
 
 use crate::blog::BlogRegistry;
 use crate::registry::{DocsRegistry, agent_feedback_block};
-use docs_kit_core::seo::xml_escape;
+use oxidt_docs_kit_core::seo::xml_escape;
 
 const TEXT: &str = "text/plain; charset=utf-8";
 const XML: &str = "application/xml; charset=utf-8";

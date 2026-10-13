@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 use crate::BlogContext;
 use crate::blog::registry::BlogRegistry;
-use docs_kit_core::seo::{article_jsonld, join_site_url};
+use oxidt_docs_kit_core::seo::{article_jsonld, join_site_url};
 
 /// Injects Open Graph / SEO meta tags and document title for a single blog post.
 ///

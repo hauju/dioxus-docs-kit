@@ -143,7 +143,7 @@ fn main() {
 fn main() {
     use dioxus_docs_kit::server::SeoRouter;
 
-    const SITE_TITLE: &str = "Dioxus Docs Kit";
+    const SITE_TITLE: &str = "Oxidt Docs Kit";
     const SITE_DESC: &str = "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.";
 
     dioxus::server::serve(|| async {
@@ -344,7 +344,7 @@ fn SiteNavbar(
                 Link {
                     to: Route::Home {},
                     class: "text-lg sm:text-xl font-semibold tracking-tight truncate hover:opacity-80 transition-opacity",
-                    "Dioxus Docs Kit"
+                    "Oxidt Docs Kit"
                 }
             }
             div { class: "flex-none flex items-center gap-1",
@@ -692,7 +692,7 @@ fn UsedBySection() -> Element {
                 div { class: "text-center mb-12",
                     h2 { class: "text-3xl font-bold tracking-tight", "Used in Production" }
                     p { class: "mt-3 text-base-content/60",
-                        "Projects powered by Dioxus Docs Kit."
+                        "Projects powered by Oxidt Docs Kit."
                     }
                 }
                 div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto",
@@ -861,7 +861,7 @@ fn LandingFooter() -> Element {
     rsx! {
         footer { class: "border-t border-base-300 px-4 py-8",
             div { class: "max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-base-content/50",
-                span { "Dioxus Docs Kit · Built with Dioxus" }
+                span { "Oxidt Docs Kit · Built with Dioxus" }
                 a {
                     href: "https://github.com/hauju/dioxus-docs-kit",
                     target: "_blank",
