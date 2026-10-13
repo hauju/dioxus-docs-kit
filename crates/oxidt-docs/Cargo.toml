@@ -1,0 +1,24 @@
+[package]
+name = "oxidt-docs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+# Topcoat's own MSRV.
+rust-version = "1.98"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Static documentation site generator: MDX + _nav.json in, plain HTML out"
+keywords = ["documentation", "mdx", "static-site", "docs-site"]
+categories = ["command-line-utilities", "web-programming"]
+publish = false
+
+[dependencies]
+dioxus-docs-kit-build = { workspace = true }
+http = "1"
+http-body-util = "0.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+topcoat = { version = "0.10.0", default-features = false, features = ["router", "serve"] }
+topcoat-docs-kit = { path = "../topcoat-docs-kit" }
