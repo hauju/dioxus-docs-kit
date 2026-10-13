@@ -5,6 +5,7 @@ members = [
     "crates/dioxus-mdx",
     "crates/oxidt-docs-kit-core",
     "crates/hl-lite",
+    "crates/oxidt-docs",
     "crates/topcoat-docs-kit",
     "examples/topcoat-docs",
 ]
