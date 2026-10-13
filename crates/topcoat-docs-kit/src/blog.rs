@@ -7,9 +7,9 @@
 
 use dioxus_mdx::extract_headers;
 use dioxus_mdx::lucide::{LdChevronLeft, LdChevronRight, LdClock, LdSearch};
-use docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
-use docs_kit_core::seo::{article_jsonld, join_site_url};
-use docs_kit_core::{BlogPost, BlogRegistry};
+use oxidt_docs_kit_core::search::{MAX_RESULTS, SNIPPET_WINDOW, build_snippet, split_terms};
+use oxidt_docs_kit_core::seo::{article_jsonld, join_site_url};
+use oxidt_docs_kit_core::{BlogPost, BlogRegistry};
 use topcoat::{
     Result,
     router::StatusCode,

@@ -896,8 +896,8 @@ dependencies = [
  "dioxus-docs-kit-build",
  "dioxus-fullstack-core",
  "dioxus-mdx",
- "docs-kit-core",
  "gloo-timers",
+ "oxidt-docs-kit-core",
  "schemars",
  "serde",
  "serde_json",
@@ -1392,17 +1392,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "docs-kit-core"
-version = "0.10.2"
-dependencies = [
- "dioxus-docs-kit-build",
- "dioxus-mdx",
- "serde",
- "serde_json",
- "tracing",
 ]
 
 [[package]]
@@ -2602,6 +2591,17 @@ dependencies = [
  "indexmap",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "oxidt-docs-kit-core"
+version = "0.10.2"
+dependencies = [
+ "dioxus-docs-kit-build",
+ "dioxus-mdx",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -3889,8 +3889,8 @@ version = "0.10.2"
 dependencies = [
  "dioxus-docs-kit-build",
  "dioxus-mdx",
- "docs-kit-core",
  "hl-lite",
+ "oxidt-docs-kit-core",
  "tokio",
  "topcoat",
 ]

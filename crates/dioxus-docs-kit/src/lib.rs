@@ -285,7 +285,7 @@ impl BlogContext {
 
 /// The framework-agnostic registry, config and error modules, re-exported at
 /// their pre-0.11 paths.
-pub use docs_kit_core::{config, error, registry};
+pub use oxidt_docs_kit_core::{config, error, registry};
 
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
@@ -342,4 +342,4 @@ pub use components::{
 // Macros
 // ============================================================================
 
-pub use docs_kit_core::{blog_bundle, docs_bundle};
+pub use oxidt_docs_kit_core::{blog_bundle, docs_bundle};

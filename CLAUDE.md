@@ -30,7 +30,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 
 ## Project Architecture
 
-**Dioxus 0.7 documentation site framework** — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
+**oxidt-docs-kit** (formerly dioxus-docs-kit) — **Rust documentation site framework** with a Dioxus 0.7 shell — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
 
 ### Crate Layout
 
@@ -38,13 +38,13 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 |-------|------|---------|
 | `dioxus-docs-kit-example` | `src/main.rs` | Example app: routes, custom pages (Home, Blog, Navbar), docs glue |
 | `dioxus-docs-kit` | `crates/dioxus-docs-kit/` | **Reusable docs shell** — layout, sidebar, search, page nav, theme toggle, OpenAPI |
-| `docs-kit-core` | `crates/docs-kit-core/` | **UI-agnostic core** — bundle loader, `DocsRegistry`/`BlogRegistry`, configs, search, SEO/XML helpers. No `dioxus` dep; the kit re-exports it at its old paths |
+| `oxidt-docs-kit-core` | `crates/oxidt-docs-kit-core/` | **UI-agnostic core** — bundle loader, `DocsRegistry`/`BlogRegistry`, configs, search, SEO/XML helpers. No `dioxus` dep; the kit re-exports it at its old paths |
 | `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
 | `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
-| `topcoat-docs-kit` | `crates/topcoat-docs-kit/` | **Topcoat docs shell** (experimental) — server-rendered `docs_page`/`docs_head`/`doc_content` on `docs-kit-core`, no runtime script; own precompiled CSS. Rust 1.98. Example: `examples/topcoat-docs` (`cargo run -p topcoat-docs-example`) |
+| `topcoat-docs-kit` | `crates/topcoat-docs-kit/` | **Topcoat docs shell** (experimental) — server-rendered `docs_page`/`docs_head`/`doc_content` on `oxidt-docs-kit-core`, no runtime script; own precompiled CSS. Rust 1.98. Example: `examples/topcoat-docs` (`cargo run -p topcoat-docs-example`) |
 | `hl-lite` | `crates/hl-lite/` | Zero-dependency syntax highlighter (12 hand-written lexers → `hl-*` spans); used by `dioxus-mdx`'s code blocks |
 
-**Dependency direction:** `dioxus-docs-kit` depends on `docs-kit-core` (which depends on `dioxus-mdx` with no features — types only) and on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
+**Dependency direction:** `dioxus-docs-kit` depends on `oxidt-docs-kit-core` (which depends on `dioxus-mdx` with no features — types only) and on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
 
 ### Content Pipeline
 
@@ -56,7 +56,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 4. `DocsConfig::new(docs_bundle!()).build()` creates a `DocsRegistry` — it deserializes the bundle (inside the consumer's `LazyLock`, so on first page render) and derives only the cheap runtime bits (API sidebar entries, operation index, blog categories)
 5. `DocsPageContent` checks `registry.get_api_operation(&path)` first, then falls back to `registry.get_parsed_doc(&path)`
 
-The bundle carries a `version` field (`BUNDLE_VERSION`, mirrored in `crates/docs-kit-core/src/bundle.rs` and `crates/dioxus-docs-kit-build/src/bundle.rs`); bump it whenever the layout changes incompatibly. The build crate's `bundle.rs` holds serialize-only mirrors of `SearchEntry`, `BlogPost`, `BlogFrontmatter` and `BlogSearchEntry` — the core and kit tests dev-depend on the build crate and generate real bundles, which is what keeps the two definitions in sync.
+The bundle carries a `version` field (`BUNDLE_VERSION`, mirrored in `crates/oxidt-docs-kit-core/src/bundle.rs` and `crates/dioxus-docs-kit-build/src/bundle.rs`); bump it whenever the layout changes incompatibly. The build crate's `bundle.rs` holds serialize-only mirrors of `SearchEntry`, `BlogPost`, `BlogFrontmatter` and `BlogSearchEntry` — the core and kit tests dev-depend on the build crate and generate real bundles, which is what keeps the two definitions in sync.
 
 **Adding a new doc page:** create `docs/<group>/<slug>.mdx` and add the path to `docs/_nav.json`.
 

@@ -6,7 +6,7 @@
 //! never needs to know which theme the visitor picked.
 
 use dioxus_mdx::lucide::{LdMoon, LdSun};
-use docs_kit_core::ThemeConfig;
+use oxidt_docs_kit_core::ThemeConfig;
 use topcoat::{
     Result,
     view::{Unescaped, View, component, view},

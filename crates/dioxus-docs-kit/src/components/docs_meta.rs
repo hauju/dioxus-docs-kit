@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use super::managed_head::{HeadTag, ManagedPageHead};
 use crate::DocsContext;
 use crate::registry::DocsRegistry;
-use docs_kit_core::seo::{join_site_url, jsonld_to_string};
+use oxidt_docs_kit_core::seo::{join_site_url, jsonld_to_string};
 
 /// Build a schema.org JSON-LD `@graph` for a docs page: a `TechArticle` plus an
 /// optional `BreadcrumbList`. `</` is escaped to `<\/` so the payload cannot

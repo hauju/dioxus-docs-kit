@@ -4,7 +4,7 @@
 use dioxus_mdx::HttpMethod;
 use dioxus_mdx::extract_headers;
 use dioxus_mdx::lucide::LdSearch;
-use docs_kit_core::{DocsHit, DocsRegistry, NavGroup, search::MAX_RESULTS};
+use oxidt_docs_kit_core::{DocsHit, DocsRegistry, NavGroup, search::MAX_RESULTS};
 use topcoat::{
     Result,
     router::StatusCode,

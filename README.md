@@ -1,6 +1,6 @@
-# dioxus-docs-kit
+# oxidt-docs-kit
 
-A documentation site framework for [Dioxus 0.7](https://dioxuslabs.com/) with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time.
+A documentation site framework for Rust with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time. Ships a [Dioxus 0.7](https://dioxuslabs.com/) shell (`dioxus-docs-kit`) and an experimental [Topcoat](https://github.com/tokio-rs/topcoat) shell (`topcoat-docs-kit`) on one shared core.
 
 ## Quick Start
 

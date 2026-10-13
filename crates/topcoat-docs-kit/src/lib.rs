@@ -66,7 +66,7 @@ pub use content::doc_content;
 pub use shell::{docs_head, docs_page, docs_search_head, docs_search_page};
 pub use theme::docs_theme_script;
 
-pub use docs_kit_core::{
+pub use oxidt_docs_kit_core::{
     BlogConfig, BlogRegistry, DocsConfig, DocsRegistry, ThemeConfig, blog_bundle, docs_bundle,
 };
 

@@ -1,5 +1,5 @@
 [package]
-name = "docs-kit-core"
+name = "oxidt-docs-kit-core"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "UI-framework-agnostic core of dioxus-docs-kit: content bundle, registries, search and SEO helpers"
-documentation = "https://docs.rs/docs-kit-core"
+documentation = "https://docs.rs/oxidt-docs-kit-core"
 keywords = ["documentation", "mdx", "docs-site", "openapi", "search"]
 categories = ["web-programming"]
 readme = "README.md"

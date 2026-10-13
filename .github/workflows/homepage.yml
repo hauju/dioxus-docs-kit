@@ -1,4 +1,4 @@
-name: Dioxus Docs Kit
+name: Oxidt Docs Kit
 
 on:
   push:
@@ -133,7 +133,7 @@ jobs:
         with:
           cache-on-failure: true
       - name: Check published crates on the declared MSRV
-        run: cargo check -p dioxus-mdx -p docs-kit-core -p dioxus-docs-kit -p dioxus-docs-kit-build
+        run: cargo check -p dioxus-mdx -p oxidt-docs-kit-core -p dioxus-docs-kit -p dioxus-docs-kit-build
 
   build:
     runs-on: ubuntu-latest

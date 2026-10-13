@@ -1,6 +1,6 @@
 //! Renders real build-time blog bundles through the Topcoat blog components.
 
-use docs_kit_core::{BlogConfig, BlogRegistry};
+use oxidt_docs_kit_core::{BlogConfig, BlogRegistry};
 use topcoat::{
     context::Cx,
     view::{View, ViewExt, view},

@@ -1,6 +1,6 @@
 //! Renders real build-time bundles through the Topcoat components.
 
-use docs_kit_core::{DocsConfig, DocsRegistry};
+use oxidt_docs_kit_core::{DocsConfig, DocsRegistry};
 use topcoat::{
     context::Cx,
     view::{View, ViewExt, view},

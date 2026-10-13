@@ -1,4 +1,4 @@
-//! # docs-kit-core
+//! # oxidt-docs-kit-core
 //!
 //! The UI-framework-agnostic half of `dioxus-docs-kit`: it loads the content
 //! bundle written by `dioxus-docs-kit-build` and answers every question a docs
@@ -7,11 +7,11 @@
 //! layer can sit on top.
 //!
 //! ```rust,ignore
-//! use docs_kit_core::{DocsConfig, DocsRegistry};
+//! use oxidt_docs_kit_core::{DocsConfig, DocsRegistry};
 //! use std::sync::LazyLock;
 //!
 //! static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-//!     DocsConfig::new(docs_kit_core::docs_bundle!())
+//!     DocsConfig::new(oxidt_docs_kit_core::docs_bundle!())
 //!         .with_default_path("getting-started/introduction")
 //!         .build()
 //! });
@@ -38,7 +38,7 @@ pub use registry::{ApiEndpointEntry, DocsHit, DocsRegistry, NavConfig, NavGroup,
 ///
 /// ```rust,ignore
 /// static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
-///     DocsConfig::new(docs_kit_core::docs_bundle!()).build()
+///     DocsConfig::new(oxidt_docs_kit_core::docs_bundle!()).build()
 /// });
 /// ```
 ///
@@ -56,7 +56,7 @@ macro_rules! docs_bundle {
 ///
 /// ```rust,ignore
 /// static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
-///     BlogConfig::new(docs_kit_core::blog_bundle!()).build()
+///     BlogConfig::new(oxidt_docs_kit_core::blog_bundle!()).build()
 /// });
 /// ```
 ///
