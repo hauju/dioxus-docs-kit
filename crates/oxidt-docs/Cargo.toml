@@ -15,6 +15,7 @@ publish = false
 
 [dependencies]
 dioxus-docs-kit-build = { workspace = true }
+dioxus-mdx = { workspace = true }
 http = "1"
 http-body-util = "0.1"
 serde = { workspace = true }

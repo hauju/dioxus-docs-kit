@@ -1,7 +1,7 @@
 //! `oxidt-docs` — MDX + `_nav.json` in, a static docs site out.
 //!
 //! ```sh
-//! oxidt-docs build [--root .] [--out dist] [--openapi PREFIX=SPEC]... [--site-url URL]
+//! oxidt-docs build [--root .] [--out dist] [--base-path /repo] [--openapi PREFIX=SPEC]... [--site-url URL]
 //! oxidt-docs dev   [--root .] [--port 3000] [--openapi PREFIX=SPEC]...
 //! ```
 
@@ -19,13 +19,14 @@ use topcoat::router::{Router, StatusCode};
 use site::Options;
 
 const USAGE: &str = "usage:
-  oxidt-docs build [--root DIR] [--out DIR] [--openapi PREFIX=SPEC]... [--site-url URL]
+  oxidt-docs build [--root DIR] [--out DIR] [--base-path /REPO] [--openapi PREFIX=SPEC]... [--site-url URL]
   oxidt-docs dev   [--root DIR] [--port PORT] [--openapi PREFIX=SPEC]...";
 
 struct Args {
     command: String,
     opts: Options,
     out: PathBuf,
+    base_path: String,
     port: u16,
 }
 
@@ -40,6 +41,7 @@ fn parse_args() -> Result<Args, String> {
             site_url: None,
         },
         out: PathBuf::from("dist"),
+        base_path: String::new(),
         port: 3000,
     };
     while let Some(flag) = args.next() {
@@ -47,6 +49,12 @@ fn parse_args() -> Result<Args, String> {
         match flag.as_str() {
             "--root" => parsed.opts.root = value()?.into(),
             "--out" => parsed.out = value()?.into(),
+            "--base-path" => {
+                parsed.base_path = format!("/{}", value()?.trim_matches('/'));
+                if parsed.base_path == "/" {
+                    parsed.base_path.clear();
+                }
+            }
             "--port" => parsed.port = value()?.parse().map_err(|e| format!("--port: {e}"))?,
             "--site-url" => {
                 parsed.opts.site_url = Some(value()?.trim_end_matches('/').to_string());
@@ -71,7 +79,7 @@ fn parse_args() -> Result<Args, String> {
 async fn main() -> ExitCode {
     let result = match parse_args() {
         Ok(args) => match args.command.as_str() {
-            "build" => build(&args.opts, &args.out).await,
+            "build" => build(&args.opts, &args.out, &args.base_path).await,
             "dev" => dev(&args.opts, args.port).await,
             other => Err(format!("unknown command {other}\n{USAGE}")),
         },
@@ -87,8 +95,11 @@ async fn main() -> ExitCode {
 }
 
 /// Render every route through the router in memory and write it to `out`.
-async fn build(opts: &Options, out: &Path) -> Result<(), String> {
-    site::load(opts)?;
+///
+/// Pages are rendered at `/docs/...` and every root-relative URL is then
+/// prefixed with `base` (e.g. `/my-repo` for a GitHub project page).
+async fn build(opts: &Options, out: &Path, base: &str) -> Result<(), String> {
+    let bundle = site::load(opts)?;
     let router = site::router();
     let registry = site::registry();
 
@@ -100,32 +111,96 @@ async fn build(opts: &Options, out: &Path) -> Result<(), String> {
     paths.extend(registry.get_api_endpoint_paths());
     paths.sort();
 
+    let docs = out.join("docs");
     write(
-        &out.join("docs/index.html"),
-        &render(&router, "/docs").await?,
+        &docs.join("index.html"),
+        &rebase(&render(&router, "/docs").await?, base),
     )?;
     for path in &paths {
         let html = render(&router, &format!("/docs/{path}")).await?;
-        write(&out.join("docs").join(path).join("index.html"), &html)?;
+        write(&docs.join(path).join("index.html"), &rebase(&html, base))?;
     }
+
+    // The header search box submits to /docs/search; statically that page
+    // ranks the exported index in the browser.
+    let search_page = rebase(&render(&router, "/docs/search").await?, base).replace(
+        "</body>",
+        &format!("<script src=\"{base}/oxidt-search.js\" data-base=\"{base}\"></script></body>"),
+    );
+    write(&docs.join("search/index.html"), &search_page)?;
+    write(&out.join("search-index.json"), &search_index(bundle)?)?;
+    write(&out.join("oxidt-search.js"), include_str!("search.js"))?;
+
     write(&out.join("docs-kit.css"), topcoat_docs_kit::STYLESHEET)?;
     write(
         &out.join("index.html"),
-        "<!DOCTYPE html><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=/docs\"><link rel=\"canonical\" href=\"/docs\">",
+        &format!(
+            "<!DOCTYPE html><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={base}/docs\"><link rel=\"canonical\" href=\"{base}/docs\">"
+        ),
     )?;
     if let Some(url) = &opts.site_url {
         write(
             &out.join("sitemap.xml"),
-            &registry.generate_sitemap(url, "/docs"),
+            &registry.generate_sitemap(url, &format!("{base}/docs")),
         )?;
         write(
             &out.join("robots.txt"),
-            &format!("User-agent: *\nAllow: /\n\nSitemap: {url}/sitemap.xml\n"),
+            &format!("User-agent: *\nAllow: /\n\nSitemap: {url}{base}/sitemap.xml\n"),
         )?;
     }
 
     println!("wrote {} pages to {}", paths.len() + 1, out.display());
     Ok(())
+}
+
+/// Prefix root-relative `href`/`src`/`action` URLs with `base`, leaving
+/// protocol-relative `//host` URLs alone.
+fn rebase(html: &str, base: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(i) = rest.find("=\"/") {
+        let (head, tail) = rest.split_at(i + 2);
+        out.push_str(head);
+        let attr = head[..i].rsplit(|c: char| c.is_whitespace()).next();
+        if matches!(attr, Some("href" | "src" | "action")) && !tail.starts_with("//") {
+            out.push_str(base);
+        }
+        rest = tail;
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The bundle's search entries, trimmed to what `search.js` reads.
+fn search_index(bundle: &str) -> Result<String, String> {
+    #[derive(serde::Deserialize)]
+    struct Bundle {
+        search: Vec<Entry>,
+    }
+    // Mirrors the bundle's `SearchEntry`, whose empty fields may be omitted.
+    #[derive(Default, serde::Deserialize, serde::Serialize)]
+    #[serde(default)]
+    struct Entry {
+        path: String,
+        anchor: String,
+        title: String,
+        heading: String,
+        description: String,
+        body: String,
+        breadcrumb: String,
+        #[serde(skip_serializing)]
+        api_method: Option<dioxus_mdx::HttpMethod>,
+        #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
+        method: Option<&'static str>,
+        #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
+        method_class: Option<&'static str>,
+    }
+    let mut bundle: Bundle = serde_json::from_str(bundle).map_err(|e| e.to_string())?;
+    for entry in &mut bundle.search {
+        entry.method = entry.api_method.map(|m| m.as_str());
+        entry.method_class = entry.api_method.map(|m| m.badge_class());
+    }
+    serde_json::to_string(&bundle.search).map_err(|e| e.to_string())
 }
 
 async fn render(router: &Router, uri: &str) -> Result<String, String> {
@@ -177,7 +252,7 @@ async fn dev(opts: &Options, port: u16) -> Result<(), String> {
             }
             stamp = now;
             match site::load(&opts) {
-                Ok(()) => println!("rebuilt"),
+                Ok(_) => println!("rebuilt"),
                 Err(e) => eprintln!("error: {e}"),
             }
         }

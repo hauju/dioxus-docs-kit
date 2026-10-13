@@ -56,7 +56,8 @@ pub fn registry() -> &'static DocsRegistry {
 }
 
 /// Parse `<root>/docs` into a registry and make it the one routes render.
-pub fn load(opts: &Options) -> Result<(), String> {
+/// Returns the content bundle JSON the registry was built from.
+pub fn load(opts: &Options) -> Result<&'static str, String> {
     let docs_dir = opts.root.join("docs");
     let nav_json = read(&docs_dir.join("_nav.json"))?;
     let nav: Nav = serde_json::from_str(&nav_json).map_err(|e| format!("docs/_nav.json: {e}"))?;
@@ -72,13 +73,14 @@ pub fn load(opts: &Options) -> Result<(), String> {
 
     let bundle =
         dioxus_docs_kit_build::docs_bundle_json(&nav_json, &pairs(&pages), &pairs(&specs))?;
-    let registry = DocsConfig::new(Box::leak(bundle.into_boxed_str()))
+    let bundle: &'static str = Box::leak(bundle.into_boxed_str());
+    let registry = DocsConfig::new(bundle)
         .with_theme_toggle("light", "dark", "dark")
         .try_build()
         .map_err(|e| e.to_string())?;
     *REGISTRY.write().unwrap() = Some(Box::leak(Box::new(registry)));
     VERSION.fetch_add(1, Ordering::Relaxed);
-    Ok(())
+    Ok(bundle)
 }
 
 fn read(path: &Path) -> Result<String, String> {
