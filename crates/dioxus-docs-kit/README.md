@@ -141,7 +141,7 @@ use.
 Keep both crates on the same version: the bundle carries a format version and
 the runtime rejects one it does not understand.
 
-See the [example project](https://github.com/hauju/dioxus-docs-kit) for a complete `build.rs` implementation.
+See the [example project](https://github.com/oxidt/oxidt-docs-kit) for a complete `build.rs` implementation.
 
 ## Styling Setup
 

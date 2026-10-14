@@ -387,7 +387,7 @@ fn SiteNavbar(
                 }
                 SearchButton { search_open }
                 a {
-                    href: "https://github.com/hauju/dioxus-docs-kit",
+                    href: "https://github.com/oxidt/oxidt-docs-kit",
                     target: "_blank",
                     rel: "noopener noreferrer",
                     class: "btn btn-ghost btn-sm btn-square rounded-lg",
@@ -691,7 +691,7 @@ fn HeroSection() -> Element {
                         Icon { class: "size-4", icon: LdArrowRight }
                     }
                     a {
-                        href: "https://github.com/hauju/dioxus-docs-kit",
+                        href: "https://github.com/oxidt/oxidt-docs-kit",
                         target: "_blank",
                         rel: "noopener noreferrer",
                         class: "btn btn-ghost gap-2",
@@ -898,7 +898,7 @@ fn CodeSection() -> Element {
                             div { class: "flex-1 min-w-0",
                                 p { class: "text-sm font-medium text-base-content mb-1.5", "Install the skill" }
                                 code { class: "block bg-base-200 text-xs font-mono px-3 py-2 rounded-lg text-base-content/70 overflow-x-auto",
-                                    "git clone https://github.com/hauju/dioxus-docs-kit.git /tmp/ddk && cp -r /tmp/ddk/skills/dioxus-docs-kit-integration ~/.claude/skills/"
+                                    "git clone https://github.com/oxidt/oxidt-docs-kit.git /tmp/ddk && cp -r /tmp/ddk/skills/dioxus-docs-kit-integration ~/.claude/skills/"
                                 }
                             }
                         }
@@ -948,7 +948,7 @@ fn LandingFooter() -> Element {
             div { class: "max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-base-content/50",
                 span { "Oxidt Docs Kit · Built with Dioxus" }
                 a {
-                    href: "https://github.com/hauju/dioxus-docs-kit",
+                    href: "https://github.com/oxidt/oxidt-docs-kit",
                     target: "_blank",
                     rel: "noopener noreferrer",
                     class: "flex items-center gap-1.5 hover:text-base-content transition-colors",

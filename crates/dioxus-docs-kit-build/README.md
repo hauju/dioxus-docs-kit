@@ -1,6 +1,6 @@
 # dioxus-docs-kit-build
 
-Build-time content pipeline for [dioxus-docs-kit](https://github.com/hauju/dioxus-docs-kit). Reads your `_nav.json` / `_blog.json`, parses every MDX page and OpenAPI spec, renders the prose to HTML, precomputes the search index, and writes one JSON bundle into `OUT_DIR`.
+Build-time content pipeline for [dioxus-docs-kit](https://github.com/oxidt/oxidt-docs-kit). Reads your `_nav.json` / `_blog.json`, parses every MDX page and OpenAPI spec, renders the prose to HTML, precomputes the search index, and writes one JSON bundle into `OUT_DIR`.
 
 Because all of that happens here, the wasm client links no MDX parser, no markdown-rs, no regex engine, no `openapiv3` and no `serde_yaml` — and never re-parses a page on navigation.
 
