@@ -51,8 +51,10 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 **All parsing happens at build time.** The wasm client links no MDX parser, no `markdown`, no `regex`/`regex-lite`, no `openapiv3` and no `serde_yaml` — it only runs `serde_json` over the bundle, once.
 
 1. `build.rs` calls `dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").with_openapi(prefix, spec_path).generate()` (and `BlogBuild::new("blog/_blog.json").generate()`)
+   - `SkillsBuild::new("skills/_skills.json").generate()` reads `skills/<name>/SKILL.md` (frontmatter via `serde_yaml`) into `skills_bundle.json`
 2. The build crate reads `_nav.json`, parses every `.mdx` into `Vec<DocNode>` with prose rendered to HTML (`DocNode::Html`), parses the OpenAPI spec into `OpenApiSpec`, builds the section-level search index (lowercase fields included) and writes `$OUT_DIR/docs_bundle.json` / `blog_bundle.json`. `cargo:rerun-if-changed` is emitted per file.
 3. `docs_bundle!()` / `blog_bundle!()` macros embed the JSON with `include_str!`
+   - `skills_bundle!()` → `SkillsConfig::new(..).build()` → `SkillsRegistry` (rendered by `SkillsLayout`/`SkillsIndex`/`SkillPage`)
 4. `DocsConfig::new(docs_bundle!()).build()` creates a `DocsRegistry` — it deserializes the bundle (inside the consumer's `LazyLock`, so on first page render) and derives only the cheap runtime bits (API sidebar entries, operation index, blog categories)
 5. `DocsPageContent` checks `registry.get_api_operation(&path)` first, then falls back to `registry.get_parsed_doc(&path)`
 

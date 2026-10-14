@@ -10,6 +10,7 @@ mod search_modal;
 mod search_shell;
 pub(crate) mod shared;
 mod sidebar;
+mod skills;
 mod theme_toggle;
 
 pub use copy_page::CopyPageButton;
@@ -24,6 +25,10 @@ pub use page_nav::DocsPageNav;
 pub use search_modal::SearchModal;
 pub use shared::use_theme_provider;
 pub use sidebar::DocsSidebar;
+pub use skills::{
+    SkillMeta, SkillPage, SkillsIndex, SkillsLayout, SkillsMobileDrawer, SkillsSearchButton,
+    SkillsSearchModal,
+};
 pub use theme_toggle::ThemeToggle;
 
 // Blog component re-exports

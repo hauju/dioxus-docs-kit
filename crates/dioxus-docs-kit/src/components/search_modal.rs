@@ -67,7 +67,7 @@ pub fn SearchModal() -> Element {
 /// The new page's DOM mounts *after* navigation returns, so retry over a few
 /// animation frames until the element exists (mirrors the TOC scroll JS).
 #[cfg(target_arch = "wasm32")]
-fn scroll_to_anchor(anchor: String) {
+pub(crate) fn scroll_to_anchor(anchor: String) {
     spawn(async move {
         let js = format!(
             r#"

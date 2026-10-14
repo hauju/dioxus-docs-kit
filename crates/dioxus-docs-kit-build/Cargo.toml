@@ -20,6 +20,7 @@ readme = "README.md"
 dioxus-mdx = { workspace = true, features = ["parse", "openapi-parse"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-# Only for validating docs frontmatter *shapes* (reporting the ones the runtime
-# subset rejects); the frontmatter itself is parsed with `parse_yaml_lite`.
+# For validating docs frontmatter *shapes* (reporting the ones the runtime
+# subset rejects; docs/blog frontmatter itself is parsed with `parse_yaml_lite`)
+# and for `SKILL.md` frontmatter, which uses block scalars and nested maps.
 serde_yaml = { workspace = true }

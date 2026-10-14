@@ -12,6 +12,7 @@
 //!     let seo = SeoRouter::new("https://example.com", "My Docs", "Documentation for My Product")
 //!         .with_docs(&DOCS, "/docs")
 //!         .with_blog(&BLOG, "/blog")
+//!         .with_skills(&SKILLS, "/skills")
 //!         .into_router();
 //!     Ok(dioxus::server::router(App).merge(seo))
 //! });
@@ -21,6 +22,7 @@ use dioxus::server::axum::{Router, http::header, response::Redirect, routing::ge
 
 use crate::blog::BlogRegistry;
 use crate::registry::{DocsRegistry, agent_feedback_block};
+use crate::skills::SkillsRegistry;
 use oxidt_docs_kit_core::seo::xml_escape;
 
 const TEXT: &str = "text/plain; charset=utf-8";
@@ -55,11 +57,13 @@ impl AgentFeedback {
 /// | Route | Condition | Content |
 /// |---|---|---|
 /// | `<docs_path>/<page>.md` | docs | raw Markdown per doc page |
-/// | `/llms.txt`, `/llms-full.txt` | docs | LLM-friendly docs index / full corpus |
+/// | `/llms.txt`, `/llms-full.txt` | docs | LLM-friendly docs index / full corpus (`llms.txt` gains a `## Skills` section with skills) |
 /// | `/sitemap-docs.xml` | docs | docs sitemap |
 /// | `<blog_path>/<slug>.md` | blog | raw Markdown per post |
 /// | `<blog_path>/rss.xml` | blog | RSS feed |
 /// | `/sitemap-blog.xml` | blog | blog sitemap |
+/// | `<skills_path>/<slug>.md` | skills | raw `SKILL.md` body per skill |
+/// | `/sitemap-skills.xml` | skills | skills sitemap |
 /// | `/sitemap.xml` | always | sitemap index over the above |
 /// | `/robots.txt` | always | allow-all incl. explicit AI-crawler entries |
 /// | `/.well-known/agent-feedback.json` | agent feedback | discovery document (inline or 308 redirect) |
@@ -69,6 +73,7 @@ pub struct SeoRouter {
     site_description: String,
     docs: Option<(&'static DocsRegistry, String)>,
     blog: Option<(&'static BlogRegistry, String)>,
+    skills: Option<(&'static SkillsRegistry, String)>,
     agent_feedback: Option<AgentFeedback>,
 }
 
@@ -94,6 +99,7 @@ impl SeoRouter {
             site_description: site_description.to_string(),
             docs: None,
             blog: None,
+            skills: None,
             agent_feedback: None,
         }
     }
@@ -107,6 +113,12 @@ impl SeoRouter {
     /// Serve blog endpoints for `registry`, mounted under `base_path` (e.g. `"/blog"`).
     pub fn with_blog(mut self, registry: &'static BlogRegistry, base_path: &str) -> Self {
         self.blog = Some((registry, normalize_base(base_path)));
+        self
+    }
+
+    /// Serve skills endpoints for `registry`, mounted under `base_path` (e.g. `"/skills"`).
+    pub fn with_skills(mut self, registry: &'static SkillsRegistry, base_path: &str) -> Self {
+        self.skills = Some((registry, normalize_base(base_path)));
         self
     }
 
@@ -163,8 +175,19 @@ impl SeoRouter {
 
             let docs_base_url = format!("{site_url}{base}");
 
+            let skills_section = self
+                .skills
+                .as_ref()
+                .map(|(skills, base)| skills.generate_llms_section(&format!("{site_url}{base}")));
             let llms = with_block(
-                docs.generate_llms_txt(&self.site_title, &self.site_description, &docs_base_url),
+                with_block(
+                    docs.generate_llms_txt(
+                        &self.site_title,
+                        &self.site_description,
+                        &docs_base_url,
+                    ),
+                    skills_section.as_deref(),
+                ),
                 feedback_block.as_deref(),
             );
             router = router.route(
@@ -215,6 +238,23 @@ impl SeoRouter {
                 get(move || async move { ([(header::CONTENT_TYPE, XML)], sitemap) }),
             );
             sitemap_index_entries.push(format!("{site_url}/sitemap-blog.xml"));
+        }
+
+        if let Some((skills, base)) = &self.skills {
+            for skill in skills.all_skills() {
+                let markdown = skill.raw_markdown.as_str();
+                router = router.route(
+                    &format!("{base}/{}.md", skill.slug),
+                    get(move || async move { ([(header::CONTENT_TYPE, MD)], markdown) }),
+                );
+            }
+
+            let sitemap = skills.generate_sitemap(site_url, base);
+            router = router.route(
+                "/sitemap-skills.xml",
+                get(move || async move { ([(header::CONTENT_TYPE, XML)], sitemap) }),
+            );
+            sitemap_index_entries.push(format!("{site_url}/sitemap-skills.xml"));
         }
 
         let sitemap_index = format!(

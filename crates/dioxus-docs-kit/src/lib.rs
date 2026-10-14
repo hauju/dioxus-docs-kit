@@ -56,6 +56,7 @@ pub mod components;
 pub mod hooks;
 #[cfg(feature = "server")]
 pub mod server;
+pub mod skills;
 #[cfg(feature = "webmcp")]
 pub mod webmcp;
 
@@ -280,6 +281,60 @@ impl BlogContext {
 }
 
 // ============================================================================
+// Skills context
+// ============================================================================
+
+/// Navigation bridge for skill pages, decoupled from the consumer's Route enum.
+///
+/// The consumer creates this in their skills layout wrapper and passes it to
+/// [`use_skills_providers`].
+#[derive(Clone)]
+#[non_exhaustive]
+pub struct SkillsContext {
+    /// Current skill slug (empty on the index page). Must be reactive — wrap a
+    /// route-derived value with `use_memo(use_reactive!(...))`.
+    pub current_slug: ReadSignal<String>,
+    /// Base URL path for skills (e.g. "/skills").
+    pub base_path: String,
+    /// Callback to navigate to a skill by slug (empty string = skills index).
+    pub navigate: Callback<String>,
+    /// Optional full site URL, used for `<link rel="canonical">` and `og:url`.
+    pub site_url: Option<String>,
+    /// When true (default), [`SkillMeta`] and [`SkillsIndex`] emit title,
+    /// description, Open Graph and Twitter Card tags.
+    pub auto_meta: bool,
+}
+
+impl SkillsContext {
+    /// Create a context; `site_url` defaults to `None`, `auto_meta` to `true`.
+    pub fn new(
+        current_slug: impl Into<ReadSignal<String>>,
+        base_path: impl Into<String>,
+        navigate: Callback<String>,
+    ) -> Self {
+        Self {
+            current_slug: current_slug.into(),
+            base_path: base_path.into(),
+            navigate,
+            site_url: None,
+            auto_meta: true,
+        }
+    }
+
+    /// Set the public site origin (e.g. `"https://example.com"`).
+    pub fn with_site_url(mut self, site_url: impl Into<String>) -> Self {
+        self.site_url = Some(site_url.into());
+        self
+    }
+
+    /// Enable or disable automatic per-page meta emission (default: on).
+    pub fn with_auto_meta(mut self, auto_meta: bool) -> Self {
+        self.auto_meta = auto_meta;
+        self
+    }
+}
+
+// ============================================================================
 // Docs re-exports
 // ============================================================================
 
@@ -339,7 +394,19 @@ pub use components::{
 };
 
 // ============================================================================
+// Skills re-exports
+// ============================================================================
+
+pub use components::{
+    SkillMeta, SkillPage, SkillsIndex, SkillsLayout, SkillsMobileDrawer, SkillsSearchButton,
+    SkillsSearchModal,
+};
+pub use skills::{
+    Skill, SkillsConfig, SkillsProviders, SkillsRegistry, SkillsSearchEntry, use_skills_providers,
+};
+
+// ============================================================================
 // Macros
 // ============================================================================
 
-pub use oxidt_docs_kit_core::{blog_bundle, docs_bundle};
+pub use oxidt_docs_kit_core::{blog_bundle, docs_bundle, skills_bundle};

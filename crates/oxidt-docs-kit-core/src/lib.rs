@@ -24,6 +24,7 @@ pub mod error;
 pub mod registry;
 pub mod search;
 pub mod seo;
+pub mod skills;
 
 pub use blog::{
     Author, BlogCategory, BlogCategoryMetadata, BlogConfig, BlogFrontmatter, BlogPost,
@@ -32,6 +33,7 @@ pub use blog::{
 pub use config::{DocsConfig, ThemeConfig};
 pub use error::DocsKitError;
 pub use registry::{ApiEndpointEntry, DocsHit, DocsRegistry, NavConfig, NavGroup, SearchEntry};
+pub use skills::{Skill, SkillsConfig, SkillsRegistry, SkillsSearchEntry};
 
 /// Embeds the docs bundle written by `dioxus-docs-kit-build` as a
 /// `&'static str`.
@@ -66,5 +68,23 @@ macro_rules! docs_bundle {
 macro_rules! blog_bundle {
     () => {
         include_str!(concat!(env!("OUT_DIR"), "/blog_bundle.json"))
+    };
+}
+
+/// Embeds the skills bundle written by `dioxus-docs-kit-build` as a
+/// `&'static str`.
+///
+/// ```rust,ignore
+/// static SKILLS: LazyLock<SkillsRegistry> = LazyLock::new(|| {
+///     SkillsConfig::new(oxidt_docs_kit_core::skills_bundle!()).build()
+/// });
+/// ```
+///
+/// Requires a `build.rs` that calls
+/// `dioxus_docs_kit_build::SkillsBuild::new("skills/_skills.json").generate()`.
+#[macro_export]
+macro_rules! skills_bundle {
+    () => {
+        include_str!(concat!(env!("OUT_DIR"), "/skills_bundle.json"))
     };
 }

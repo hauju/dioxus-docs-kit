@@ -18,6 +18,7 @@ pub use author_info::AuthorInfo;
 pub use blog_card::BlogCard;
 pub use blog_layout::{BlogLayout, BlogSearchButton};
 pub use blog_list::BlogList;
+pub(crate) use blog_meta::listing_tags;
 pub use blog_meta::{BlogIndexMeta, BlogPostMeta};
 pub use blog_post::BlogPostView;
 pub use mobile_drawer::BlogMobileDrawer;

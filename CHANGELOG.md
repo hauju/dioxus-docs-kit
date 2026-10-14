@@ -15,6 +15,20 @@ apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
 
 ### Added
 
+- **Agent skills pages.** `skills/<name>/SKILL.md` files listed in a
+  `skills/_skills.json` (groups plus the `repo`/`path`/`ref` that links point
+  at) render as site pages: `SkillsBuild` in `build.rs` writes
+  `skills_bundle.json`, `SkillsConfig::new(skills_bundle!())` builds a
+  `SkillsRegistry`, and `SkillsLayout` / `SkillsIndex` / `SkillPage` /
+  `SkillMeta` (wired with `SkillsContext` + `use_skills_providers`) show each
+  skill with a copyable `npx skills add` command and GitHub source/raw links.
+  `SkillsLayout` includes a mobile drawer (`SkillsMobileDrawer`) and
+  section-level skills search (`SkillsSearchModal`, `SkillsSearchButton`,
+  Cmd/Ctrl+K; `SkillsRegistry::search_skills` / `search_hits`);
+  `use_skills_providers` returns `SkillsProviders { search_open, drawer_open }`
+  for a custom header.
+  `SeoRouter::with_skills` adds `/sitemap-skills.xml`, per-skill `.md` routes
+  and a `## Skills` section in `llms.txt`. Dioxus shell only.
 - **`oxidt-docs-kit-core` crate.** The registries (`DocsRegistry`, `BlogRegistry`),
   their configs, the bundle loader, search ranking/snippets and the SEO/XML
   helpers moved out of `dioxus-docs-kit` into a new crate with no `dioxus`

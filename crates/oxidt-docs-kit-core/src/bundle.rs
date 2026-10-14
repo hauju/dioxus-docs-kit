@@ -2,12 +2,14 @@
 //!
 //! `dioxus-docs-kit-build` writes one JSON document per registry into `OUT_DIR`;
 //! the app embeds it with [`docs_bundle!`](crate::docs_bundle) /
-//! [`blog_bundle!`](crate::blog_bundle) and the registry deserializes it the
+//! [`blog_bundle!`](crate::blog_bundle) / [`skills_bundle!`](crate::skills_bundle)
+//! and the registry deserializes it the
 //! first time it is touched. Nothing here parses MDX, YAML or Markdown.
 
 use crate::blog::types::{Author, BlogCategoryMetadata, BlogPost, BlogSearchEntry};
 use crate::error::DocsKitError;
 use crate::registry::{NavConfig, SearchEntry};
+use crate::skills::{Skill, SkillsSearchEntry};
 #[cfg(feature = "openapi")]
 use dioxus_mdx::OpenApiSpec;
 use dioxus_mdx::ParsedDoc;
@@ -68,6 +70,28 @@ pub(crate) struct BlogBundle {
 impl BlogBundle {
     pub(crate) fn parse(json: &str) -> Result<Self, DocsKitError> {
         let bundle: Self = serde_json::from_str(json).map_err(DocsKitError::BlogBundleParse)?;
+        check_version(bundle.version)?;
+        Ok(bundle)
+    }
+}
+
+/// Everything the skills registry needs, parsed at build time.
+#[derive(Deserialize)]
+pub(crate) struct SkillsBundle {
+    version: u32,
+    pub repo: String,
+    pub path: String,
+    #[serde(rename = "ref")]
+    pub git_ref: String,
+    /// Skills in `_skills.json` order, each tagged with its group.
+    pub skills: Vec<Skill>,
+    /// Section-level search index with its lowercase fields precomputed.
+    pub search: Vec<SkillsSearchEntry>,
+}
+
+impl SkillsBundle {
+    pub(crate) fn parse(json: &str) -> Result<Self, DocsKitError> {
+        let bundle: Self = serde_json::from_str(json).map_err(DocsKitError::SkillsBundleParse)?;
         check_version(bundle.version)?;
         Ok(bundle)
     }

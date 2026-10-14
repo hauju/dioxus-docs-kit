@@ -9,7 +9,7 @@
     {
       "group": "Guides",
       "tab": "Guides",
-      "pages": ["guides/basic-usage", "guides/customization", "guides/integration", "guides/blog", "guides/webmcp"]
+      "pages": ["guides/basic-usage", "guides/customization", "guides/integration", "guides/blog", "guides/skills", "guides/webmcp"]
     },
     {
       "group": "API Reference",

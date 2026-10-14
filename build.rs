@@ -1,5 +1,5 @@
 fn main() {
-    use dioxus_docs_kit_build::{BlogBuild, DocsBuild, ValidationMode};
+    use dioxus_docs_kit_build::{BlogBuild, DocsBuild, SkillsBuild, ValidationMode};
 
     DocsBuild::new("docs/_nav.json")
         .with_openapi("api-reference", "docs/api-reference/petstore.yaml")
@@ -7,6 +7,10 @@ fn main() {
         .generate();
 
     BlogBuild::new("blog/_blog.json")
+        .with_validation(ValidationMode::Strict)
+        .generate();
+
+    SkillsBuild::new("skills/_skills.json")
         .with_validation(ValidationMode::Strict)
         .generate();
 

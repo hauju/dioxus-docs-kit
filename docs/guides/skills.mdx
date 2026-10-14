@@ -1,0 +1,160 @@
+---
+title: Agent Skills
+description: Render your repo's agent skills (SKILL.md files) as indexable pages with an install command and GitHub links
+sidebarTitle: Skills
+icon: puzzle-piece
+---
+
+## Overview
+
+If your project ships [agent skills](https://agentskills.io) as `skills/<name>/SKILL.md`, the kit can turn each one into a page: name, description, a copyable `npx skills add` command, links to the source on GitHub, then the rendered skill body. Pages are listed in a sitemap and in `llms.txt`, so they are found by search engines and agents alike. See [this site's skills](/skills) for a live example.
+
+## The `_skills.json` Manifest
+
+Put a `_skills.json` next to the skill directories:
+
+```text
+skills/
+├── _skills.json
+├── my-cli-setup/
+│   └── SKILL.md
+└── my-cli-theming/
+    └── SKILL.md
+```
+
+```json
+{
+  "repo": "acme/my-cli",
+  "path": "skills",
+  "ref": "main",
+  "groups": [
+    { "group": "Setup", "skills": ["my-cli-setup"] },
+    { "group": "Theming", "skills": ["my-cli-theming"] }
+  ]
+}
+```
+
+- `groups` sets the sidebar and index order. Each entry is a skill directory name.
+- `repo`, `path` and `ref` are where the install command and the GitHub links point. `ref` is optional and defaults to `main`.
+
+Each `SKILL.md` needs `name` (equal to its directory name) and `description` in its frontmatter. Other keys such as `license`, `allowed-tools` or `metadata` are ignored.
+
+## Build Script
+
+Add `SkillsBuild` to `build.rs`, next to `DocsBuild`:
+
+```rust
+dioxus_docs_kit_build::SkillsBuild::new("skills/_skills.json")
+    .with_validation(dioxus_docs_kit_build::ValidationMode::Strict)
+    .generate();
+```
+
+In strict mode a missing `SKILL.md` or a `name` that differs from its directory fails the build. A missing `description` is only a warning.
+
+## Registry and Routes
+
+```rust
+use dioxus_docs_kit::{
+    SkillPage, SkillsConfig, SkillsContext, SkillsIndex, SkillsLayout, SkillsRegistry,
+    use_skills_providers,
+};
+
+static SKILLS: LazyLock<SkillsRegistry> = LazyLock::new(|| {
+    SkillsConfig::new(dioxus_docs_kit::skills_bundle!())
+        .with_base_path("/skills")
+        .build()
+});
+
+#[derive(Debug, Clone, Routable, PartialEq)]
+enum Route {
+    // ...
+    #[layout(MySkillsLayout)]
+        #[route("/skills")]
+        SkillsIndexPage {},
+        #[route("/skills/:slug")]
+        SkillDetailPage { slug: String },
+}
+
+#[component]
+fn MySkillsLayout() -> Element {
+    let nav = use_navigator();
+    let route = use_route::<Route>();
+    // `use_reactive!` keeps the sidebar highlight in sync with navigation.
+    let current_slug = use_memo(use_reactive!(|route| match route {
+        Route::SkillDetailPage { slug } => slug,
+        _ => String::new(),
+    }));
+    let ctx = SkillsContext::new(
+        current_slug,
+        SKILLS.base_path(),
+        Callback::new(move |slug: String| {
+            nav.push(Route::SkillDetailPage { slug });
+        }),
+    )
+    .with_site_url("https://example.com");
+    let providers = use_skills_providers(&SKILLS, ctx);
+
+    rsx! {
+        SkillsLayout {
+            // Wire `providers.search_open` to a `SkillsSearchButton` and
+            // `providers.drawer_open` to a menu button shown below `lg`.
+            // Omit `header` for a default bar with both.
+            header: rsx! {
+                MyNavbar {
+                    search_open: providers.search_open,
+                    drawer_open: providers.drawer_open,
+                }
+            },
+            Outlet::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn SkillsIndexPage() -> Element {
+    rsx! { SkillsIndex { description: "Agent skills for My CLI." } }
+}
+
+#[component]
+fn SkillDetailPage(slug: String) -> Element {
+    rsx! { SkillPage { slug } }
+}
+```
+
+`SkillsLayout` brings a slide-in sidebar drawer for small screens and a skills search modal (Cmd/Ctrl+K). Search is section-level: a match inside a heading's section jumps to that heading.
+
+With the `server` feature, add the skills to the `SeoRouter` for a `/sitemap-skills.xml`, a `## Skills` section in `llms.txt` and a raw `<base>/<slug>.md` per skill:
+
+```rust
+SeoRouter::new(SITE_URL, SITE_TITLE, SITE_DESC)
+    .with_docs(&DOCS, "/docs")
+    .with_skills(&SKILLS, SKILLS.base_path())
+    .into_router()
+```
+
+## Skills from Another Repo
+
+Skills often live in a CLI's repo while the docs site lives elsewhere. Vendor them: copy `skills/**/SKILL.md` into the docs repo with a scheduled GitHub Action that opens a PR, and point `repo`/`path` at the source repo. The pages are built from the copies; the install command and links go to the original.
+
+```yaml
+# .github/workflows/sync-skills.yml (in the docs repo)
+on:
+  schedule: [{ cron: "0 6 * * 1" }]
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: acme/my-cli, path: upstream }
+      - run: |
+          (cd upstream/skills && find . -name SKILL.md -exec cp --parents {} ../../skills/ \;)
+          rm -rf upstream
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          title: "docs: sync skills from acme/my-cli"
+          branch: sync-skills
+```
+
+`_skills.json` stays hand-maintained in the docs repo, so a new upstream skill shows up only once you add it to a group.

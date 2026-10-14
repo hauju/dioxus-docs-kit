@@ -255,6 +255,8 @@ Then open any Dioxus project with Claude Code and say:
 
 The skill walks Claude through all 5 steps: dependencies, build.rs, content files, route/layout wiring, and Tailwind safelist.
 
+The kit can also render a repo's skills as site pages with an install command and GitHub links, like the example's `/skills` ([Skills guide](https://dioxus-docs-kit.oxidt.com/docs/guides/skills)).
+
 ## Running the Example
 
 ```sh

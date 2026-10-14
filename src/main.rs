@@ -6,8 +6,9 @@ use dioxus_docs_kit::lucide::{
 use dioxus_docs_kit::{
     BlogCategoryPage, BlogConfig, BlogContext, BlogLayout, BlogList, BlogPostView, BlogRegistry,
     BlogThemeToggle, CodeBlockNode, DocCodeBlock, DocsConfig, DocsContext, DocsLayout,
-    DocsPageContent, DocsRegistry, DocsWebMcp, SearchButton, SearchModal, ThemeToggle,
-    use_blog_providers, use_docs_context, use_docs_providers,
+    DocsPageContent, DocsRegistry, DocsWebMcp, SearchButton, SearchModal, SkillPage, SkillsConfig,
+    SkillsContext, SkillsIndex, SkillsLayout, SkillsRegistry, ThemeToggle, use_blog_providers,
+    use_docs_context, use_docs_providers, use_skills_providers,
 };
 use std::sync::LazyLock;
 
@@ -55,6 +56,16 @@ static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
 });
 
 // ============================================================================
+// Skills Registry
+// ============================================================================
+
+static SKILLS: LazyLock<SkillsRegistry> = LazyLock::new(|| {
+    SkillsConfig::new(dioxus_docs_kit::skills_bundle!())
+        .with_base_path("/skills")
+        .build()
+});
+
+// ============================================================================
 // Routes
 // ============================================================================
 
@@ -79,6 +90,12 @@ enum Route {
         BlogCategoryPaginated { slug: String, page: usize },
         #[route("/blog/:slug")]
         BlogPage { slug: String },
+    #[end_layout]
+    #[layout(MySkillsLayout)]
+        #[route("/skills")]
+        SkillsIndexPage {},
+        #[route("/skills/:slug")]
+        SkillDetailPage { slug: String },
 }
 
 const SEGGWAT_LOGO: Asset = asset!("/assets/seggwat_logo.avif");
@@ -150,6 +167,7 @@ fn main() {
         let seo = SeoRouter::new(SITE_URL, SITE_TITLE, SITE_DESC)
             .with_docs(&DOCS, "/docs")
             .with_blog(&BLOG, "/blog")
+            .with_skills(&SKILLS, SKILLS.base_path())
             .into_router();
         Ok(dioxus::server::router(App).merge(seo))
     });
@@ -301,6 +319,7 @@ enum NavSection {
     Home,
     Docs,
     Blog,
+    Skills,
 }
 
 /// The site navbar, shared by the Home, docs, and blog layouts.
@@ -361,6 +380,9 @@ fn SiteNavbar(
                             class: link_class(NavSection::Docs),
                             "Docs"
                         }
+                    }
+                    li {
+                        Link { to: Route::SkillsIndexPage {}, class: link_class(NavSection::Skills), "Skills" }
                     }
                 }
                 SearchButton { search_open }
@@ -506,6 +528,69 @@ fn BlogIndex() -> Element {
 fn BlogPage(slug: String) -> Element {
     rsx! {
         BlogPostView { slug }
+    }
+}
+
+// ============================================================================
+// Skills Layout Wrapper
+// ============================================================================
+
+#[component]
+fn MySkillsLayout() -> Element {
+    let nav = use_navigator();
+    let route = use_route::<Route>();
+
+    let current_slug = use_memo(use_reactive!(|route| match route {
+        Route::SkillDetailPage { slug } => slug,
+        _ => String::new(),
+    }));
+
+    let skills_ctx = SkillsContext::new(
+        current_slug,
+        SKILLS.base_path(),
+        Callback::new(move |slug: String| {
+            if slug.is_empty() {
+                nav.push(Route::SkillsIndexPage {});
+            } else {
+                nav.push(Route::SkillDetailPage { slug });
+            }
+        }),
+    )
+    .with_site_url(SITE_URL);
+    let providers = use_skills_providers(&SKILLS, skills_ctx);
+
+    // The navbar's theme toggle reads the docs registry's theme config.
+    use_context_provider(|| -> &'static DocsRegistry { &DOCS });
+    dioxus_docs_kit::use_theme_provider(DOCS.theme.clone());
+
+    rsx! {
+        SkillsLayout {
+            header: rsx! {
+                SiteNavbar {
+                    section: NavSection::Skills,
+                    drawer_open: providers.drawer_open,
+                    search_open: providers.search_open,
+                    theme_toggle: rsx! { ThemeToggle {} },
+                }
+            },
+            Outlet::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn SkillsIndexPage() -> Element {
+    rsx! {
+        SkillsIndex {
+            description: "Agent skills for working with Oxidt Docs Kit. Install one with the skills CLI.",
+        }
+    }
+}
+
+#[component]
+fn SkillDetailPage(slug: String) -> Element {
+    rsx! {
+        SkillPage { slug }
     }
 }
 

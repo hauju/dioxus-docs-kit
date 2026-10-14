@@ -407,6 +407,156 @@ pub(crate) fn reading_time_minutes(text: &str) -> u32 {
 }
 
 // ============================================================================
+// Skills bundle
+// ============================================================================
+
+/// `_skills.json`: where links point, and the skills in sidebar order.
+#[derive(serde::Deserialize)]
+pub(crate) struct SkillsManifest {
+    pub repo: String,
+    pub path: String,
+    #[serde(rename = "ref", default = "default_ref")]
+    pub git_ref: String,
+    pub groups: Vec<SkillsGroup>,
+}
+
+#[derive(serde::Deserialize)]
+pub(crate) struct SkillsGroup {
+    pub group: String,
+    pub skills: Vec<String>,
+}
+
+fn default_ref() -> String {
+    "main".to_string()
+}
+
+#[derive(Serialize)]
+pub(crate) struct SkillsBundle {
+    pub version: u32,
+    pub repo: String,
+    pub path: String,
+    #[serde(rename = "ref")]
+    pub git_ref: String,
+    /// Skills in `_skills.json` order, each tagged with its group.
+    pub skills: Vec<Skill>,
+    /// Section-level search index, lowercase fields included.
+    pub search: Vec<SkillsSearchEntry>,
+}
+
+/// One searchable skill section. Mirrors `oxidt_docs_kit_core::SkillsSearchEntry`.
+#[derive(Serialize)]
+pub(crate) struct SkillsSearchEntry {
+    pub slug: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub anchor: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub heading: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub description: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub body: String,
+    pub group: String,
+    pub name_lower: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub heading_lower: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub description_lower: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub body_lower: String,
+}
+
+/// One entry per skill section (split on h2–h4, like the docs index).
+fn build_skills_search_index(skills: &[Skill]) -> Vec<SkillsSearchEntry> {
+    let mut entries = Vec::new();
+    for skill in skills {
+        let sections = split_into_sections(&skill.raw_markdown);
+        let has_headings = sections.iter().any(|s| !s.heading.is_empty());
+        for section in sections {
+            let body = clean_markdown(&section.body);
+            if section.heading.is_empty() && body.is_empty() && has_headings {
+                continue;
+            }
+            entries.push(SkillsSearchEntry {
+                slug: skill.slug.clone(),
+                anchor: section.anchor,
+                name_lower: search_lower(&skill.name),
+                heading_lower: search_lower(&section.heading),
+                description_lower: search_lower(&skill.description),
+                body_lower: search_lower(&body),
+                name: skill.name.clone(),
+                heading: section.heading,
+                description: skill.description.clone(),
+                body,
+                group: skill.group.clone(),
+            });
+        }
+    }
+    entries
+}
+
+/// Mirrors `oxidt_docs_kit_core::Skill`.
+#[derive(Serialize)]
+pub(crate) struct Skill {
+    pub slug: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "is_empty_str")]
+    pub description: String,
+    pub group: String,
+    pub body: Vec<DocNode>,
+    pub raw_markdown: String,
+}
+
+/// Build the skills bundle JSON from content you have already loaded.
+///
+/// [`SkillsBuild::generate`](crate::SkillsBuild::generate) reads the files and
+/// calls this; use it directly in tests or when the `SKILL.md` files come from
+/// somewhere other than the filesystem.
+///
+/// - `manifest_json`: the `_skills.json` document.
+/// - `skills`: skill name (its directory) → raw `SKILL.md`, frontmatter included.
+///
+/// Skills are emitted in manifest order; a listed skill missing from `skills`
+/// is skipped. Returns the first malformed frontmatter error.
+pub fn skills_bundle_json(manifest_json: &str, skills: &[(&str, &str)]) -> Result<String, String> {
+    let manifest: SkillsManifest = serde_json::from_str(manifest_json)
+        .map_err(|e| format!("failed to parse _skills.json: {e}"))?;
+
+    let mut built = Vec::new();
+    for group in &manifest.groups {
+        for slug in &group.skills {
+            if built.iter().any(|s: &Skill| &s.slug == slug) {
+                continue;
+            }
+            let Some((_, content)) = skills.iter().find(|(name, _)| name == slug) else {
+                continue;
+            };
+            let (frontmatter, body) = crate::parse_skill_frontmatter(slug, content)?;
+            // The page renders the name in its own <h1>; drop a duplicate body H1.
+            let (body, raw_markdown) = dioxus_mdx::parse_body(dioxus_mdx::strip_leading_h1(body));
+            built.push(Skill {
+                slug: slug.clone(),
+                name: frontmatter.name.unwrap_or_else(|| slug.clone()),
+                description: frontmatter.description.unwrap_or_default(),
+                group: group.group.clone(),
+                body,
+                raw_markdown,
+            });
+        }
+    }
+
+    serde_json::to_string(&SkillsBundle {
+        version: BUNDLE_VERSION,
+        repo: manifest.repo,
+        path: manifest.path,
+        git_ref: manifest.git_ref,
+        search: build_skills_search_index(&built),
+        skills: built,
+    })
+    .map_err(|e| format!("failed to serialize the skills bundle: {e}"))
+}
+
+// ============================================================================
 // Section splitting and text normalisation
 // ============================================================================
 

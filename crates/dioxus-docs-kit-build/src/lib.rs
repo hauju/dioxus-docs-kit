@@ -15,6 +15,7 @@
 //!         .generate();
 //!
 //!     dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
+//!     dioxus_docs_kit_build::SkillsBuild::new("skills/_skills.json").generate();
 //! }
 //! ```
 //!
@@ -22,9 +23,9 @@
 
 mod bundle;
 
-pub use bundle::{blog_bundle_json, docs_bundle_json};
+pub use bundle::{blog_bundle_json, docs_bundle_json, skills_bundle_json};
 
-use bundle::{BUNDLE_VERSION, BlogBundle, BlogFrontmatter, BlogPost};
+use bundle::{BUNDLE_VERSION, BlogBundle, BlogFrontmatter, BlogPost, SkillsManifest};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -355,6 +356,169 @@ impl BlogBuild {
             serde_json::to_string(&bundle).expect("serialize blog bundle"),
         );
     }
+}
+
+// ============================================================================
+// Skills bundle generation
+// ============================================================================
+
+/// Builds the agent-skills bundle a `dioxus-docs-kit` app embeds.
+///
+/// Reads `_skills.json`, then `<dir>/<name>/SKILL.md` for every listed skill
+/// (`<dir>` is the manifest's directory), parses the frontmatter `name` and
+/// `description`, renders the body to HTML, and writes
+/// `$OUT_DIR/skills_bundle.json`.
+///
+/// ```rust,ignore
+/// dioxus_docs_kit_build::SkillsBuild::new("skills/_skills.json")
+///     .with_validation(dioxus_docs_kit_build::ValidationMode::Strict)
+///     .generate();
+/// ```
+pub struct SkillsBuild {
+    manifest_path: String,
+    mode: ValidationMode,
+}
+
+impl SkillsBuild {
+    /// Start a skills bundle from a `_skills.json` path, relative to the crate root.
+    pub fn new(manifest_path: impl Into<String>) -> Self {
+        Self {
+            manifest_path: manifest_path.into(),
+            mode: ValidationMode::Warn,
+        }
+    }
+
+    /// Choose how content problems are reported (default [`ValidationMode::Warn`]).
+    ///
+    /// [`ValidationMode::Strict`] fails on missing `SKILL.md` files, duplicate
+    /// entries and a frontmatter `name` that differs from its directory. A
+    /// missing `description` is only ever a warning; malformed frontmatter is
+    /// always an error.
+    pub fn with_validation(mut self, mode: ValidationMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Parse everything and write `$OUT_DIR/skills_bundle.json`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `_skills.json` cannot be read or parsed, if any listed skill
+    /// has malformed frontmatter, or on any diagnostic in strict mode.
+    pub fn generate(self) {
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let manifest_path = self.manifest_path.as_str();
+        let mut diagnostics = Vec::new();
+
+        println!("cargo:rerun-if-changed={manifest_path}");
+
+        let json = fs::read_to_string(manifest_path)
+            .unwrap_or_else(|e| panic!("Failed to read {manifest_path}: {e}"));
+        let manifest: SkillsManifest = serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("Failed to parse {manifest_path}: {e}"));
+
+        let skills_dir = Path::new(manifest_path)
+            .parent()
+            .and_then(|p| p.to_str())
+            .unwrap_or("skills");
+
+        let mut sources: Vec<(String, String)> = Vec::new();
+        let mut seen = HashSet::new();
+        for slug in manifest.groups.iter().flat_map(|g| &g.skills) {
+            if !seen.insert(slug) {
+                diagnostics.push(format!("{manifest_path}: duplicate skill \"{slug}\""));
+                continue;
+            }
+            let skill_path = format!("{skills_dir}/{slug}/SKILL.md");
+            let Some(content) = read_content(&manifest_dir, &skill_path) else {
+                diagnostics.push(missing_file_diagnostic(&manifest_dir, slug, &skill_path));
+                continue;
+            };
+            // Malformed frontmatter surfaces as an error from `skills_bundle_json`.
+            if let Ok((frontmatter, _)) = parse_skill_frontmatter(&skill_path, &content) {
+                if frontmatter.description.is_none() {
+                    println!(
+                        "cargo:warning={skill_path}: frontmatter has no `description`; the skill index and meta tags will be empty"
+                    );
+                }
+                diagnostics.extend(skill_name_diagnostic(&skill_path, slug, &frontmatter));
+            }
+            sources.push((slug.clone(), content));
+        }
+        report_diagnostics(&diagnostics, self.mode);
+
+        let json = skills_bundle_json(&json, &as_pairs(&sources))
+            .unwrap_or_else(|e| panic!("dioxus-docs-kit-build: {e}"));
+        write_bundle("skills_bundle.json", json);
+    }
+}
+
+/// The two `SKILL.md` frontmatter keys the site uses; any other key
+/// (`license`, `allowed-tools`, `metadata`, …) is ignored.
+struct SkillFrontmatter {
+    name: Option<String>,
+    description: Option<String>,
+}
+
+/// The agent-skills spec requires `name` to match the skill's directory.
+fn skill_name_diagnostic(path: &str, slug: &str, frontmatter: &SkillFrontmatter) -> Option<String> {
+    match frontmatter.name.as_deref() {
+        Some(name) if name == slug => None,
+        Some(name) => Some(format!(
+            "{path}: frontmatter name \"{name}\" does not match its directory \"{slug}\""
+        )),
+        None => Some(format!(
+            "{path}: frontmatter has no `name` (expected \"{slug}\")"
+        )),
+    }
+}
+
+/// Split a leading `---` frontmatter block from `content`, returning the YAML
+/// and the remaining body.
+fn split_frontmatter<'a>(path: &str, content: &'a str) -> Result<(&'a str, &'a str), String> {
+    let content = content.trim();
+    if !content.starts_with("---") {
+        return Err(format!(
+            "{path}: missing frontmatter block (expected leading ---)"
+        ));
+    }
+    let after = &content[3..];
+    let Some(end) = after.find("\n---") else {
+        return Err(format!(
+            "{path}: unclosed frontmatter block (missing closing ---)"
+        ));
+    };
+    Ok((after[..end].trim(), after[end + 4..].trim_start()))
+}
+
+/// Parse a `SKILL.md` frontmatter block.
+///
+/// Uses `serde_yaml`, not `parse_yaml_lite`: skill descriptions are routinely
+/// folded block scalars (`description: >-`) and the spec allows a nested
+/// `metadata` map, both outside the lite subset. This runs at build time only.
+fn parse_skill_frontmatter<'a>(
+    path: &str,
+    content: &'a str,
+) -> Result<(SkillFrontmatter, &'a str), String> {
+    let (yaml, body) = split_frontmatter(path, content)?;
+    let map: serde_yaml::Mapping =
+        serde_yaml::from_str(yaml).map_err(|e| format!("{path}: malformed frontmatter: {e}"))?;
+    let string = |key: &str| -> Result<Option<String>, String> {
+        match map.get(key) {
+            None | Some(serde_yaml::Value::Null) => Ok(None),
+            Some(serde_yaml::Value::String(s)) => Ok(Some(s.trim().to_string())),
+            Some(_) => Err(format!(
+                "{path}: malformed frontmatter: `{key}` must be a string"
+            )),
+        }
+    };
+    Ok((
+        SkillFrontmatter {
+            name: string("name")?,
+            description: string("description")?,
+        },
+        body,
+    ))
 }
 
 // ============================================================================
@@ -750,20 +914,7 @@ fn parse_blog_frontmatter<'a>(
     path: &str,
     content: &'a str,
 ) -> Result<(BlogFrontmatter, &'a str), String> {
-    let content = content.trim();
-    if !content.starts_with("---") {
-        return Err(format!(
-            "{path}: missing frontmatter block (expected leading ---)"
-        ));
-    }
-    let after = &content[3..];
-    let Some(end) = after.find("\n---") else {
-        return Err(format!(
-            "{path}: unclosed frontmatter block (missing closing ---)"
-        ));
-    };
-    let yaml = after[..end].trim();
-    let body = after[end + 4..].trim_start();
+    let (yaml, body) = split_frontmatter(path, content)?;
 
     let malformed = |e| format!("{path}: malformed frontmatter: {e}");
     let map = dioxus_mdx::parse_yaml_lite(yaml).map_err(malformed)?;
@@ -800,6 +951,33 @@ fn unknown_category_keys(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn skill_name_must_match_its_directory() {
+        let content = "---\nname: other-name\ndescription: >-\n  Folded\n  text.\nlicense: MIT\nmetadata:\n  author: x\n---\n# Title\nBody";
+        let (frontmatter, body) = parse_skill_frontmatter("s/SKILL.md", content).unwrap();
+        assert_eq!(frontmatter.description.as_deref(), Some("Folded text."));
+        assert_eq!(body, "# Title\nBody");
+
+        let diagnostic = skill_name_diagnostic("s/SKILL.md", "my-skill", &frontmatter).unwrap();
+        assert!(diagnostic.contains("other-name") && diagnostic.contains("my-skill"));
+        let diagnostics = vec![diagnostic];
+        report_diagnostics(&diagnostics, ValidationMode::Warn);
+        assert!(
+            std::panic::catch_unwind(|| report_diagnostics(&diagnostics, ValidationMode::Strict))
+                .is_err()
+        );
+
+        let (matching, _) =
+            parse_skill_frontmatter("s/SKILL.md", "---\nname: my-skill\n---\nBody").unwrap();
+        assert!(skill_name_diagnostic("s/SKILL.md", "my-skill", &matching).is_none());
+    }
+
+    #[test]
+    fn skill_frontmatter_rejects_non_string_name() {
+        assert!(parse_skill_frontmatter("s/SKILL.md", "---\nname: [a]\n---\nBody").is_err());
+        assert!(parse_skill_frontmatter("s/SKILL.md", "no frontmatter").is_err());
+    }
 
     #[test]
     fn category_keys_without_a_matching_tag_are_reported() {

@@ -17,6 +17,14 @@ pub fn MobileDrawer(mut open: Signal<bool>) -> Element {
         open.set(false);
     });
 
+    rsx! {
+        DrawerPanel { open, title: "Navigation", DocsSidebar {} }
+    }
+}
+
+/// Backdrop plus slide-in panel shared by the docs and skills drawers.
+#[component]
+pub(crate) fn DrawerPanel(mut open: Signal<bool>, title: String, children: Element) -> Element {
     let is_open = open();
 
     let backdrop_class = if is_open {
@@ -45,7 +53,7 @@ pub fn MobileDrawer(mut open: Signal<bool>) -> Element {
 
             // Header
             div { class: "flex items-center justify-between px-4 py-3 border-b border-base-300",
-                span { class: "font-semibold text-sm", "Navigation" }
+                span { class: "font-semibold text-sm", "{title}" }
                 button {
                     class: "btn btn-ghost btn-xs btn-square",
                     "aria-label": "Close navigation",
@@ -56,7 +64,7 @@ pub fn MobileDrawer(mut open: Signal<bool>) -> Element {
 
             // Sidebar content
             div { class: "overflow-y-auto h-[calc(100%-3.5rem)] p-6",
-                DocsSidebar {}
+                {children}
             }
         }
     }

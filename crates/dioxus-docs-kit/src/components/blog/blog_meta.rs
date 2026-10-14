@@ -95,7 +95,7 @@ pub fn BlogIndexMeta(title: String, description: String) -> Element {
     rsx! { ManagedPageHead { title, tags } }
 }
 
-pub(super) fn listing_tags(
+pub(crate) fn listing_tags(
     title: &str,
     description: &str,
     canonical: Option<&str>,
