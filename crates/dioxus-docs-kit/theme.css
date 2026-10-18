@@ -224,6 +224,17 @@ pre.mermaid,
     --pele-accent: var(--dk-accent);
 }
 
+/* Card chrome like code blocks; nodes take the next shade so they stand out. */
+.dk-diagram {
+    background: var(--dk-bg-sub);
+    border: 1px solid var(--dk-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem 1rem;
+    --pele-bg: var(--dk-bg-sub);
+    --pele-surface: var(--dk-bg-alt);
+    --pele-border: color-mix(in oklab, var(--dk-fg) 25%, transparent);
+}
+
 .dk-diagram > svg {
     display: block;
     margin-inline: auto;
