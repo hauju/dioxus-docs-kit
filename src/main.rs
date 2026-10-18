@@ -119,6 +119,8 @@ const THEME_PRESET_SHADCN_LIGHT: &str =
     include_str!("../crates/dioxus-docs-kit/examples/themes/shadcn-light.css");
 const THEME_PRESET_SHADCN_DARK: &str =
     include_str!("../crates/dioxus-docs-kit/examples/themes/shadcn-dark.css");
+const THEME_PRESET_CADENCE: &str =
+    include_str!("../crates/dioxus-docs-kit/examples/themes/cadence.css");
 
 const THEME_PRESET_STORAGE_KEY: &str = "dk-theme-preset";
 const DAISY_THEME_STORAGE_KEY: &str = "docs-theme";
@@ -132,6 +134,7 @@ fn preset_css(name: &str) -> &'static str {
         "brutalist-light" => THEME_PRESET_BRUTALIST,
         "shadcn-light" => THEME_PRESET_SHADCN_LIGHT,
         "shadcn-dark" => THEME_PRESET_SHADCN_DARK,
+        "cadence" => THEME_PRESET_CADENCE,
         _ => THEME_PRESET_DEFAULT,
     }
 }
@@ -238,12 +241,13 @@ fn ThemePresetPicker() -> Element {
     let current = preset();
 
     // (slug, label, locked-mode)
-    let options: [(&str, &str, Option<&str>); 5] = [
+    let options: [(&str, &str, Option<&str>); 6] = [
         ("default", "Default", None),
         ("warm-editorial", "Warm editorial", Some("light")),
         ("brutalist-light", "Brutalist light", Some("light")),
         ("shadcn-light", "shadcn light", Some("light")),
         ("shadcn-dark", "shadcn dark", Some("dark")),
+        ("cadence", "Cadence", None),
     ];
 
     rsx! {

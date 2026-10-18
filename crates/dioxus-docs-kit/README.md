@@ -291,11 +291,12 @@ The variant is emitted as a class on `dk-root` (`dk-variant-prose` or
 
 ### Pre-built theme examples
 
-`examples/themes/` ships three drop-in visual identities built entirely on
+`examples/themes/` ships drop-in visual identities built entirely on
 top of `--dk-*` tokens:
 
 - `warm-editorial.css` — amber accent, serif headings, cream surfaces
 - `brutalist-light.css` — high contrast, zero-radius, monospace
+- `cadence.css` — monochrome with a blue accent and Geist; follows the light/dark toggle
 - `default.css` — baseline (nothing overridden)
 
 See [THEMING.md](./THEMING.md) for the full roadmap and proposals open for

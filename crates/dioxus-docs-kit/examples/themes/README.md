@@ -17,6 +17,7 @@ copy it into your project, and import it after `theme.css`.
 | `default.css` | Baseline; nothing overridden. Here as a reference. |
 | `warm-editorial.css` | Amber accent, serif display headings, softer borders. Good for content-heavy sites. |
 | `brutalist-light.css` | High contrast, zero-radius, monospace headings. Good for dev-tool docs. |
+| `cadence.css` | Monochrome neutrals, one blue accent, Geist. Follows the light/dark toggle. |
 
 Each file targets only the `dk-*` tokens. None of them touches a Tailwind or
 DaisyUI class directly — that's the whole point of the theming surface. If you
