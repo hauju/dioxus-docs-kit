@@ -3,8 +3,15 @@
     "@tailwindcss/typography": "^0.5.19"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@tailwindcss/cli": "4.1.18",
     "daisyui": "^5.5.18",
+    "pele": "1.6.0",
     "tailwindcss": "4.1.18"
+  },
+  "scripts": {
+    "test:diagrams": "bun test scripts/diagrams.test.js",
+    "vendor:pele": "bun scripts/vendor-pele.js",
+    "test:diagrams:site": "bun test scripts/diagrams-site.test.js"
   }
 }

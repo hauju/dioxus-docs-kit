@@ -26,6 +26,18 @@ permissions:
   packages: write
 
 jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run vendor:pele
+      - name: Check bundled Pele modules are fresh
+        run: git diff --exit-code -- crates/dioxus-mdx/assets/pele crates/dioxus-mdx/src/pele_assets.rs
+      - run: bun run test:diagrams
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -137,7 +149,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [fmt, clippy, unused-dependencies, security-audit, unit-tests, msrv]
+    needs: [diagrams, fmt, clippy, unused-dependencies, security-audit, unit-tests, msrv]
     steps:
       - uses: actions/checkout@v5
 
@@ -200,7 +212,10 @@ jobs:
           bun add --global agent-browser@0.23.4
           agent-browser install --with-deps
 
-      - name: Check search in the bundled site
+      - name: Install diagram-test browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Check search and diagrams in the bundled site
         run: |
           cd target/dx/dioxus-docs-kit-example/release/web
           IP=127.0.0.1 PORT=18479 ./server > "$RUNNER_TEMP/docs-kit-server.log" 2>&1 &
@@ -219,6 +234,8 @@ jobs:
             exit 1
           fi
           python3 "$GITHUB_WORKSPACE/scripts/browser-smoke.py" http://127.0.0.1:18479
+          cd "$GITHUB_WORKSPACE"
+          DOCS_TEST_URL=http://127.0.0.1:18479 bun run test:diagrams:site
 
       # Registry secrets are unavailable on fork PRs, so only set up Docker and
       # push the image on push events.

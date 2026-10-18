@@ -1,10 +1,12 @@
 //! Mermaid diagram rendering component.
 //!
 //! Renders fenced `mermaid` code blocks as actual diagrams by loading
-//! mermaid.js from CDN on demand. Falls back to displaying the raw
+//! bundled Pele modules on demand. Falls back to displaying the raw
 //! mermaid source text if JavaScript is unavailable.
 
 use dioxus::prelude::*;
+
+const PELE: Asset = asset!("/assets/pele", AssetOptions::folder());
 
 /// Props for MermaidDiagram component.
 #[derive(Props, Clone, PartialEq)]
@@ -15,11 +17,9 @@ pub struct MermaidDiagramProps {
 
 /// Renders a mermaid diagram.
 ///
-/// The component outputs a `<pre class="mermaid">` element that mermaid.js
-/// recognises. A `use_effect` hook (WASM-only) lazily loads mermaid from
-/// jsDelivr, detects the current DaisyUI theme, and calls `mermaid.run()` over
-/// every block the page still has to draw. A single `MutationObserver` on
-/// `<html data-theme>` re-renders them all when the user toggles themes.
+/// The component outputs a `<pre class="mermaid">` element. A `use_effect`
+/// hook (WASM-only) registers it with the shared lazy Pele loader. Diagram
+/// colors follow the docs theme through CSS variables without re-rendering.
 #[component]
 pub fn MermaidDiagram(props: MermaidDiagramProps) -> Element {
     #[allow(unused_variables)]
@@ -35,7 +35,11 @@ pub fn MermaidDiagram(props: MermaidDiagramProps) -> Element {
 
     rsx! {
         div { class: "not-prose my-6 flex justify-center",
-            pre { class: "mermaid", "{props.code}" }
+            pre {
+                class: "mermaid",
+                "data-pele-url": format!("{PELE}/lazy.js"),
+                "{props.code}"
+            }
         }
     }
 }

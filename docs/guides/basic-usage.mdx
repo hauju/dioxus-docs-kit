@@ -102,7 +102,19 @@ def greet(name: str):
 
 ## Mermaid Diagrams
 
-Fenced code blocks with the `mermaid` language are rendered as diagrams:
+Fenced code blocks with the `mermaid` language are rendered as diagrams by
+[Pele](https://pele.run/). The browser loads bundled Pele 1.6.0 modules from your own site,
+including only the diagram types needed when a diagram nears the viewport. Colors follow the docs theme without
+re-rendering. This works in both the Dioxus and Topcoat kits with the existing
+`mermaid` feature. Dioxus bundles the modules automatically. Topcoat apps register
+`Router::builder().route(topcoat_docs_kit::diagram_assets)` to serve them.
+
+Pele uses its own layout, so diagrams can look different from Mermaid.js.
+Mermaid themes, arbitrary HTML labels, and JavaScript click callbacks are not
+supported. Invalid diagrams retain their source and show an error; without
+JavaScript the source remains readable.
+
+For example:
 
 ```mermaid
 graph TD

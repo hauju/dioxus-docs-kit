@@ -110,6 +110,7 @@ pub mod components;
 pub mod lucide;
 mod mermaid_js;
 pub mod parser;
+mod pele_assets;
 #[cfg(feature = "parse")]
 mod re;
 mod text;
@@ -168,3 +169,7 @@ pub use components::{MdxContent, MdxRenderer};
 #[cfg(feature = "mermaid")]
 pub use components::MermaidDiagram;
 pub use mermaid_js::MERMAID_JS;
+
+pub use pele_assets::PELE_VERSION;
+#[cfg(not(target_arch = "wasm32"))]
+pub use pele_assets::pele_asset;

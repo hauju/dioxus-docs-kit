@@ -207,3 +207,31 @@
 .dk-code .hl-punctuation { color: var(--dk-hl-punctuation); }
 .dk-code .hl-constant    { color: var(--dk-hl-constant); }
 .dk-code .hl-variable    { color: var(--dk-hl-variable); }
+
+/* Mermaid fences rendered by Pele, shared with the Topcoat kit. */
+pre.mermaid,
+.dk-diagram {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    --pele-bg: var(--dk-bg);
+    --pele-fg: var(--dk-fg);
+    --pele-muted: var(--dk-muted);
+    --pele-line: var(--dk-fg);
+    --pele-surface: var(--dk-bg-sub);
+    --pele-surface-alt: var(--dk-bg-alt);
+    --pele-border: var(--dk-border);
+    --pele-accent: var(--dk-accent);
+}
+
+.dk-diagram > svg {
+    display: block;
+    margin-inline: auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.dk-diagram-error {
+    white-space: pre-wrap;
+    color: var(--color-error, #b42318);
+}

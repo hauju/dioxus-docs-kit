@@ -1,0 +1,161 @@
+---
+title: Diagrams
+description: Examples of the diagram types Pele renders from mermaid code blocks
+sidebarTitle: Diagrams
+---
+
+Any fenced code block with the `mermaid` language becomes a diagram. These
+examples show the most common diagram types. See
+[Basic Usage](/docs/guides/basic-usage#mermaid-diagrams) for how the rendering works.
+
+## Flowchart
+
+```mermaid
+flowchart LR
+    MDX[docs/*.mdx] --> Build[build.rs]
+    Nav[_nav.json] --> Build
+    Spec[openapi.yaml] --> Build
+    Build --> Bundle[(docs_bundle.json)]
+    Bundle --> App{Shell}
+    App -->|Dioxus| Wasm[WASM client]
+    App -->|Topcoat| Html[Server-rendered HTML]
+```
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Page
+    participant Pele
+    User->>Page: Scroll to diagram
+    Page->>Pele: Load lazy.js
+    Pele->>Pele: Import needed chunks
+    Pele-->>Page: SVG
+    Note over Page,Pele: Colors follow the docs theme
+```
+
+## Class Diagram
+
+```mermaid
+classDiagram
+    class DocsConfig {
+        +new(bundle) DocsConfig
+        +with_theme_toggle() DocsConfig
+        +build() DocsRegistry
+    }
+    class DocsRegistry {
+        +get_parsed_doc(path)
+        +search_docs(query)
+        +page_neighbors(path)
+    }
+    class DocsContext {
+        +current_path
+        +base_path
+        +navigate
+    }
+    DocsConfig --> DocsRegistry : builds
+    DocsRegistry <.. DocsContext : resolves paths
+```
+
+## State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Source
+    Source --> Loading : near viewport
+    Loading --> Rendered : success
+    Loading --> Error : invalid syntax
+    Error --> Loading : source changed
+    Rendered --> [*]
+```
+
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    TAB ||--o{ GROUP : contains
+    GROUP ||--|{ PAGE : lists
+    PAGE ||--o{ SECTION : has
+    SECTION ||--|| SEARCH_ENTRY : indexed_as
+```
+
+## Gantt Chart
+
+```mermaid
+gantt
+    title Release plan
+    dateFormat YYYY-MM-DD
+    section Core
+    Bundle format     :done, a1, 2026-09-01, 10d
+    Search index      :done, a2, after a1, 7d
+    section Shells
+    Dioxus kit        :active, b1, 2026-09-15, 14d
+    Topcoat kit       :b2, after b1, 10d
+```
+
+## Pie Chart
+
+```mermaid
+pie title Bundle size by content type
+    "Docs HTML" : 52
+    "OpenAPI" : 28
+    "Search index" : 15
+    "Blog" : 5
+```
+
+## Git Graph
+
+```mermaid
+gitGraph
+    commit id: "init"
+    branch feature
+    checkout feature
+    commit id: "add diagrams"
+    commit id: "tests"
+    checkout main
+    commit id: "fix nav"
+    merge feature
+    commit id: "release"
+```
+
+## Mindmap
+
+```mermaid
+mindmap
+  root((Docs kit))
+    Content
+      MDX
+      OpenAPI
+      Blog
+    Shells
+      Dioxus
+      Topcoat
+    Features
+      Search
+      Diagrams
+      Theme toggle
+```
+
+## Timeline
+
+```mermaid
+timeline
+    title Project history
+    2025 : dioxus-docs-kit
+         : MDX components
+    2026 : Build-time bundle
+         : Topcoat shell
+         : Pele diagrams
+```
+
+## XY Chart
+
+```mermaid
+xychart
+    title "Page views per month"
+    x-axis [Jun, Jul, Aug, Sep, Oct]
+    y-axis "Views" 0 --> 5000
+    bar [1200, 1900, 2600, 3400, 4300]
+    line [1200, 1900, 2600, 3400, 4300]
+```

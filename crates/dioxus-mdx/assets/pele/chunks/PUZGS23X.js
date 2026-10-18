@@ -1,0 +1,1 @@
+import{b as s}from"./VMV7XPHP.js";var e=/[\t ]*accDescr(?:[\t ]*:(?:[^\n\r]*?(?=%%)|[^\n\r]*)|\s*({))/y;function f(){let n=!1;return(r,u)=>{e.lastIndex=u;let t=e.exec(r);if(t===null)return-1;let c=e.lastIndex;if(t[1]===void 0)return c;if(n)return-1;let o=r.indexOf("}",c);return n=o===-1,o+1||-1}}function i(n="ACC_DESCR"){return{...s,name:n,scanner:f}}export{i as a};
