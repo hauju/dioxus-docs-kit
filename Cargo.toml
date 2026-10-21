@@ -82,10 +82,3 @@ inherits = "release"
 lto = "fat"
 codegen-units = 1
 strip = true
-
-# TEMPORARY: until the oxidt-docs-kit 0.11.0 crates are on crates.io.
-[patch.crates-io]
-oxidt-mdx = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-mdx" }
-oxidt-docs-kit-core = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-docs-kit-core" }
-oxidt-docs-kit-build = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-docs-kit-build" }
-hl-lite = { path = "../oxidt/oxidt-docs-kit-split/crates/hl-lite" }

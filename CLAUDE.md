@@ -32,7 +32,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 
 **dioxus-docs-kit** — **Rust documentation site framework** with a Dioxus 0.7 shell (Tailwind 4 + DaisyUI 5) — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
 
-The content pipeline crates (`oxidt-mdx`, `oxidt-docs-kit-build`, `oxidt-docs-kit-core`, `hl-lite`) live in [oxidt/oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit) and come from crates.io; changes to them (bundle format, registries, parser) are made there and released before this repo can use them. While unreleased, `[patch.crates-io]` in the root `Cargo.toml` points at a local checkout.
+The content pipeline crates (`oxidt-mdx`, `oxidt-docs-kit-build`, `oxidt-docs-kit-core`, `hl-lite`) live in [oxidt/oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit) and come from crates.io; changes to them (bundle format, registries, parser) are made there and released before this repo can use them. To test an unreleased change, add a `[patch.crates-io]` pointing at a local checkout, and remove it before pushing.
 
 ### Crate Layout
 

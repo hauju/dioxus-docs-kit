@@ -1640,6 +1640,8 @@ dependencies = [
 [[package]]
 name = "hl-lite"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb20fe9c9072d3acc877c9e4f3fc8ed1c153d49865fe008a603327b4b53cb5e0"
 
 [[package]]
 name = "http"
@@ -2339,6 +2341,8 @@ dependencies = [
 [[package]]
 name = "oxidt-docs-kit-build"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85d99df528e013da99e40b6de81553c39e15eea1072f368176ba3d13d67cefc4"
 dependencies = [
  "oxidt-mdx",
  "serde",
@@ -2349,6 +2353,8 @@ dependencies = [
 [[package]]
 name = "oxidt-docs-kit-core"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bf079a1d7d987c661a9b1d82681ad058a19d5e339b62940e4de5b6e7e968ae9"
 dependencies = [
  "oxidt-mdx",
  "serde",
@@ -2359,6 +2365,8 @@ dependencies = [
 [[package]]
 name = "oxidt-mdx"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f2b6c8889394fd8243fe3db6cc233f0e749c247c19ef5601328884854fdbc6b"
 dependencies = [
  "markdown",
  "openapiv3",
