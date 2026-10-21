@@ -40,7 +40,7 @@ dioxus = { version = "0.7.10", features = ["router", "fullstack"] }
 dioxus-docs-kit = { version = "0.5", default-features = false }
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.5"
+oxidt-docs-kit-build = "0.5"
 ```
 
 Wire features so `web` propagates to the kit:
@@ -67,11 +67,11 @@ Create or extend `build.rs`:
 
 ```rust
 fn main() {
-    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+    oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
         // Optional: .with_openapi("api-reference", "docs/api-reference/openapi.yaml")
         .generate();
     // Only if adding the blog:
-    // dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
+    // oxidt_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
 }
 ```
 
@@ -191,7 +191,7 @@ static BLOG: LazyLock<BlogRegistry> = LazyLock::new(|| {
 });
 ```
 
-Keep `dioxus-docs-kit` and `dioxus-docs-kit-build` on the same version — the
+Keep `dioxus-docs-kit` and `oxidt-docs-kit-build` on the same version — the
 bundle carries a format version the runtime checks.
 
 ## Step 5: Routes

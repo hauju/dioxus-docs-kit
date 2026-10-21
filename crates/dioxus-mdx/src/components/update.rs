@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 
 use crate::components::DocNodeRenderer;
 use crate::parser::UpdateNode;
-use crate::text::slugify;
+use crate::slugify;
 
 /// Props for DocUpdate component.
 #[derive(Props, Clone, PartialEq)]

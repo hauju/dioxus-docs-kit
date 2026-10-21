@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 
 use crate::components::DocNodeRenderer;
 use crate::parser::{DocNode, TabsNode};
-use crate::text::slugify;
+use crate::slugify;
 
 /// Props for DocTabs component.
 #[derive(Props, Clone, PartialEq)]

@@ -2,9 +2,9 @@
 
 use dioxus::prelude::*;
 
+use crate::clean_step_title;
 use crate::components::DocNodeRenderer;
 use crate::parser::{DocNode, StepsNode};
-use crate::text::clean_step_title;
 
 /// Props for DocSteps component.
 #[derive(Props, Clone, PartialEq)]

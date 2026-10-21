@@ -1,6 +1,6 @@
-# oxidt-docs-kit
+# dioxus-docs-kit
 
-A documentation site framework for Rust with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time. Ships a [Dioxus 0.7](https://dioxuslabs.com/) shell (`dioxus-docs-kit`) and an experimental [Topcoat](https://github.com/tokio-rs/topcoat) shell (`topcoat-docs-kit`) on one shared core.
+A documentation site framework for Rust with MDX content, sidebar navigation, full-text search, OpenAPI API reference pages, and theme switching — all embedded at compile time. Built for [Dioxus 0.7](https://dioxuslabs.com/), styled with Tailwind CSS 4 + DaisyUI 5. The content pipeline (`oxidt-mdx`, `oxidt-docs-kit-build`, `oxidt-docs-kit-core`) lives in [oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit), which also ships a Topcoat shell.
 
 ## Quick Start
 
@@ -22,8 +22,8 @@ To add the kit to an **existing** Dioxus app instead, follow the
 | Crate | Description |
 |-------|-------------|
 | [`dioxus-docs-kit`](crates/dioxus-docs-kit/) | Docs site shell (layout, sidebar, search, page nav, OpenAPI) |
-| [`dioxus-docs-kit-build`](crates/dioxus-docs-kit-build/) | Build-time helper that generates content maps from `_nav.json` |
-| [`dioxus-mdx`](crates/dioxus-mdx/) | Standalone MDX parser + renderer (usable without the full shell) |
+| [`dioxus-mdx`](crates/dioxus-mdx/) | Dioxus MDX renderer (usable without the full shell); re-exports the `oxidt-mdx` parser |
+| [`oxidt-docs-kit-build`](https://crates.io/crates/oxidt-docs-kit-build) | Build-time helper that bundles `_nav.json`, MDX and OpenAPI specs (from oxidt-docs-kit) |
 
 ## Integration Guide
 
@@ -33,10 +33,10 @@ To add the kit to an **existing** Dioxus app instead, follow the
 # Cargo.toml
 [dependencies]
 dioxus = { version = "0.7", features = ["router", "fullstack"] }
-dioxus-docs-kit = "0.10"
+dioxus-docs-kit = "0.11"
 
 [build-dependencies]
-dioxus-docs-kit-build = "0.10"
+oxidt-docs-kit-build = "0.11"
 
 [features]
 default = ["web"]
@@ -50,7 +50,7 @@ The kit's default features are `web` + `mermaid` + `openapi`. Syntax highlightin
 
 ```rust
 fn main() {
-    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+    oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
         // Optional: .with_openapi("api-reference", "docs/api-reference/spec.yaml")
         .generate();
 }
@@ -220,7 +220,7 @@ Without `--debug-symbols false`, `wasm-opt` aborts on the DWARF `dx` keeps by de
 With the `webmcp` feature (off by default), `DocsWebMcp {}` mounted below `use_docs_providers` registers `docs_search`, `docs_get_page`, `docs_list_pages` and `docs_get_api_operation` as [WebMCP](https://github.com/webmachinelearning/webmcp) tools. They are read-only and answer from the search index and content already in the wasm.
 
 ```toml
-dioxus-docs-kit = { version = "0.10", features = ["webmcp"] }
+dioxus-docs-kit = { version = "0.11", features = ["webmcp"] }
 ```
 
 Chrome 153+ has `document.modelContext` natively (149 to 152 behind the origin trial or `chrome://flags/#enable-webmcp-testing`). Every other browser needs Google's [WebMCP polyfill](https://github.com/GoogleChromeLabs/webmcp-tools) (Apache-2.0) to run **before the wasm starts**, so it goes in `index.html`, not in a component. The polyfill is not part of the crate; copy it from this repo's `assets/webmcp-polyfill.js` and pin it as an unhashed asset so the URL is stable:

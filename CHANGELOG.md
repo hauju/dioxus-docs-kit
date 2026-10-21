@@ -2,16 +2,24 @@
 
 All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions
-apply to all six crates (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-`oxidt-docs-kit-core`, `dioxus-mdx`, `hl-lite`, `topcoat-docs-kit`), which are released together from this workspace.
+apply to `dioxus-docs-kit` and `dioxus-mdx`, which are released together. Up to
+0.10 this workspace also held the content pipeline crates; from 0.11 they live
+in [oxidt/oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit).
 
 ## [Unreleased]
 
 ### Changed
 
-- **Project renamed to oxidt-docs-kit.** The site, README and docs now use the
-  new name. Published crate names (`dioxus-docs-kit`, `dioxus-docs-kit-build`,
-  `dioxus-mdx`, `hl-lite`) are unchanged.
+- **BREAKING: pipeline crates moved out.** `oxidt-docs-kit-core`, `hl-lite`
+  and the build crate (renamed `dioxus-docs-kit-build` → `oxidt-docs-kit-build`)
+  now live in [oxidt/oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit)
+  and come from crates.io. Update your `build.rs`:
+  `oxidt_docs_kit_build::DocsBuild` instead of `dioxus_docs_kit_build::DocsBuild`.
+- **BREAKING: `dioxus-mdx` is the renderer only.** The parser and document
+  types moved to `oxidt-mdx`; `dioxus-mdx` re-exports them, so
+  `dioxus_mdx::parse_document`, `DocNode` etc. keep working. `DocNode` and
+  `CalloutType` are `#[non_exhaustive]`: a `match` on them outside the
+  defining crate needs a `_` arm.
 
 ### Added
 

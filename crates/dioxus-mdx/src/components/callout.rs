@@ -31,7 +31,8 @@ pub fn DocCallout(props: DocCalloutProps) -> Element {
             "text-warning",
             "shadow-warning/5",
         ),
-        CalloutType::Info => ("bg-info/5", "border-info/40", "text-info", "shadow-info/5"),
+        // `Info`, and any kind `oxidt-mdx` adds later (the enum is non-exhaustive).
+        _ => ("bg-info/5", "border-info/40", "text-info", "shadow-info/5"),
     };
 
     let html = props.content_html.clone();
@@ -47,7 +48,7 @@ pub fn DocCallout(props: DocCalloutProps) -> Element {
                         CalloutType::Tip => rsx! { Icon { class: "size-5", icon: LdLightbulb } },
                         CalloutType::Note => rsx! { Icon { class: "size-5", icon: LdInfo } },
                         CalloutType::Warning => rsx! { Icon { class: "size-5", icon: LdTriangleAlert } },
-                        CalloutType::Info => rsx! { Icon { class: "size-5", icon: LdInfo } },
+                        _ => rsx! { Icon { class: "size-5", icon: LdInfo } },
                     }
                 }
                 // Content

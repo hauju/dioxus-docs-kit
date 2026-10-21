@@ -135,7 +135,7 @@ mod tests {
             .iter()
             .map(|(path, body)| (path.as_str(), body.as_str()))
             .collect();
-        let bundle = dioxus_docs_kit_build::docs_bundle_json(&nav, &pages, &[])
+        let bundle = oxidt_docs_kit_build::docs_bundle_json(&nav, &pages, &[])
             .expect("generate docs bundle")
             .leak();
 

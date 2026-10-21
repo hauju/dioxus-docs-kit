@@ -162,7 +162,7 @@ The spec is parsed in `build.rs`, alongside your MDX pages:
 ```rust
 // build.rs
 fn main() {
-    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+    oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
         .with_openapi("api-reference", "docs/api-reference/petstore.yaml")
         .generate();
 }

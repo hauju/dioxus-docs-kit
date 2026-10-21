@@ -1,32 +1,25 @@
 [workspace]
-members = [
-    "crates/dioxus-docs-kit",
-    "crates/dioxus-docs-kit-build",
-    "crates/dioxus-mdx",
-    "crates/oxidt-docs-kit-core",
-    "crates/hl-lite",
-    "crates/oxidt-docs",
-    "crates/topcoat-docs-kit",
-    "examples/topcoat-docs",
-]
+members = ["crates/dioxus-docs-kit", "crates/dioxus-mdx"]
 
 [workspace.package]
-version = "0.10.2"
+version = "0.11.0"
 authors = ["Hauke Jung <hauke.jung@outlook.de>"]
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
-repository = "https://github.com/oxidt/oxidt-docs-kit"
-homepage = "https://github.com/oxidt/oxidt-docs-kit"
+repository = "https://github.com/hauju/dioxus-docs-kit"
+homepage = "https://github.com/hauju/dioxus-docs-kit"
 
 [workspace.dependencies]
 dioxus = { version = "0.7.10", default-features = false }
 dioxus-fullstack-core = "0.7.10"
-dioxus-mdx = { version = "0.10.2", path = "crates/dioxus-mdx", default-features = false }
-dioxus-docs-kit = { version = "0.10.2", path = "crates/dioxus-docs-kit", default-features = false }
-oxidt-docs-kit-core = { version = "0.10.2", path = "crates/oxidt-docs-kit-core", default-features = false }
-dioxus-docs-kit-build = { version = "0.10.2", path = "crates/dioxus-docs-kit-build" }
-hl-lite = { version = "0.10.2", path = "crates/hl-lite" }
+dioxus-mdx = { version = "0.11.0", path = "crates/dioxus-mdx", default-features = false }
+dioxus-docs-kit = { version = "0.11.0", path = "crates/dioxus-docs-kit", default-features = false }
+# The content pipeline lives in https://github.com/hauju/dioxus-docs-kit.
+oxidt-mdx = { version = "0.11.0", default-features = false }
+oxidt-docs-kit-core = { version = "0.11.0", default-features = false }
+oxidt-docs-kit-build = "0.11.0"
+hl-lite = "0.11.0"
 serde = { version = "1.0", features = ["derive"] }
 schemars = "1"
 webmcp-rs = { version = "0.1", default-features = false, features = ["schema", "dioxus"] }
@@ -58,7 +51,7 @@ dioxus = { workspace = true, features = [
 dioxus-docs-kit = { workspace = true }
 
 [build-dependencies]
-dioxus-docs-kit-build = { workspace = true }
+oxidt-docs-kit-build = { workspace = true }
 
 [features]
 default = ["web", "mermaid", "openapi", "webmcp"]
@@ -89,3 +82,10 @@ inherits = "release"
 lto = "fat"
 codegen-units = 1
 strip = true
+
+# TEMPORARY: until the oxidt-docs-kit 0.11.0 crates are on crates.io.
+[patch.crates-io]
+oxidt-mdx = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-mdx" }
+oxidt-docs-kit-core = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-docs-kit-core" }
+oxidt-docs-kit-build = { path = "../oxidt/oxidt-docs-kit-split/crates/oxidt-docs-kit-build" }
+hl-lite = { path = "../oxidt/oxidt-docs-kit-split/crates/hl-lite" }

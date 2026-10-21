@@ -35,7 +35,7 @@ static WEBMCP_POLYFILL: Asset = asset!(
 // ============================================================================
 
 // Pages, the OpenAPI spec and the search index are parsed by `build.rs`
-// (`dioxus_docs_kit_build::DocsBuild`); this only deserializes the result.
+// (`oxidt_docs_kit_build::DocsBuild`); this only deserializes the result.
 static DOCS: LazyLock<DocsRegistry> = LazyLock::new(|| {
     DocsConfig::new(dioxus_docs_kit::docs_bundle!())
         .with_default_path("getting-started/introduction")
@@ -163,7 +163,7 @@ fn main() {
 fn main() {
     use dioxus_docs_kit::server::SeoRouter;
 
-    const SITE_TITLE: &str = "Oxidt Docs Kit";
+    const SITE_TITLE: &str = "Dioxus Docs Kit";
     const SITE_DESC: &str = "A Dioxus-powered documentation framework with MDX rendering, OpenAPI reference pages, and full-text search.";
 
     dioxus::server::serve(|| async {
@@ -367,7 +367,7 @@ fn SiteNavbar(
                 Link {
                     to: Route::Home {},
                     class: "text-lg sm:text-xl font-semibold tracking-tight truncate hover:opacity-80 transition-opacity",
-                    "Oxidt Docs Kit"
+                    "Dioxus Docs Kit"
                 }
             }
             div { class: "flex-none flex items-center gap-1",
@@ -391,7 +391,7 @@ fn SiteNavbar(
                 }
                 SearchButton { search_open }
                 a {
-                    href: "https://github.com/oxidt/oxidt-docs-kit",
+                    href: "https://github.com/hauju/dioxus-docs-kit",
                     target: "_blank",
                     rel: "noopener noreferrer",
                     class: "btn btn-ghost btn-sm btn-square rounded-lg",
@@ -586,7 +586,7 @@ fn MySkillsLayout() -> Element {
 fn SkillsIndexPage() -> Element {
     rsx! {
         SkillsIndex {
-            description: "Agent skills for working with Oxidt Docs Kit. Install one with the skills CLI.",
+            description: "Agent skills for working with Dioxus Docs Kit. Install one with the skills CLI.",
         }
     }
 }
@@ -695,7 +695,7 @@ fn HeroSection() -> Element {
                         Icon { class: "size-4", icon: LdArrowRight }
                     }
                     a {
-                        href: "https://github.com/oxidt/oxidt-docs-kit",
+                        href: "https://github.com/hauju/dioxus-docs-kit",
                         target: "_blank",
                         rel: "noopener noreferrer",
                         class: "btn btn-ghost gap-2",
@@ -781,7 +781,7 @@ fn UsedBySection() -> Element {
                 div { class: "text-center mb-12",
                     h2 { class: "text-3xl font-bold tracking-tight", "Used in Production" }
                     p { class: "mt-3 text-base-content/60",
-                        "Projects powered by Oxidt Docs Kit."
+                        "Projects powered by Dioxus Docs Kit."
                     }
                 }
                 div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto",
@@ -847,7 +847,7 @@ const CODE_SNIPPET: &str = r#"use dioxus_docs_kit::{
 };
 use std::sync::LazyLock;
 
-// build.rs: dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+// build.rs: oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
 //     .with_openapi("api-reference", "docs/api.yaml")
 //     .generate();
 
@@ -902,7 +902,7 @@ fn CodeSection() -> Element {
                             div { class: "flex-1 min-w-0",
                                 p { class: "text-sm font-medium text-base-content mb-1.5", "Install the skill" }
                                 code { class: "block bg-base-200 text-xs font-mono px-3 py-2 rounded-lg text-base-content/70 overflow-x-auto",
-                                    "git clone https://github.com/oxidt/oxidt-docs-kit.git /tmp/ddk && cp -r /tmp/ddk/skills/dioxus-docs-kit-integration ~/.claude/skills/"
+                                    "git clone https://github.com/hauju/dioxus-docs-kit.git /tmp/ddk && cp -r /tmp/ddk/skills/dioxus-docs-kit-integration ~/.claude/skills/"
                                 }
                             }
                         }
@@ -950,9 +950,9 @@ fn LandingFooter() -> Element {
     rsx! {
         footer { class: "border-t border-base-300 px-4 py-8",
             div { class: "max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-base-content/50",
-                span { "Oxidt Docs Kit · Built with Dioxus" }
+                span { "Dioxus Docs Kit · Built with Dioxus" }
                 a {
-                    href: "https://github.com/oxidt/oxidt-docs-kit",
+                    href: "https://github.com/hauju/dioxus-docs-kit",
                     target: "_blank",
                     rel: "noopener noreferrer",
                     class: "flex items-center gap-1.5 hover:text-base-content transition-colors",

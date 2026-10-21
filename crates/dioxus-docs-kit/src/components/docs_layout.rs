@@ -345,13 +345,10 @@ paths:
         let specs: &[(&str, &str)] = &[("api-reference", SPEC)];
         #[cfg(not(feature = "openapi"))]
         let specs: &[(&str, &str)] = &[];
-        let bundle = dioxus_docs_kit_build::docs_bundle_json(
-            NAV,
-            &[("getting-started/intro", INTRO)],
-            specs,
-        )
-        .expect("generate docs bundle")
-        .leak();
+        let bundle =
+            oxidt_docs_kit_build::docs_bundle_json(NAV, &[("getting-started/intro", INTRO)], specs)
+                .expect("generate docs bundle")
+                .leak();
         Box::leak(Box::new(DocsConfig::new(bundle).build()))
     }
 

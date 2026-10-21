@@ -1,5 +1,5 @@
 fn main() {
-    use dioxus_docs_kit_build::{BlogBuild, DocsBuild, SkillsBuild, ValidationMode};
+    use oxidt_docs_kit_build::{BlogBuild, DocsBuild, SkillsBuild, ValidationMode};
 
     DocsBuild::new("docs/_nav.json")
         .with_openapi("api-reference", "docs/api-reference/petstore.yaml")

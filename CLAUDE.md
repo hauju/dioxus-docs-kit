@@ -30,7 +30,9 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 
 ## Project Architecture
 
-**oxidt-docs-kit** (formerly dioxus-docs-kit) — **Rust documentation site framework** with a Dioxus 0.7 shell — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
+**dioxus-docs-kit** — **Rust documentation site framework** with a Dioxus 0.7 shell (Tailwind 4 + DaisyUI 5) — renders MDX docs, OpenAPI API reference pages, and a search modal. All content is embedded at compile time.
+
+The content pipeline crates (`oxidt-mdx`, `oxidt-docs-kit-build`, `oxidt-docs-kit-core`, `hl-lite`) live in [oxidt/oxidt-docs-kit](https://github.com/oxidt/oxidt-docs-kit) and come from crates.io; changes to them (bundle format, registries, parser) are made there and released before this repo can use them. While unreleased, `[patch.crates-io]` in the root `Cargo.toml` points at a local checkout.
 
 ### Crate Layout
 
@@ -38,19 +40,18 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 |-------|------|---------|
 | `dioxus-docs-kit-example` | `src/main.rs` | Example app: routes, custom pages (Home, Blog, Navbar), docs glue |
 | `dioxus-docs-kit` | `crates/dioxus-docs-kit/` | **Reusable docs shell** — layout, sidebar, search, page nav, theme toggle, OpenAPI |
-| `oxidt-docs-kit-core` | `crates/oxidt-docs-kit-core/` | **UI-agnostic core** — bundle loader, `DocsRegistry`/`BlogRegistry`, configs, search, SEO/XML helpers. No `dioxus` dep; the kit re-exports it at its old paths |
-| `dioxus-docs-kit-build` | `crates/dioxus-docs-kit-build/` | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
-| `dioxus-mdx` | `crates/dioxus-mdx/` | Standalone MDX parser + renderer (Mintlify-style components) |
-| `topcoat-docs-kit` | `crates/topcoat-docs-kit/` | **Topcoat docs shell** (experimental) — server-rendered `docs_page`/`docs_head`/`doc_content` on `oxidt-docs-kit-core`, no runtime script; own precompiled CSS. Rust 1.98. Example: `examples/topcoat-docs` (`cargo run -p topcoat-docs-example`) |
-| `hl-lite` | `crates/hl-lite/` | Zero-dependency syntax highlighter (12 hand-written lexers → `hl-*` spans); used by `dioxus-mdx`'s code blocks |
+| `dioxus-mdx` | `crates/dioxus-mdx/` | Dioxus MDX renderer (Mintlify-style components); `pub use oxidt_mdx::*` for the parser and types |
+| `oxidt-docs-kit-core` | crates.io | **UI-agnostic core** — bundle loader, `DocsRegistry`/`BlogRegistry`, configs, search, SEO/XML helpers. The kit re-exports it at its old paths |
+| `oxidt-docs-kit-build` | crates.io | Build-time pipeline: parses `_nav.json` + all MDX + OpenAPI into one JSON bundle |
+| `oxidt-mdx` / `hl-lite` | crates.io | MDX parser + document types / zero-dependency syntax highlighter |
 
-**Dependency direction:** `dioxus-docs-kit` depends on `oxidt-docs-kit-core` (which depends on `dioxus-mdx` with no features — types only) and on `dioxus-mdx` with `features = ["components"]` (renderer only). `dioxus-docs-kit-build` depends on `dioxus-mdx` with `default-features = false, features = ["parse", "openapi-parse"]` (parser only, no dioxus). The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
+**Dependency direction:** `dioxus-docs-kit` depends on `oxidt-docs-kit-core` (which depends on `oxidt-mdx` with no features — types only) and on `dioxus-mdx` with `features = ["components"]` (renderer only). `oxidt-docs-kit-build` depends on `oxidt-mdx` with `features = ["parse", "openapi-parse"]` (parser only). `DocNode` and `CalloutType` are `#[non_exhaustive]` upstream, so renderer matches need a `_` arm. The mdx and docs-kit crates use `dioxus = { features = ["lib"] }` (NOT fullstack). Only the root example uses fullstack.
 
 ### Content Pipeline
 
 **All parsing happens at build time.** The wasm client links no MDX parser, no `markdown`, no `regex`/`regex-lite`, no `openapiv3` and no `serde_yaml` — it only runs `serde_json` over the bundle, once.
 
-1. `build.rs` calls `dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").with_openapi(prefix, spec_path).generate()` (and `BlogBuild::new("blog/_blog.json").generate()`)
+1. `build.rs` calls `oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json").with_openapi(prefix, spec_path).generate()` (and `BlogBuild::new("blog/_blog.json").generate()`)
    - `SkillsBuild::new("skills/_skills.json").generate()` reads `skills/<name>/SKILL.md` (frontmatter via `serde_yaml`) into `skills_bundle.json`
 2. The build crate reads `_nav.json`, parses every `.mdx` into `Vec<DocNode>` with prose rendered to HTML (`DocNode::Html`), parses the OpenAPI spec into `OpenApiSpec`, builds the section-level search index (lowercase fields included) and writes `$OUT_DIR/docs_bundle.json` / `blog_bundle.json`. `cargo:rerun-if-changed` is emitted per file.
 3. `docs_bundle!()` / `blog_bundle!()` macros embed the JSON with `include_str!`
@@ -58,7 +59,7 @@ Requires Dioxus CLI (`dx`): `curl -sSL http://dioxus.dev/install.sh | sh`
 4. `DocsConfig::new(docs_bundle!()).build()` creates a `DocsRegistry` — it deserializes the bundle (inside the consumer's `LazyLock`, so on first page render) and derives only the cheap runtime bits (API sidebar entries, operation index, blog categories)
 5. `DocsPageContent` checks `registry.get_api_operation(&path)` first, then falls back to `registry.get_parsed_doc(&path)`
 
-The bundle carries a `version` field (`BUNDLE_VERSION`, mirrored in `crates/oxidt-docs-kit-core/src/bundle.rs` and `crates/dioxus-docs-kit-build/src/bundle.rs`); bump it whenever the layout changes incompatibly. The build crate's `bundle.rs` holds serialize-only mirrors of `SearchEntry`, `BlogPost`, `BlogFrontmatter` and `BlogSearchEntry` — the core and kit tests dev-depend on the build crate and generate real bundles, which is what keeps the two definitions in sync.
+The bundle carries a `version` field (`BUNDLE_VERSION`, in the upstream core and build crates); bump it whenever the layout changes incompatibly. The build crate's `bundle.rs` holds serialize-only mirrors of `SearchEntry`, `BlogPost`, `BlogFrontmatter` and `BlogSearchEntry` — the core and kit tests dev-depend on the build crate and generate real bundles, which is what keeps the two definitions in sync.
 
 **Adding a new doc page:** create `docs/<group>/<slug>.mdx` and add the path to `docs/_nav.json`.
 
@@ -118,8 +119,8 @@ Route enum (main.rs):
 - `use_signal()` for local state, `use_context_provider()` for shared state
 - Syntax highlighting: `hl-lite`, always on — no feature, no grammar selection, no C toolchain. `dioxus-mdx`'s `code_block` lexes the fence and emits `<pre class="dk-code">` with one `<span class="hl-{kind}">` per token; colors are the `--dk-hl-*` CSS tokens in `crates/dioxus-docs-kit/theme.css`, never Rust. An unknown language renders the same markup with no spans
 - Cargo features (docs-kit): `default = ["web", "mermaid", "openapi"]`, plus `server` (SeoRouter/Axum routes) and `webmcp`. `openapi` gates the API-reference rendering path only — the spec parser lives in the build crate. The workspace `dioxus` dep is `default-features = false`; the example enables `launch`/`devtools`/`logger` itself
-- Cargo features (dioxus-mdx): `components` gates `src/components/**` and pulls in both `dioxus` and `hl-lite`; `parse` gates `src/parser/**` implementation (markdown-rs + regex) while the AST types and `src/text.rs` are always compiled; `openapi` is types + viewer components (no deps), `openapi-parse` adds `openapiv3`/`serde_yaml`. Frontmatter uses `dioxus_mdx::parse_yaml_lite`, not `serde_yaml`
-- CI toolchain: Rust 1.98.0 (Topcoat's MSRV; the Dioxus crates still declare 1.88), Dioxus CLI 0.7.10, Bun for Tailwind
+- Cargo features (dioxus-mdx): `components` gates `src/components/**` and pulls in both `dioxus` and `hl-lite`; `parse` turns on `oxidt-mdx/parse` (markdown-rs + regex) and `MdxContent`; `openapi` is types + viewer components (no deps), `openapi-parse` adds `oxidt-mdx`'s spec parser. Frontmatter uses `oxidt_mdx::parse_yaml_lite`, not `serde_yaml`
+- CI toolchain: Rust 1.98.0 (the crates declare 1.88; an MSRV job checks it), Dioxus CLI 0.7.10, Bun for Tailwind
 
 ---
 

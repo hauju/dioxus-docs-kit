@@ -44,8 +44,8 @@ Each `SKILL.md` needs `name` (equal to its directory name) and `description` in 
 Add `SkillsBuild` to `build.rs`, next to `DocsBuild`:
 
 ```rust
-dioxus_docs_kit_build::SkillsBuild::new("skills/_skills.json")
-    .with_validation(dioxus_docs_kit_build::ValidationMode::Strict)
+oxidt_docs_kit_build::SkillsBuild::new("skills/_skills.json")
+    .with_validation(oxidt_docs_kit_build::ValidationMode::Strict)
     .generate();
 ```
 

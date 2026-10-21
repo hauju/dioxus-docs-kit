@@ -26,7 +26,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     dioxus-docs-kit = "0.7"
 
     [build-dependencies]
-    dioxus-docs-kit-build = "0.7"
+    oxidt-docs-kit-build = "0.7"
 
     [features]
     default = ["web"]
@@ -90,7 +90,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
 
     ```rust
     fn main() {
-        dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json").generate();
+        oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json").generate();
     }
     ```
 
@@ -99,7 +99,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     To include an OpenAPI spec, chain `.with_openapi()` with the spec's **path** — it is parsed here, not in the browser:
 
     ```rust
-    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+    oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
         .with_openapi("api-reference", "docs/api-reference/openapi.yaml")
         .generate();
     ```
@@ -124,7 +124,7 @@ This guide walks you through adding `dioxus-docs-kit` to an existing Dioxus 0.7 
     ```
 
     <Note>
-      Keep `dioxus-docs-kit` and `dioxus-docs-kit-build` on the same version. The bundle carries a format version and the registry refuses one it does not understand.
+      Keep `dioxus-docs-kit` and `oxidt-docs-kit-build` on the same version. The bundle carries a format version and the registry refuses one it does not understand.
     </Note>
   </Step>
 

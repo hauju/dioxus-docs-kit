@@ -7,7 +7,7 @@
 //! Also includes a full blog engine with post listing, tag filtering,
 //! search, reading time, and MDX rendering.
 //!
-//! Content is parsed into a JSON bundle by `dioxus-docs-kit-build` in your
+//! Content is parsed into a JSON bundle by `oxidt-docs-kit-build` in your
 //! `build.rs`; the app embeds that bundle and deserializes it once, so the wasm
 //! client never links an MDX, Markdown or YAML parser.
 //!
@@ -15,7 +15,7 @@
 //!
 //! ```rust,ignore
 //! // build.rs
-//! dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+//! oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
 //!     .with_openapi("api-reference", "docs/api-reference/openapi.yaml")
 //!     .generate();
 //! ```
@@ -36,7 +36,7 @@
 //!
 //! ```rust,ignore
 //! // build.rs
-//! dioxus_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
+//! oxidt_docs_kit_build::BlogBuild::new("blog/_blog.json").generate();
 //! ```
 //!
 //! ```rust,ignore

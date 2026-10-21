@@ -116,6 +116,9 @@ pub fn DocNodeRenderer(props: DocNodeRendererProps) -> Element {
                 }
             }
         }
+        // `DocNode` is non-exhaustive: a node kind newer than this renderer
+        // renders nothing rather than failing to compile.
+        _ => rsx! {},
     }
 }
 

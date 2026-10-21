@@ -52,8 +52,8 @@ test('loads only near the viewport and repeated scans reuse the diagram', async 
     expect(requests.length).toBe(count);
 });
 
-test('both kit stylesheets apply theme colors without replacing the SVG', async () => {
-    for (const kit of ['dioxus-docs-kit', 'topcoat-docs-kit']) {
+test('the kit stylesheet applies theme colors without replacing the SVG', async () => {
+    for (const kit of ['dioxus-docs-kit']) {
         await page.locator('style').last().evaluate(el => el.remove());
         await page.addStyleTag({ content: await Bun.file(`crates/${kit}/assets/docs-kit.css`).text() });
         await insert();

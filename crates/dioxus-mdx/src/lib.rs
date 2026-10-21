@@ -109,42 +109,11 @@
 pub mod components;
 pub mod lucide;
 mod mermaid_js;
-pub mod parser;
-mod pele_assets;
-#[cfg(feature = "parse")]
-mod re;
-mod text;
 
-// Re-export parser types and functions
-pub use parser::{
-    AccordionGroupNode, AccordionNode, ApiInfo, ApiOperation, ApiParameter, ApiRequestBody,
-    ApiResponse, ApiServer, ApiTag, CalloutNode, CalloutType, CardGroupNode, CardNode,
-    CodeBlockNode, CodeGroupNode, DocFrontmatter, DocNode, ExpandableNode, HttpMethod,
-    MediaTypeContent, OpenApiNode, OpenApiSpec, ParamFieldNode, ParamLocation, ParameterLocation,
-    ParsedDoc, RequestExampleNode, ResponseExampleNode, ResponseFieldNode, SchemaDefinition,
-    SchemaType, StepNode, StepsNode, TabNode, TabsNode, UpdateNode, YamlLiteError, YamlMap,
-    YamlValue, parse_yaml_lite,
-};
-
-// Heading helpers are free of both dioxus and regex, so they are available in
-// every configuration (the renderer, the TOC and the build-time bundle
-// generator all have to agree on anchor ids).
-pub use text::{
-    clean_step_title, extract_headers, parse_atx_heading, slugify, strip_markdown_links,
-};
-
-// Parsing lives behind the `parse` feature (default). A docs-kit app turns it
-// off: its content is parsed into a bundle at build time.
-#[cfg(feature = "parse")]
-pub use parser::{
-    extract_frontmatter, parse_body, parse_document, parse_mdx, strip_leading_h1, to_html,
-    to_html_with_heading_ids,
-};
-
-// Spec parsing lives behind the `openapi-parse` feature (default); the
-// `OpenApiSpec` types and the viewer components are always available.
-#[cfg(feature = "openapi-parse")]
-pub use parser::{OpenApiError, parse_openapi};
+// The parser, document types and text helpers come from `oxidt-mdx`, which
+// shares them with the build crate and the docs-kit core. `lucide` and
+// `MERMAID_JS` are this crate's own and take precedence over the glob.
+pub use oxidt_mdx::*;
 
 // The highlighter itself, so consumers can lex a snippet (or map a fence slug
 // to a language) without adding their own dependency on it.
@@ -169,7 +138,3 @@ pub use components::{MdxContent, MdxRenderer};
 #[cfg(feature = "mermaid")]
 pub use components::MermaidDiagram;
 pub use mermaid_js::MERMAID_JS;
-
-pub use pele_assets::PELE_VERSION;
-#[cfg(not(target_arch = "wasm32"))]
-pub use pele_assets::pele_asset;

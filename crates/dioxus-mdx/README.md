@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-mdx = "0.7"
+dioxus-mdx = "0.11"
 ```
 
 Render MDX content in a component:
@@ -31,10 +31,11 @@ fn BlogPost(content: String) -> Element {
 
 ## Parsing Only
 
-Use the parser directly without rendering — and without pulling in Dioxus at
-all, by depending on the crate with `default-features = false, features = ["parse"]`.
-That is how `dioxus-docs-kit-build` parses a whole documentation site inside a
-build script.
+The parser and document types come from
+[`oxidt-mdx`](https://crates.io/crates/oxidt-mdx) and are re-exported here. To
+parse without pulling in Dioxus at all, depend on `oxidt-mdx` directly — that is
+how `oxidt-docs-kit-build` parses a whole documentation site inside a build
+script.
 
 The parsed tree is `serde`-serializable, so you can parse at build time and
 deserialize the result in the browser instead of shipping the parser.
@@ -155,8 +156,8 @@ and adapt to any DaisyUI theme.
 
 ## Features
 
-- `components` (default) — the Dioxus renderer components. This is the only thing that pulls `dioxus` in; without it the crate is a plain Rust library of the document types plus (with `parse`) the parser.
-- `parse` (default) — the MDX/Markdown parser, including Markdown → HTML rendering. Pulls in `markdown` and a regex engine. A `dioxus-docs-kit` app leaves this off on the client: its pages are parsed into a bundle at build time.
+- `components` (default) — the Dioxus renderer components. Without it the crate only re-exports `oxidt-mdx`; depend on that directly instead.
+- `parse` (default) — `oxidt-mdx`'s MDX/Markdown parser, including Markdown → HTML rendering. Pulls in `markdown` and a regex engine. A `dioxus-docs-kit` app leaves this off on the client: its pages are parsed into a bundle at build time.
 - `web` (default) — enables web-specific features like clipboard copy buttons on code blocks
 - `openapi` — the `OpenApiSpec` types and the viewer components (`OpenApiViewer`, `EndpointPage`, …). Costs no dependencies; always compiled.
 - `openapi-parse` (default) — the spec *parser*: `parse_openapi()` and inline `<OpenAPI>…</OpenAPI>` blocks, plus `openapiv3` and `serde_yaml` (and its `unsafe-libyaml`). Disable to drop them; an `<OpenAPI>` block then falls through to the markdown branch and its body renders as text. Frontmatter parsing is unaffected: it uses the built-in `parse_yaml_lite` subset parser, not `serde_yaml`.

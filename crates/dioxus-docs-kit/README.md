@@ -10,19 +10,19 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-docs-kit = "0.10"
+dioxus-docs-kit = "0.11"
 ```
 
 ### 1. Parse your content in `build.rs`
 
-[`dioxus-docs-kit-build`](https://crates.io/crates/dioxus-docs-kit-build) turns
+[`oxidt-docs-kit-build`](https://crates.io/crates/oxidt-docs-kit-build) turns
 your pages and specs into a single JSON bundle at compile time, so the wasm
 client ships no MDX/Markdown/YAML parser and never re-parses a page:
 
 ```rust
 // build.rs
 fn main() {
-    dioxus_docs_kit_build::DocsBuild::new("docs/_nav.json")
+    oxidt_docs_kit_build::DocsBuild::new("docs/_nav.json")
         .with_openapi("api-reference", "docs/api-reference/spec.yaml")
         .generate();
 }
@@ -131,7 +131,7 @@ Define your docs structure in `_nav.json`. `tabs` is a flat list of tab names, a
 
 ## Content Pipeline
 
-All doc content is parsed at compile time. `dioxus-docs-kit-build` reads
+All doc content is parsed at compile time. `oxidt-docs-kit-build` reads
 `_nav.json`, parses every referenced `.mdx` file into the renderer's node tree
 (prose already rendered to HTML), parses any OpenAPI spec, builds the search
 index, and writes one `docs_bundle.json` into `OUT_DIR`. `docs_bundle!()`
@@ -141,7 +141,7 @@ use.
 Keep both crates on the same version: the bundle carries a format version and
 the runtime rejects one it does not understand.
 
-See the [example project](https://github.com/oxidt/oxidt-docs-kit) for a complete `build.rs` implementation.
+See the [example project](https://github.com/hauju/dioxus-docs-kit) for a complete `build.rs` implementation.
 
 ## Styling Setup
 
@@ -306,7 +306,7 @@ community contribution.
 
 - `web` (default) — enables web-specific features (propagated to `dioxus-mdx`)
 - `mermaid` (default) — renders ` ```mermaid ` fences as diagrams
-- `openapi` (default) — renders API reference pages from OpenAPI specs. The spec is parsed by `dioxus-docs-kit-build`, so this costs no extra dependency; disabling it (`default-features = false`) drops the endpoint pages, the API sidebar and the API search entries, and the registry ignores any specs in the bundle. Docs pages and the blog are unaffected.
+- `openapi` (default) — renders API reference pages from OpenAPI specs. The spec is parsed by `oxidt-docs-kit-build`, so this costs no extra dependency; disabling it (`default-features = false`) drops the endpoint pages, the API sidebar and the API search entries, and the registry ignores any specs in the bundle. Docs pages and the blog are unaffected.
 - `server` — Axum route builders for crawler-facing endpoints
 
 With the `server` feature, `SeoRouter` generates per-page raw-Markdown routes, `llms.txt` / `llms-full.txt`, sitemaps, blog RSS, and robots.txt as plain Axum routes (server functions would JSON-encode the bodies):

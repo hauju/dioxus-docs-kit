@@ -18,13 +18,10 @@ dioxus = { workspace = true, features = ["lib"], optional = true }
 # Only the renderer highlights code, so it rides with `components`.
 hl-lite = { workspace = true, optional = true }
 
-serde = { workspace = true }
+# The parser and document types; this crate re-exports them.
+oxidt-mdx = { workspace = true }
+# The wasm-only clipboard and scroll-spy scripts JSON-encode their arguments.
 serde_json = { workspace = true }
-serde_yaml = { workspace = true, optional = true }
-tracing = { workspace = true }
-regex-lite = { version = "0.1", optional = true }
-markdown = { version = "1.0", optional = true }
-openapiv3 = { version = "2.0", optional = true }
 
 # `dioxus-web`'s history implementation calls `window.location()` but only asks
 # for `web-sys/Location` from its own `devtools` feature, so a build that enables
@@ -40,25 +37,24 @@ gloo-timers = { workspace = true, optional = true }
 [features]
 default = ["components", "parse", "web", "mermaid", "openapi-parse"]
 
-# The Dioxus renderer components. Turning this off leaves a plain Rust library
-# of the document types and (with `parse`) the MDX parser, with no `dioxus`
-# dependency at all — that is how `dioxus-docs-kit-build` uses this crate.
+# The Dioxus renderer components. Turning this off leaves only the
+# `oxidt-mdx` re-exports; depend on `oxidt-mdx` directly for that.
 components = ["dep:dioxus", "dep:gloo-timers", "dep:hl-lite"]
 
-# The MDX/Markdown parser, including Markdown -> HTML rendering. Pulls in
-# markdown-rs and a regex engine, so a docs-kit app leaves it off: its pages are
-# parsed at build time and shipped as a JSON bundle of already-rendered nodes.
-parse = ["dep:markdown", "dep:regex-lite"]
+# `oxidt-mdx`'s MDX/Markdown parser (markdown-rs + a regex engine), plus
+# `MdxContent`, which parses at runtime. A docs-kit app leaves it off: its pages
+# are parsed at build time and shipped as a JSON bundle.
+parse = ["oxidt-mdx/parse"]
 
 web = ["components", "dioxus/web", "dep:web-sys"]
 mermaid = ["components"]
 
 # `openapi` is the value types plus the viewer components, which cost no extra
-# dependencies and are always compiled. `openapi-parse` adds the spec *parser*
+# dependencies. `openapi-parse` adds `oxidt-mdx`'s spec *parser*
 # (`parse_openapi`, inline `<OpenAPI>` blocks) and with it `openapiv3` and
 # `serde_yaml` — build-time only in a docs-kit app.
-openapi = []
-openapi-parse = ["openapi", "parse", "dep:openapiv3", "dep:serde_yaml"]
+openapi = ["oxidt-mdx/openapi"]
+openapi-parse = ["openapi", "parse", "oxidt-mdx/openapi-parse"]
 
 [package.metadata.docs.rs]
 features = ["web", "mermaid", "parse", "openapi-parse"]

@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 
 use crate::components::{DocNodeRenderer, MdxIcon};
 use crate::parser::{AccordionGroupNode, DocNode};
-use crate::text::slugify;
+use crate::slugify;
 
 /// Props for DocAccordionGroup component.
 #[derive(Props, Clone, PartialEq)]

@@ -11,7 +11,7 @@ use dioxus::prelude::*;
 // `extract_headers` and `slugify` live in `crate::text` — free of dioxus and of
 // any regex engine — so the build-time bundle generator runs the same code the
 // browser does. Re-exported here so `dioxus_mdx::components::{..}` keeps working.
-pub use crate::text::{extract_headers, slugify};
+pub use crate::{extract_headers, slugify};
 
 /// Props for DocTableOfContents component.
 #[derive(Props, Clone, PartialEq)]
